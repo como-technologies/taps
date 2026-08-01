@@ -1,0 +1,25 @@
+# The exact conduit config the client-corpus demo runs with.
+# demo/client-corpus-init.sh copies this into the per-run workdir as
+# conduit.toml, resolving the placeholder on the [adroit] dir line to the
+# absolute path of the per-run corpus SPACE (<workdir>/corpus-space — a KB
+# space seeded from the client corpus's legacy docs/src/adr; the pinned
+# adroit is KB-only per its ADR-0020). Everything else is explicit so the
+# demo's effective config is fully documented here.
+
+[forge]
+default = "gitea"
+
+[forge.gitea]
+base_url = "http://localhost:@FORGE_PORT@" # resolved by client-corpus-init.sh from FORGE_PORT (default 3000)
+owner = "como"
+repo = "@REPO_NAME@" # resolved by client-corpus-init.sh from REPO_NAME (default "client-corpus")
+
+[engine]
+kind = "fake" # the deterministic demo engine; CONDUIT_ENGINE=claude-code for the encore
+timeout_secs = 900
+
+[adroit]
+dir = "@ADROIT_DIR@" # resolved by client-corpus-init.sh -> <workdir>/corpus-space (the seeded KB space)
+# ai_provider/ai_model defaults are irrelevant to the demo path: the demo
+# plans an ADR that carries a STORED plan — a deterministic, provider-free
+# read; no AI env is needed.
