@@ -1,18 +1,15 @@
 [package]
-name = "llm-wiki-engine"
+name = "llm-wiki"
 version = "0.4.1"
 edition.workspace = true
 rust-version.workspace = true
-description = "Git-backed wiki engine with MCP/ACP server — bring your own LLM"
-authors = ["Jerome Guibert <jguibert@gmail.com>"]
+repository.workspace = true
+authors.workspace = true
+# Dual-licensed with the upstream copyright retained (LICENSE-MIT names the
+# origin project's author) — see the README's credit section.
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/geronimo-iia/llm-wiki"
-homepage = "https://github.com/geronimo-iia/llm-wiki"
-documentation = "https://docs.rs/llm-wiki-engine"
+description = "Git-backed wiki engine with MCP/ACP server — bring your own LLM"
 readme = "README.md"
-keywords = ["wiki", "knowledge-base", "mcp", "git", "acp"]
-categories = ["command-line-utilities", "development-tools"]
-exclude = [".github/", "tests/", "tests-integration/", "docs/"]
 
 [lib]
 name = "llm_wiki"
@@ -80,7 +77,3 @@ notify.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
-
-[package.metadata.binstall]
-pkg-url = "{ repo }/releases/download/v{ version }/{ target }.tar.gz"
-bin-dir = "llm-wiki"

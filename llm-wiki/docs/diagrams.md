@@ -48,7 +48,6 @@ graph LR
 ```
 
 References:
-- [overview.md](overview.md)
 - [server.md](specifications/engine/server.md)
 
 ## 2. Repository Layers
@@ -192,7 +191,7 @@ flowchart LR
 ```
 
 References:
-- [overview.md](overview.md)
+- [README.md](../README.md)
 
 ## 7. Typed Graph Edges
 
@@ -291,7 +290,6 @@ sequenceDiagram
 
 References:
 - [server.md](specifications/engine/server.md)
-- [decisions/graceful-shutdown.md](decisions/graceful-shutdown.md)
 
 ## 10. ACP Workflow Dispatch
 
@@ -337,8 +335,7 @@ sequenceDiagram
 
 References:
 - [acp/server.rs](../src/acp/server.rs)
-- [decisions/0.3.0/acp-workflows.md](decisions/0.3.0/acp-workflows.md)
-- [guides/ide-integration.md](guides/ide-integration.md)
+- [acp-transport.md](specifications/integrations/acp-transport.md)
 
 ## 11. Engine Startup
 

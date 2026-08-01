@@ -24,7 +24,8 @@ access** that a skill cannot replicate:
 - Space registry mutations
 
 Everything else — workflow orchestration, LLM prompting, multi-step
-procedures — belongs in skills (the `llm-wiki-skills` repository).
+procedures — belongs in skills, external to the engine (e.g. the
+Como authoring kit under `kit/`).
 
 ## The 16 Tools
 

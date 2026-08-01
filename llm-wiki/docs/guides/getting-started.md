@@ -1,25 +1,23 @@
 # Getting Started
 
-A complete walkthrough from installation to a working wiki with
+A complete walkthrough from a fresh build to a working wiki with
 searchable pages and a concept graph.
 
-## 1. Install
+## 1. Build
+
+llm-wiki is a member of the taps Cargo workspace. Build it from the
+workspace root:
 
 ```bash
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/geronimo-iia/llm-wiki/main/install.sh | bash
-
-# Or via cargo
-cargo install llm-wiki-engine
+cargo build --release -p llm-wiki
 ```
 
-Verify:
+The binary lands at `target/release/llm-wiki`. Put it on your `PATH`
+(or invoke it via `cargo run -p llm-wiki --`). Verify:
 
 ```bash
 llm-wiki --version
 ```
-
-See [installation.md](installation.md) for all options.
 
 ## 2. Create a Wiki
 
@@ -223,7 +221,7 @@ llm-wiki graph --relation fed-by
 llm-wiki graph --root concepts/mixture-of-experts --depth 2
 ```
 
-## 9. Connect an IDE
+## 9. Connect an Agent
 
 Start the MCP server:
 
@@ -238,13 +236,14 @@ automatically:
 llm-wiki serve --watch
 ```
 
-Connect your editor — see [ide-integration.md](ide-integration.md).
-Now the agent can search, read, write, and ingest through the wiki
-tools.
+Connect any MCP-compatible agent or editor over stdio (or Streamable
+HTTP with `--http`); ACP editors connect with `--acp`. See
+[specifications/integrations/](../specifications/integrations/) for
+client configuration and transport details. Now the agent can search,
+read, write, and ingest through the wiki tools.
 
 ## Next Steps
 
 - [Custom types](custom-types.md) — add your own page types
-- [IDE integration](ide-integration.md) — connect to VS Code, Cursor, Zed
-- [CI/CD](ci-cd.md) — validate and index in pipelines
+- [Como authoring](como-authoring.md) — the authoring contract for agents
 - [Multi-wiki](multi-wiki.md) — manage multiple wikis

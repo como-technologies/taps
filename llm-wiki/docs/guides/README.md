@@ -1,15 +1,13 @@
 # Guides
 
-User-facing documentation for installing, configuring, and integrating
+User-facing documentation for building, configuring, and integrating
 llm-wiki.
 
 ## Getting started
 
-| Guide                                    | Description                                                       |
-| ---------------------------------------- | ----------------------------------------------------------------- |
-| [getting-started.md](getting-started.md) | End-to-end walkthrough: install → create → write → search → graph |
-| [installation.md](installation.md)       | Install llm-wiki (script, cargo, homebrew, asdf)                  |
-| [ide-integration.md](ide-integration.md) | Connect to VS Code, Cursor, Windsurf, Zed, Claude Code            |
+| Guide                                    | Description                                                     |
+| ---------------------------------------- | --------------------------------------------------------------- |
+| [getting-started.md](getting-started.md) | End-to-end walkthrough: build → create → write → search → graph |
 
 ## Writing and managing content
 
@@ -27,7 +25,9 @@ llm-wiki.
 | ------------------------------------------ | ---------------------------------------------------------------------------- |
 | [configuration.md](configuration.md)       | Common settings, per-wiki overrides, troubleshooting                         |
 | [multi-wiki.md](multi-wiki.md)             | Manage multiple wikis, cross-wiki search, wiki:// URIs                       |
-| [ci-cd.md](ci-cd.md)                       | Schema validation, index rebuild, and ingest in CI pipelines                 |
+
+MCP client and ACP editor integration is specified in
+[specifications/integrations/](../specifications/integrations/).
 
 ## Search, graph, and output
 
@@ -36,9 +36,3 @@ llm-wiki.
 | [search-ranking.md](search-ranking.md)     | Tune search ranking: status multipliers, custom statuses, per-wiki overrides |
 | [llms-format.md](llms-format.md)           | LLM-optimized output: when and how to use `format: "llms"` and `wiki_export` |
 | [graph.md](graph.md)                       | Community detection, cross-cluster suggestions, threshold tuning             |
-
-## Operations
-
-| Guide                  | Description                                              |
-| ---------------------- | -------------------------------------------------------- |
-| [release.md](release.md) | Release process and distribution channels              |

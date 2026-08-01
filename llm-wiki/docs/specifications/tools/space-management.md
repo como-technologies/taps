@@ -152,8 +152,8 @@ If the name is not found, returns an empty list.
 Text (default):
 
 ```
-* research    /Users/geronimo/wikis/research    ML research knowledge base
-  work        /Users/geronimo/wikis/work        —
+* research    /home/user/wikis/research    ML research knowledge base
+  work        /home/user/wikis/work        —
 ```
 
 `*` marks the current default.
@@ -164,13 +164,13 @@ JSON (`--format json`):
 [
   {
     "name": "research",
-    "path": "/Users/geronimo/wikis/research",
+    "path": "/home/user/wikis/research",
     "description": "ML research knowledge base",
     "default": true
   },
   {
     "name": "work",
-    "path": "/Users/geronimo/wikis/work",
+    "path": "/home/user/wikis/work",
     "description": null,
     "default": false
   }

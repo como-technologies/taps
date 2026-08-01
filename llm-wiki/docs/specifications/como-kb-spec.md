@@ -18,8 +18,9 @@ the [kb-spike](https://github.com/como-technologies/kb-spike) evaluation
 portfolio
 [ADR-0006](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0006-adopt-llm-wiki-engine-como-fork-as-the-knowledge-base-substrate.md).
 Substrate: `llm-wiki` — this repo, the Como KB product (portfolio
-[ADR-0008](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0008-build-the-kb-product-in-the-fork-itself-developing-on-main.md)):
-a fork of `llm-wiki-engine` developed on `main`. At this stage instances are
+[ADR-0008](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0008-build-the-kb-product-in-the-fork-itself-developing-on-main.md)).
+Como owns and maintains the engine in the taps workspace (portfolio
+ADR-0012); the break from upstream is complete. At this stage instances are
 **ephemeral and built from source at HEAD of `main`** (portfolio
 [ADR-0009](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0009-iterate-ephemeral-first-disposable-kb-instances-built-from-source-at-head.md));
 release-tag pinning returns when a persistent KB is declared. This document

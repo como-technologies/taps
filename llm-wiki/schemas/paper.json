@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/geronimo-iia/llm-wiki/schemas/v0.1.0/paper.json",
+  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/paper.json",
   "title": "Source type",
   "description": "What a specific source claims. Shared by paper, article, documentation, clipping, transcript, note, data, book-chapter, thread.",
   "type": "object",

@@ -16,8 +16,8 @@ Skill pages use `name`/`description` instead of `title`/`summary`,
 following the [agentskills.io](https://agentskills.io) convention. The
 engine aliases them at ingest time so they index uniformly.
 
-Compatible with Claude Code skills and agent-foundation skills. Both
-runtimes silently ignore fields they don't recognize.
+Compatible with Claude Code skills — runtimes silently ignore fields
+they don't recognize.
 
 ## Aliases
 
@@ -99,6 +99,6 @@ last_updated: "2025-07-17"
 allowed-tools: Read Write Edit Bash Grep Glob
 disable-model-invocation: true
 tags: [ingest, workflow]
-owner: geronimo
+owner: como
 document_refs: [docs/ingest-guide]
 ```

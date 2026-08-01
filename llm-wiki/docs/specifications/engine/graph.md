@@ -163,7 +163,7 @@ in memory per wiki space and reused across `wiki_graph`, `wiki_stats`,
 and `wiki_suggest` calls. The cache is keyed on an index generation
 counter incremented after every write (`reload_reader`). Filtered
 graph requests (type, relation, root) bypass the cache and build on
-demand. See [graph-cache.md](../implementation/graph-cache.md) for the
+demand. See [graph-cache.md](../../implementation/graph-cache.md) for the
 implementation.
 
 ## Community detection

@@ -11,6 +11,5 @@ last_updated: "2026-05-03"
 
 | Area                                            | What                                                     |
 | ----------------------------------------------- | -------------------------------------------------------- |
-| IDE                                             | Zed agent panel validation; Cursor MCP config validation |
-| Remote Wiki Registration and Version Management | see docs/improvements/design-spaces-register-remote.md   |
-| REST / OpenAPI API                              | see docs/improvements/2026-05-03-rest-api-design.md      |
+| Remote wiki registration and version management | deferred — re-spec before build                          |
+| REST / OpenAPI API                              | deferred — re-spec before build                          |

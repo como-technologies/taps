@@ -7,12 +7,14 @@ A headless wiki engine for agents. 23 MCP tools. One Rust binary. No LLM inside.
 A git-backed Markdown wiki — searchable, typed, graph-linked. Accessible from
 the command line, from any MCP-compatible agent, or from any IDE via ACP.
 
-This fork is the **Como KB product**: it ships the Como schema library and
-zero-flag admission provisioning in `spaces create`, and the
+llm-wiki is the **Como KB product** — the knowledge-base substrate of the
+Como suite. It ships the Como schema library and zero-flag admission
+provisioning in `spaces create`, and the
 **[Como authoring kit](kit/README.md)** — skills, harness configs, the
 [authoring contract](docs/guides/como-authoring.md), and a captured
 worked example — for pointing an AI harness at a space and authoring
-content that lands in the right shape.
+content that lands in the right shape. The KB contract itself is specified
+in [docs/specifications/como-kb-spec.md](docs/specifications/como-kb-spec.md).
 
 ---
 
@@ -82,27 +84,21 @@ Sparse routing of tokens to expert subnetworks...
 
 The engine validates frontmatter against a JSON Schema, extracts typed graph
 edges from `sources` and `concepts`, and indexes everything in tantivy. The
-graph is live the moment a page is committed.
+graph is live the moment a page is committed. The default schema library
+lives in [`schemas/`](schemas/).
 
 ---
 
-## Install
+## Build
+
+llm-wiki is a member of the taps Cargo workspace. From the workspace root:
 
 ```bash
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/geronimo-iia/llm-wiki/main/install.sh | bash
-
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/geronimo-iia/llm-wiki/main/install.ps1 | iex
-
-# Homebrew
-brew install geronimo-iia/tap/llm-wiki
-
-# Cargo
-cargo install llm-wiki-engine
+cargo build --release -p llm-wiki
 ```
 
-→ [All installation options](docs/guides/installation.md)
+The binary lands at `target/release/llm-wiki`. Put it on your `PATH`, or
+run it in place with `cargo run -p llm-wiki --`.
 
 ---
 
@@ -116,10 +112,10 @@ llm-wiki spaces create ~/wikis/research --name research
 llm-wiki serve
 ```
 
-Connect your agent or editor — VS Code, Cursor, Windsurf, Zed, Claude Code —
-via the MCP config. The 23 tools are immediately available.
+Connect your agent or editor via its MCP config. The 23 tools are
+immediately available.
 
-→ [Getting started guide](docs/guides/getting-started.md) · [IDE integration](docs/guides/ide-integration.md)
+→ [Getting started guide](docs/guides/getting-started.md)
 
 ---
 
@@ -145,7 +141,7 @@ Start with `--acp` alongside `--http` to give ACP exclusive stdio:
 llm-wiki serve --acp --http :18765
 ```
 
-→ [IDE integration guide](docs/guides/ide-integration.md) · [ACP configuration](docs/guides/configuration.md)
+→ [ACP transport](docs/specifications/integrations/acp-transport.md) · [Configuration](docs/guides/configuration.md)
 
 ---
 
@@ -201,34 +197,12 @@ unaffected. Full contract:
 
 The engine exposes tools. Skills tell agents how to use them.
 
-[llm-wiki-skills](https://github.com/geronimo-iia/llm-wiki-skills) is a
-Claude Code plugin that ships ready-to-use workflows:
-
-| Skill | What it does |
-| ----- | ------------ |
-| `crystallize` | Distil a session into durable wiki pages — decisions, findings, open questions |
-| `ingest` | Process source files from `inbox/` into synthesized, cross-referenced pages |
-| `research` | Search the wiki and synthesize an answer from existing knowledge |
-| `lint` | Structural audit — orphans, broken links, schema issues, under-linked pages |
-| `graph` | Explore and interpret the concept graph |
-
-Skills are plain Markdown files — readable by the LLM, replaceable, forkable.
-Write your own for your own workflows.
-
----
-
-## Architecture
-
-```
-llm-wiki-engine          pure Rust binary — tools, git, index, graph
-llm-wiki-skills          Claude Code plugin — workflow skills (Markdown)
-llm-wiki-hugo-cms        Hugo scaffold — render the wiki as a website
-```
-
-The engine has no opinions about workflows, LLM providers, or interfaces.
-Every LLM call happens outside the binary. Every workflow lives in a skill.
-The separation means skills ship independently, the engine stays stable, and
-nothing is coupled to a specific AI provider.
+The [Como authoring kit](kit/README.md) ships the skills, harness configs,
+and authoring contract used to point an AI harness at a wiki space. Skills
+are plain Markdown files — readable by the LLM, replaceable, forkable.
+Write your own for your own workflows. The engine has no opinions about
+workflows, LLM providers, or interfaces: every LLM call happens outside
+the binary, and nothing is coupled to a specific AI provider.
 
 ---
 
@@ -238,8 +212,6 @@ The file format is Markdown. The history store is git. Both predate llm-wiki
 and will outlive it — your wiki is readable, diffable, and portable with zero
 dependency on this tool. The engine itself is a single Rust binary with no
 runtime, no database, and nothing to keep running between sessions.
-
-Single Rust binary. No runtime, no database, no Docker.
 
 | Component | Technology |
 | --------- | ---------- |
@@ -256,57 +228,29 @@ Single Rust binary. No runtime, no database, no Docker.
 | | |
 | - | - |
 | [Getting started](docs/guides/getting-started.md) | End-to-end walkthrough |
-| [Guides](docs/guides/README.md) | Installation, IDE, custom types, CI/CD, multi-wiki |
+| [Guides](docs/guides/README.md) | Configuration, custom types, multi-wiki, lint, graph |
 | [Specifications](docs/specifications/README.md) | Formal tool and model contracts |
-| [Architecture](docs/overview.md) | Core concepts, project map |
+| [Como KB spec](docs/specifications/como-kb-spec.md) | The suite's knowledge-base contract |
 | [Roadmap](docs/roadmap.md) | What shipped, what's next |
 | [Decisions](docs/decisions/README.md) | Architectural decision records |
 
----
-
-## Related Projects
-
-| Project | Roadmap |
-| ------- | ------- |
-| [llm-wiki-skills](https://github.com/geronimo-iia/llm-wiki-skills) | `docs/roadmap.md` |
-| [llm-wiki-hugo-cms](https://github.com/geronimo-iia/llm-wiki-hugo-cms) | `docs/roadmap.md` |
-| [homebrew-tap](https://github.com/geronimo-iia/homebrew-tap) | Formula updates per release |
-| [asdf-llm-wiki](https://github.com/geronimo-iia/asdf-llm-wiki) | Plugin updates per release |
-
----
-
-## Why I built this
-
-Like many of you, I've been exploring agents, LLMs, and all that comes with it.
-This project started after Andrej Karpathy's post — he put into words something
-I was already practicing: plain Markdown files with structured frontmatter as a
-practical knowledge base, for work and for the messier explorations.
-
-The technical direction reflects years of SRE-minded practice: minimize
-dependencies, use proven tools, keep the binary dumb. Written in Rust with
-Claude as a pair programmer — a language I enjoy exploring more and more.
-
-I have "a few" years of experience, but if you spot bad practices, call them
-out — I'm doing this to learn together too. And if you're using it, personally
-or at work, I'd love to hear about it :)
-
-## Acknowledgments
-
-- **[Andrej Karpathy](https://karpathy.ai/)** — for the
-  [LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
-  that defined the Dynamic Knowledge Repository pattern.
-- **[vanillaflava](https://github.com/vanillaflava)** — for
-  [llm-wiki-claude-skills](https://github.com/vanillaflava/llm-wiki-claude-skills),
-  which turned the pattern into a practical skill architecture.
-
-llm-wiki is a continuation of
-[agent-foundation](https://github.com/geronimo-iia/agent-foundation).
+Schemas for the default page types live in [`schemas/`](schemas/).
 
 ---
 
 ## Contributing
 
-[Contributing guide](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Security policy](SECURITY.md)
+[Contributing guide](CONTRIBUTING.md)
+
+## Credits
+
+llm-wiki originated as [geronimo-iia/llm-wiki](https://github.com/geronimo-iia/llm-wiki)
+by Jerome Guibert, building on Andrej Karpathy's
+[LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+that defined the Dynamic Knowledge Repository pattern. Como maintains this
+codebase independently in the taps workspace. Dual MIT/Apache-2.0 licensing
+is retained with the upstream copyright — see [LICENSE-MIT](LICENSE-MIT)
+and [LICENSE-APACHE](LICENSE-APACHE).
 
 ## License
 

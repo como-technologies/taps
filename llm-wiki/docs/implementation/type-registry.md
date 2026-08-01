@@ -18,9 +18,7 @@ metadata for all registered types. Built once at startup, used on every
 ingest, invalidated when schema files change.
 
 Types are discovered from `schemas/*.json` via `x-wiki-types`, with
-optional `[types.*]` entries in `wiki.toml` as overrides. See
-[schema-driven-types](../decisions/schema-driven-types.md) for the
-rationale.
+optional `[types.*]` entries in `wiki.toml` as overrides.
 
 ## Core Structs
 

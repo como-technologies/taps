@@ -29,12 +29,12 @@ default_wiki = "research"
 
 [[wikis]]
 name        = "research"
-path        = "/Users/geronimo/wikis/research"
+path        = "/home/user/wikis/research"
 description = "ML research knowledge base"
 
 [[wikis]]
 name = "work"
-path = "/Users/geronimo/wikis/work"
+path = "/home/user/wikis/work"
 
 # ── Defaults (overridable per wiki in wiki.toml) ──────────────────────────────
 

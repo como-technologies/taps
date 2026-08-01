@@ -1,7 +1,7 @@
 ---
 title: "Stable page identity via frontmatter ULIDs"
 summary: "Add an optional, opt-in stable page id (ULID) so links can survive file moves; slug-first resolution keeps all existing behavior."
-status: proposed
+status: accepted
 date: "2026-07-09"
 ---
 

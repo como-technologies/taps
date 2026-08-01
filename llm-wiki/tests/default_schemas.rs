@@ -170,7 +170,7 @@ fn skill_accepts_full_template() {
         "disable-model-invocation": true,
         "allowed-tools": ["Read", "Write"],
         "tags": ["ingest", "workflow"],
-        "owner": "geronimo",
+        "owner": "como",
         "document_refs": ["docs/ingest-guide"]
     })));
 }

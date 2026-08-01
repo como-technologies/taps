@@ -34,7 +34,7 @@ Shipped as default schema files by `llm-wiki spaces create`:
 | [concept, query-result](types/concept.md) | `concept.json` | Synthesized knowledge and saved conclusions                  |
 | [source types](types/source.md)           | `paper.json`   | What each source claims (paper, article, documentation, ...) |
 | [skill](types/skill.md)                   | `skill.json`   | Agent skill with workflow instructions                       |
-| [doc](types/doc.md)                       | `doc.json`     | Reference document with agent-foundation frontmatter         |
+| [doc](types/doc.md)                       | `doc.json`     | Reference document with document-authority frontmatter       |
 | [section](types/section.md)               | `section.json` | Section index grouping related pages                         |
 | decision                                  | `decision.json` | Architecture/operating decision record (Como library, llm-wiki#14) |
 | guide                                     | `guide.json`   | How-to / runbook content (Como library)                      |

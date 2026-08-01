@@ -16,8 +16,8 @@ registered wikis are mounted at startup.
 For session-oriented streaming in Zed or VS Code, use ACP instead. See
 [acp-transport.md](acp-transport.md).
 
-For Claude Code, use the `llm-wiki-skills` plugin — it starts the
-server and provides skills.
+For Claude Code, the [Como authoring kit](../../../kit/README.md)
+ships harness configs and skills for working against the server.
 
 
 ## Cursor

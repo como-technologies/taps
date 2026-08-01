@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/geronimo-iia/llm-wiki/schemas/v0.1.0/section.json",
+  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/section.json",
   "title": "Section type",
   "description": "Section index page — groups related pages under a directory.",
   "type": "object",

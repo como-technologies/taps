@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/geronimo-iia/llm-wiki/schemas/v0.1.0/skill.json",
+  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/skill.json",
   "title": "Skill type",
   "description": "Agent skill with workflow instructions. Uses name/description instead of title/summary.",
   "x-index-aliases": {

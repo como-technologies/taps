@@ -35,7 +35,7 @@ Data model and knowledge structure.
 | [types/concept.md](model/types/concept.md)                      | concept and query-result types                                 |
 | [types/source.md](model/types/source.md)                        | Source types (paper, article, documentation, ...)              |
 | [types/skill.md](model/types/skill.md)                          | Skill type with field aliasing                                 |
-| [types/doc.md](model/types/doc.md)                              | Doc type with agent-foundation fields                          |
+| [types/doc.md](model/types/doc.md)                              | Doc type with document-authority fields                        |
 | [types/section.md](model/types/section.md)                      | Section index type                                             |
 
 ## Tools

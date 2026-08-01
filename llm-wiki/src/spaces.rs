@@ -253,7 +253,7 @@ fn ensure_structure(
     if !readme.exists() {
         let desc_line = description.map(|d| format!("\n{d}\n")).unwrap_or_default();
         let content = format!(
-            "# {name}\n{desc_line}\nManaged by [llm-wiki](https://github.com/geronimo-iia/llm-wiki). Run `llm-wiki serve` to start the MCP server.\n"
+            "# {name}\n{desc_line}\nManaged by [llm-wiki](https://github.com/como-technologies/taps). Run `llm-wiki serve` to start the MCP server.\n"
         );
         std::fs::write(&readme, content)?;
     }
