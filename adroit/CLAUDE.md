@@ -118,11 +118,11 @@ just adopt-slice # live-ollama dogfood rehearsal of the Adopt read slice (temp c
 - `tests/` — `cli.rs` (binary + regressions), `model.rs` (model-based oracle over the
   naming schemes on a KB-space fixture), `parsers.rs` + `fuzz_parsers.rs`
   (properties / bolero fuzz), `config_precedence.rs`, `date_source_git.rs`,
-  `forge_faults.rs` + `forge_cli.rs`. `tests/fixtures/golden-assessment.yaml` is the
-  **vendored cross-repo ingest contract** — the assessments app's real-exporter
-  golden (regenerate it in an assessments checkout — sibling `../assessments` or a clone
-  per the suite resolution convention — via `just golden`, re-copy verbatim under the header);
-  `import_golden_assessment_contract` pins the seeded backlog against it, and the
+  `forge_faults.rs` + `forge_cli.rs`. `contract/fixtures/golden-assessment.yaml`
+  (workspace root) is the **cross-product ingest contract** — the assessments
+  exporter's golden, pinned byte-for-byte by assessments' `golden_export` test;
+  `import_golden_assessment_contract` reads the same file by path and pins the
+  seeded backlog against it, and the
   env-gated `ADROIT_LIVE_OLLAMA=1` test exercises `import --ai` on live ollama.
   See `docs/src/dev/testing.md`.
 - `docs/` — mdbook source (`book.toml` + `src/`), to GitHub Pages; output `docs/book/`
@@ -132,9 +132,9 @@ just adopt-slice # live-ollama dogfood rehearsal of the Adopt read slice (temp c
   ADR-0020 the live tool is KB-space-only, so working with it means seeding an
   ephemeral space (`adroit seed --from docs/src/adr --dir <space>`); never use
   a bare `adroit new` here (`ADROIT_DIR` points at the external dogfood repo).
-  Gated in CI: `just adr-check` (in `just ci`) bootstraps a temp space, seeds
-  it from the corpus, and runs `check` on it. See the book's Development →
-  Decision Records page.
+  Gated in CI: the workspace-root `just adr-check` (a leg of the root
+  `just ci`) seeds every product's corpus into a temp space and runs `check`
+  on it. See the book's Development → Decision Records page.
 
 ## Read/query layer (shared by all surfaces)
 

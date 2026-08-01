@@ -152,7 +152,7 @@ stated security property, and no SME session has stalled on either gap:
 > Tracked as an epic: [#18](https://github.com/como-technologies/adroit/issues/18).
 
 adroit is the **Prescribe** node of the
-[TAPS portfolio](https://github.com/como-technologies/portfolio)'s closed loop —
+[TAPS portfolio](https://github.com/como-technologies/taps/tree/main/portfolio)'s closed loop —
 **Assess → Prescribe → Adopt → Measure → re-assess** — where every stage emits an
 artifact the next consumes. adroit's job is deliberately narrow: **author and govern
 decisions** (ADRs) and their implementation **plans**, and make them

@@ -8,7 +8,7 @@ from *where are we?* to *is it working?* never gets dropped between tools.
 
 ## llm-wiki
 
-The substrate is [llm-wiki](https://github.com/como-technologies/llm-wiki),
+The substrate is [llm-wiki](https://github.com/como-technologies/taps/tree/main/llm-wiki),
 Como's knowledge base product: one headless, git-backed binary with typed
 pages, strict validation at admission, full-text search, a concept graph,
 and a rich tool surface for AI harnesses — and **no LLM inside**. Every
@@ -29,4 +29,4 @@ that prefer them.
 
 The full specification — page types, validation rules, the admission
 model — lives with the product, in the
-[llm-wiki repo](https://github.com/como-technologies/llm-wiki/blob/main/docs/specifications/como-kb-spec.md).
+[llm-wiki repo](https://github.com/como-technologies/taps/blob/main/llm-wiki/docs/specifications/como-kb-spec.md).

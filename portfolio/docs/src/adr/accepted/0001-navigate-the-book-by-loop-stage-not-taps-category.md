@@ -72,8 +72,8 @@ first-class chapters with only their navigation links fixed.
   while the book is young rather than carrying redirect stubs.
 - Two classification axes (stage chapters and the TAPS table) must be kept
   consistent by hand.
-- Per-app sections are a larger truth surface to maintain — mitigated by the
-  verify-claims gate (ADR-0003).
+- Per-app sections are a larger truth surface to maintain — mitigated at
+  the time by the verify-claims gate (ADR-0003; since retired by ADR-0011).
 
 ## Implementation
 

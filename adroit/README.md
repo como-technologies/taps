@@ -80,7 +80,8 @@ without a `wiki.toml` is a hard error naming the bootstrap path: create
 a space with `llm-wiki spaces create` (or scaffold `wiki.toml` +
 `wiki/decisions`), then `adroit seed --from <legacy-dir>` if you have an
 existing corpus. Working harness-first? The Como authoring kit in the
-llm-wiki repo (`kit/`) wires adroit and the engine into Claude Code.
+llm-wiki product (`llm-wiki/kit/`) wires adroit and the engine into
+Claude Code.
 
 `adroit config` shows every setting, its resolved value, and which of those
 layers it came from; `adroit config set <key> <value>` persists a default (add

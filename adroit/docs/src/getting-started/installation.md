@@ -18,8 +18,8 @@ cargo install --git <path-or-url-to-adroit> --rev <tag-sha> adroit
 ## Build from source
 
 ```sh
-git clone https://github.com/como-technologies/adroit.git
-cd adroit
+git clone https://github.com/como-technologies/taps.git
+cd taps/adroit
 just init      # one-time: install the toolchain (clippy, rustfmt, mdbook, …)
 just build     # debug build  → target/debug/adroit  (TUI + AI + forge)
 just release   # release build → target/release/adroit

@@ -122,7 +122,7 @@ pulse-test-harness (dev/test only)
 
 The load-bearing decisions behind this architecture are recorded as ADRs in
 the committed `docs/src/adr/` corpus, managed with
-[adroit](https://github.com/como-technologies/adroit). adroit is KB-only
+[adroit](https://github.com/como-technologies/taps/tree/main/adroit). adroit is KB-only
 (adroit ADR-0020): the gate seeds the corpus into an ephemeral KB space and
 validates it there (browse one with `adroit seed --from docs/src/adr --dir
 <fresh-space>` then `adroit list --dir <fresh-space>`). The accepted
@@ -130,5 +130,6 @@ set covers trust-zone isolation via the Cargo graph, the composition-root state
 split, the postcard wire format, the `Sensitive`/newtype redaction convention,
 k-anonymity threshold enforcement, CMK/DEK envelope encryption with
 crypto-shredding, and the decision to park product development at M0 for the
-portfolio dogfood. Corpus validation runs as part of the local gate
-(`just ci`, via the `adr-check` recipe).
+portfolio dogfood. Corpus validation runs at the taps workspace root: the
+root `just adr-check` (a leg of the root `just ci`) validates every
+product's corpus with the in-tree adroit.

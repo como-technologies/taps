@@ -107,11 +107,12 @@ and provider-free) behind the same flag.
 ## Running things
 
 ```sh
-just ci            # the full gate (fmt, clippy, tests, adr-check, book)
+just ci            # the product gate (fmt, clippy, init-adroit, tests, book)
 just test          # cargo test (all hermetic suites)
 just conformance   # the conformance suite only
-just adr-check     # validate the in-repo docs/src/adr corpus (runs `just init-adroit` itself)
 just crate-audit   # cargo audit — a separate CI job, not a `ci` leg
+# ADR-corpus validation is the workspace-root `just adr-check` (every
+# product's corpus, validated with the in-tree adroit)
 
 # Env-gated live legs (each needs its prerequisite):
 just forge-up && CONDUIT_E2E_GITEA=1  cargo test --test conformance gitea_live

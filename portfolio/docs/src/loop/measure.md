@@ -19,7 +19,7 @@ plain JSON, that answers the question every steering committee asks and
 few can: *what did this decision cost us?*
 
 Details live in the
-[tuesday repo](https://github.com/como-technologies/tuesday).
+[tuesday repo](https://github.com/como-technologies/taps/tree/main/tuesday).
 
 ## pulse
 
@@ -31,4 +31,4 @@ sufficiently anonymous aggregates ever leave the system.
 **What you get.** A k-anonymous sentiment aggregate on the same cadence
 as the capacity report — the honest qualitative signal beside the
 quantitative one, both feeding the next assessment. Details live in the
-[pulse repo](https://github.com/como-technologies/pulse).
+[pulse repo](https://github.com/como-technologies/taps/tree/main/pulse).

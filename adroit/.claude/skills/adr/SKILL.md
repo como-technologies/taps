@@ -42,7 +42,7 @@ feature-gating choice. Routine bug fixes and refactors don't.
    ./target/debug/adroit check --dir $tmp   # must be clean
    ./target/debug/adroit lint NNNN --dir $tmp
    ```
-   (This is exactly what the `just adr-check` CI gate runs.)
+   (This is exactly what the workspace-root `just adr-check` CI gate runs.)
 4. Once decided, move the file to `accepted/` and update the banner +
    `## Status` region to `Accepted` — a real status transition, so the corpus
    history is genuine. For a supersession, set the old ADR's region to

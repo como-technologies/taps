@@ -1,10 +1,10 @@
 # ADR-0004: Resolve cross-repo references through the suite's uniform resolution convention
 
-> State: Accepted
+> State: Superseded
 
 ## Status
 
-Accepted
+Superseded by [ADR-0012](../accepted/0012-collapse-the-suite-into-a-single-cargo-workspace-in-a-fresh-repo.md) — the single-workspace move (portfolio#8) collapsed the suite into one Cargo workspace, so there are no cross-repo references left to resolve: every product is in-tree, binaries build from the workspace, and the resolver machinery this convention specified is deleted.
 
 ## Stakeholders
 

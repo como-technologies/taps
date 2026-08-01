@@ -24,4 +24,4 @@ shipped [starter content](../starter-content.md)), flexible where you
 have your own shape — and machine-readable to every downstream stage.
 
 Details live in the
-[adroit repo](https://github.com/como-technologies/adroit).
+[adroit repo](https://github.com/como-technologies/taps/tree/main/adroit).

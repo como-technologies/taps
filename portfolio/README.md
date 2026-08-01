@@ -8,7 +8,7 @@ an [mdBook](https://rust-lang.github.io/mdBook/) site; the prose lives in
 [`docs/src/SUMMARY.md`](docs/src/SUMMARY.md).
 
 The book is deliberately short: it tells the story of the tools and how
-they work together, and links to each tool's own repo for the details.
+they work together, and links to each tool's own docs for the details.
 Start with the rendered [Introduction](docs/src/introduction.md). This
 README is about how to **build and work on the book**. For standing the
 whole suite up locally, see [OPERATIONS.md](OPERATIONS.md).
@@ -45,16 +45,15 @@ Run `just` (or `just --list`) any time to see every available recipe.
 | `just book` | Build the static site into `target/book/` |
 | `just book-test` | Validate code blocks in the book |
 | `just clean` | Remove all build artifacts |
-| `just ci` | Build the book and validate the ADR corpus |
+| `just ci` | Build the book |
 
 ## CI
 
-`just ci` runs `book` and `adr-check`. The `adr-check` recipe validates
-this repo's own decision corpus (`docs/src/adr/`) by seeding it into an
-ephemeral KB space with adroit, resolved by the suite convention
-(`ADROIT_BIN` → sibling `../adroit` build → PATH → cached install) — and
-**skips with a notice** when adroit isn't available, so it never blocks a
-plain `just book`.
+This product's `just ci` builds the book. ADR-corpus validation lives at
+the workspace root: the root `just adr-check` (a leg of the root
+`just ci`) seeds every product's decision corpus — including this one's
+(`docs/src/adr/`) — into an ephemeral KB space and validates it with the
+in-tree adroit.
 
 ## Layout
 

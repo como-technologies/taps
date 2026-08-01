@@ -1,4 +1,6 @@
-/target
+# Cargo's workspace target dir, plus the per-product target/book dirs the
+# portfolio and assessments mdBooks build into.
+target/
 
 # Generated local state (demo corpus builds, tool caches) — never committed.
 .como/

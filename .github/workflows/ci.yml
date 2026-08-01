@@ -5,29 +5,61 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Weekly dependency-advisory sweep (Mondays 06:00 UTC): new RUSTSEC
+    # advisories land against an unchanged tree, so the audit job re-runs on
+    # a schedule. The suite gate skips scheduled runs — it only gates pushes
+    # and PRs.
+    - cron: "0 6 * * 1"
 
 env:
   CARGO_TERM_COLOR: always
 
-# Least privilege: CI only reads the repo (fmt/lint/test, no publishing).
+# Least privilege: CI only reads the repo (fmt/lint/test/books/audit, no
+# publishing). Applies to every job that doesn't set its own.
 permissions:
   contents: read
 
 jobs:
-  ci:
-    name: Check, Lint, Test
+  gate:
+    # The whole suite gate, one job: fmt, clippy, the workspace test suite,
+    # the per-product invariant lanes (conduit tokio-free, adroit's core and
+    # web feature layering, tuesday-core's wasm32 lane), adr-check over every
+    # product's ADR corpus with the in-tree adroit, and all six books.
+    name: Suite gate
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
       # rust-toolchain.toml pins the suite toolchain; rustup respects it.
+      # The wasm32 lane's target is added by the `lanes` recipe itself.
       - run: rustup show
 
       - uses: Swatinem/rust-cache@v2
 
       - uses: taiki-e/install-action@v2
         with:
-          tool: just
+          tool: just,mdbook,mdbook-mermaid
 
       - name: CI gate
         run: just ci
+
+  audit:
+    # Separate job on purpose: a freshly published advisory must not mask
+    # the code gates (and vice versa). The only job the weekly schedule
+    # runs. Accepted advisories live in .cargo/audit.toml as dated,
+    # documented ignores.
+    name: Crate audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: rustup show
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just,cargo-audit
+
+      - name: Audit
+        run: just crate-audit

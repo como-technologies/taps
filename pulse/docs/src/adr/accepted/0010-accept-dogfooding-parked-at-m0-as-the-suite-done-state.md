@@ -38,8 +38,9 @@ stays in force.
   exit codes and a byte-identical seeded artifact, enforced in tests.
 - Deferred work must not live only in prose; the roadmap's parked milestones
   need a retire-by-ADR record.
-- The portfolio book must stay truthful under its verify-claims gate, so the
-  suite-done state needs an ADR it can pin.
+- The portfolio book must stay truthful under its verify-claims gate (since
+  retired by portfolio ADR-0011), so the suite-done state needs an ADR it
+  can pin.
 
 ## Considered Options
 
@@ -109,7 +110,8 @@ ADR-0007's allowed-work list.
 - "Done" for pulse is now a recorded, checkable bar instead of a
   per-iteration argument; the suite can close without pulse climbing.
 - The portfolio book's badge — dogfooding (parked) — is pinned to an
-  accepted ADR, so the verify-claims gate checks a fact, not a vibe.
+  accepted ADR, so the verify-claims gate checked a fact, not a vibe
+  (verify-claims was retired by portfolio ADR-0011).
 - The deferred list is retired by ADR, satisfying the mandate's escape hatch
   without prose-only debt.
 - Un-parking has a concrete trigger, so a future customer conversation has a
@@ -132,5 +134,6 @@ park banner) and `docs/src/development/dogfood.md` to cite this ADR so the
 suite-done claim is book-checkable. Hand the portfolio lane its
 verify-claims assertion (an accepted `0010-*.md` records this acceptance)
 and the one book sentence stating pulse's suite-done state; the badge line
-stays `dogfooding (parked)`. Each iteration, run the suite-done bar above
+stays `dogfooding (parked)`. (verify-claims and the badge line were since
+retired by portfolio ADR-0011.) Each iteration, run the suite-done bar above
 and record any new decision in this corpus.

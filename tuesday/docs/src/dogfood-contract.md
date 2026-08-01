@@ -67,10 +67,10 @@ Concretely:
 The dogfood path runs against **conduit's local demo forge** — a throwaway
 Gitea at `http://localhost:3000`, org `como`, repo `conduit-dogfood`, seeded
 and labeled by conduit's `demo/gitea-init.sh`. That script writes two tokens
-with **pinned filenames** into the conduit checkout's gitignored secrets
-directory (`${COMO_CONDUIT_DIR:-../conduit}/.secrets/` — the
-`COMO_CONDUIT_DIR` env knob names the conduit checkout per the suite
-resolution convention; the sibling `../conduit` is the default):
+with **pinned filenames** into conduit's gitignored secrets directory
+(`${COMO_CONDUIT_DIR:-../conduit}/.secrets/` — the `COMO_CONDUIT_DIR` env
+knob overrides; the default `../conduit` is the workspace's own conduit
+product, relative to `tuesday/`):
 
 - `.secrets/conduit-bot.token` — conduit's write identity
 - `.secrets/reviewer.token` — the reviewer identity; **tuesday reads with

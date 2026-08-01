@@ -25,7 +25,7 @@ self-approval), mints tokens into gitignored `.secrets/` (pinned filenames),
 creates org `como` and a seeded repo, and pre-creates the `effort:*` /
 `conduit:*` labels. The seeding is parameterized — `SEED_REPO_DIR` picks the
 local repo whose `main` is pushed, `REPO_NAME` the forge repo — with
-defaults preserving this walkthrough (this repo, `conduit-dogfood`). The
+defaults preserving this walkthrough (the current checkout, `conduit-dogfood`). The
 [client-corpus demo](./client-corpus-demo.md) uses the same script to seed
 the fictional client's decision corpus instead, and runs from a per-run
 unique workdir.
@@ -38,8 +38,8 @@ conduit init                  # .conduit store + the standing label set
 
 The pinned adroit is KB-only (its ADR-0020; conduit ADR-0017): it reads a
 KB **space**, so the in-repo legacy corpus is first seeded into an
-ephemeral one — the same bootstrap `just adr-check` performs on every ci
-run:
+ephemeral one — the same bootstrap the workspace-root `just adr-check`
+performs on every CI run:
 
 ```sh
 space=$(mktemp -d)

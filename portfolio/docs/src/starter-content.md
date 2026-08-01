@@ -24,4 +24,4 @@ superseding a starter opinion *is* the process working.
 
 The content itself, and the one-command bootstrap that stands it up, live
 with the kit in the
-[llm-wiki repo](https://github.com/como-technologies/llm-wiki).
+[llm-wiki repo](https://github.com/como-technologies/taps/tree/main/llm-wiki).

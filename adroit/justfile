@@ -81,7 +81,7 @@ adopt-slice: build
         exit 0
     fi
     bin="$PWD/target/debug/adroit"
-    fix="$PWD/tests/fixtures/golden-assessment.yaml"
+    fix="$PWD/../contract/fixtures/golden-assessment.yaml"
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' EXIT
     # A throwaway KB space (ADR-0020): adroit never creates the space itself.

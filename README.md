@@ -20,8 +20,14 @@ copied in from its `main` at these SHAs (recorded 2026-08-01):
 
 ## Working in the workspace
 
-- `just ci` at the root is the whole gate — fmt, clippy, tests, books, ADR
-  checks, audit. Per-product lanes live in each product's directory.
+- `just ci` at the root is the whole gate — fmt, clippy, the workspace test
+  suite, the per-product invariant lanes (`just lanes`), `adr-check` over
+  every product's ADR corpus with the in-tree adroit, and all six books.
+  `just crate-audit` runs separately (its own CI job plus a weekly sweep)
+  so a fresh advisory can't mask the code gates.
 - Toolchain is pinned suite-wide in `rust-toolchain.toml`.
 - Products keep their directory identity, their own mdBook, and their own
-  `docs/src/adr` corpus.
+  `docs/src/adr` corpus; one Pages workflow publishes all the books under
+  one site with per-product paths.
+- Heavier per-product lanes (adroit's Vue build, tuesday's `dx` builds,
+  assessments' Tailwind) live in each product's own justfile.

@@ -1,7 +1,7 @@
 # Project skills
 
 adroit ships a set of repo-local **skills** under
-[`.claude/skills/`](https://github.com/como-technologies/adroit/tree/main/.claude/skills)
+[`.claude/skills/`](https://github.com/como-technologies/taps/tree/main/adroit/.claude/skills)
 — invokable procedures that capture the recurring development workflows so they run
 the same way every time. They are committed with the repo, so anyone (or any AI
 session) working on adroit gets them.

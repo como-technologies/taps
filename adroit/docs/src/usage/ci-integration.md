@@ -102,7 +102,7 @@ quorum, and what the merge changes — see
 ## Templates
 
 Copy-and-customize starters live in the repo under
-[`templates/ci/`](https://github.com/como-technologies/adroit/tree/main/templates/ci):
+[`templates/ci/`](https://github.com/como-technologies/taps/tree/main/adroit/templates/ci):
 
 - **GitHub Actions** → `templates/ci/github/adr.yml` → `.github/workflows/adr.yml`
   (validate + review brief), and `templates/ci/github/relink.yml` →

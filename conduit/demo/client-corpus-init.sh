@@ -31,11 +31,9 @@
 #                      docs/src/adr). When unset, demo/client-corpus-build.sh
 #                      constructs one from llm-wiki's starter content
 #                      (kit/starter/decisions), resolving llm-wiki per the
-#                      suite convention: COMO_LLM_WIKI_DIR -> sibling
-#                      ../llm-wiki -> the gitignored .como/deps/llm-wiki
-#                      clone cache (COMO_LLM_WIKI_GIT / COMO_GIT_BASE) -> a
-#                      hard, actionable error. COMO_OFFLINE=1 uses a
-#                      populated cache as-is and never clones.
+#                      in-tree chain: COMO_LLM_WIKI_DIR -> the workspace's
+#                      ../llm-wiki product -> a
+#                      hard, actionable error.
 # Prints the created workdir's absolute path on stdout; everything else
 # goes to stderr.
 set -euo pipefail
@@ -54,8 +52,8 @@ fi
 if [ ! -d "${CLIENT_CORPUS_DIR:-}/docs/src/adr" ]; then
   echo "ERROR: no client corpus found (need a repo containing docs/src/adr)." >&2
   echo "  Knobs: CLIENT_CORPUS_DIR (a prebuilt corpus repo), or let demo/client-corpus-build.sh" >&2
-  echo "  construct one — it needs an llm-wiki checkout (COMO_LLM_WIKI_DIR, sibling ../llm-wiki," >&2
-  echo "  or COMO_LLM_WIKI_GIT / COMO_GIT_BASE for the .como/deps/llm-wiki clone cache)." >&2
+  echo "  construct one — it needs an llm-wiki checkout (the in-tree ../llm-wiki by default;" >&2
+  echo "  COMO_LLM_WIKI_DIR overrides)." >&2
   exit 1
 fi
 ADRS="$(cd "$CLIENT_CORPUS_DIR/docs/src/adr" && pwd)"

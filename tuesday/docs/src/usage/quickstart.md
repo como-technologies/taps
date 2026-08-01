@@ -8,7 +8,9 @@ your forge is **read merged pull requests**.
 
 What you need:
 
-- a Rust toolchain ([rustup](https://rustup.rs/)) and a clone of this repo;
+- a Rust toolchain ([rustup](https://rustup.rs/)) and a clone of the
+  [taps](https://github.com/como-technologies/taps) workspace (tuesday
+  lives in `tuesday/`);
 - a forge API token with read access (scopes below);
 - merged PRs labeled with effort scores (`effort:1-super-quick` …
   `effort:5-felt-like-forever`) — see the

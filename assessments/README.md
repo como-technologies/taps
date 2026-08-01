@@ -25,7 +25,8 @@ reached via in-app links to a specific project.
 
 ## The system
 
-The system is a Cargo workspace of three binaries sharing a common core:
+The system is three binaries sharing a common core (all crates are members
+of the taps workspace):
 
 | Binary | Port | Role |
 | ------ | ---- | ---- |
@@ -54,8 +55,8 @@ The system is a Cargo workspace of three binaries sharing a common core:
 ### Setup
 
 ```bash
-git clone https://github.com/como-technologies/assessments.git
-cd assessments
+git clone https://github.com/como-technologies/taps.git
+cd taps/assessments
 cp .env.example .env             # then put your key in ANTHROPIC_API_KEY
 just run                         # builds Tailwind, starts all three binaries, opens the browser
 ```
@@ -79,8 +80,8 @@ just run-analyze     # http://localhost:3002
 
 ```bash
 just --list          # all recipes
-just test            # cargo test --workspace
-just check           # cargo check --workspace
+just test            # cargo test
+just check           # cargo check
 just lint            # clippy
 just book-serve      # mdbook — architecture docs on http://localhost:4000
 ```
@@ -138,8 +139,8 @@ include evidence, blockers, planned action, and free-text notes.
 ## Project structure
 
 ```
-assessments/
-├── Cargo.toml                  # workspace root
+assessments/                    # a product in the taps workspace (crates are
+│                               # members of the root Cargo.toml)
 ├── Dockerfile, Dockerfile.docs # container builds — the apps / the docs site
 ├── crates/
 │   ├── amaker-core/            # shared: models, storage, services, analysis

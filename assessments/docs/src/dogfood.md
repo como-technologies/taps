@@ -2,7 +2,7 @@
 
 `amaker` is the entry point of a loop: **Assess** produces a
 schema-validated assessment, and the **Prescribe** stage
-([adroit](https://github.com/como-technologies/adroit)) consumes it to seed
+([adroit](https://github.com/como-technologies/taps/tree/main/adroit)) consumes it to seed
 one Proposed ADR per practice — turning "here are your gaps" into "here are
 the decisions to make". This page documents that seam: how to rehearse it
 live, the recorded proof runs, and the mechanical contract gate that
@@ -12,8 +12,8 @@ live, the recorded proof runs, and the mechanical contract gate that
 
 The live rehearsal is fully local: no API key, no network beyond
 localhost. It needs a running [ollama](https://ollama.com) (`llama3.2` by
-default) and an adroit binary — build the sibling checkout (`../adroit`)
-or install adroit on PATH.
+default) and an adroit binary — build the in-tree one from the workspace
+root (`cargo build -p adroit` → `target/debug/adroit`).
 
 1. **Author** — write a fresh assessment from the committed generic
    engineering-maturity brief, via the tool-call-free pipeline described
@@ -125,7 +125,7 @@ Prescribe side.)
 The questions phase dominates authoring wall-clock (one ~25–30s model call
 per practice on a CPU-bound llama3.2). `author --jobs N` runs those calls
 on N concurrent lanes; whether that is *faster* depends entirely on the
-ollama server's parallel capacity. Measured live on this repo's committed
+ollama server's parallel capacity. Measured live on the committed
 brief (llama3.2 3B, CPU-only host, `num_ctx=8192` pinned, debug build;
 2026-06-12):
 
@@ -188,7 +188,7 @@ justfile.
 Authoring takes minutes and needs a model; CI gets the seam's contract
 guarantee for free, mechanically, from both sides:
 
-- **Producer side (this repo):** the `golden_export` integration test
+- **Producer side (assessments):** the `golden_export` integration test
   (`crates/amaker-core/tests/golden_export.rs`, in `just test` — part of
   `just ci`) builds a small, fully pinned assessment, exports it through
   the real `ExportService::to_data` pipeline, asserts the export
@@ -205,11 +205,10 @@ guarantee for free, mechanically, from both sides:
 The loop line's `just seam-check` recipe (a jq join of `validate -o json`
 against a dry-run import's seed summary) has not been ported to main's
 justfile; the golden-export test is the seam gate `just ci` actually
-runs. `just adr-check` — validating this book's own ADR corpus with
-adroit — resolves the adroit binary per the suite convention (ADR-0008)
-and skips with a notice naming the knobs (`ADROIT_BIN`, build
-`../adroit`, adroit on PATH, `COMO_GIT_BASE` for the `.como/tools`
-install) when none resolves.
+runs. ADR-corpus validation — this book's corpus included — is the
+workspace-root `just adr-check`, which runs the in-tree adroit
+(portfolio#8); the per-repo resolution chain (ADR-0008) retired with the
+move to the single workspace.
 
 ## Where the loop goes next
 

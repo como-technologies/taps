@@ -85,7 +85,7 @@ along), exports it via `ExportService::to_data`, and asserts:
 1. the export **validates against the generated JSON Schema** — the same
    `validate_and_parse` path the CLI `validate` command uses — in all
    three formats, and
-2. the YAML export is **byte-identical** to the vendored golden at
+2. the YAML export is **byte-identical** to the canonical golden at
    `contract/fixtures/golden-assessment.yaml` (workspace root — the same file adroit's import contract test reads).
 
 If a contract change is intentional, run the test: it writes the current
@@ -96,7 +96,7 @@ change, not silent drift.
 ## Downstream: seeding ADRs
 
 This export is the seam between the *Assess* and *Prescribe* stages:
-[adroit](https://github.com/como-technologies/adroit) mirrors these structures
+[adroit](https://github.com/como-technologies/taps/tree/main/adroit) mirrors these structures
 in its importer, and
 
 ```bash
@@ -105,9 +105,9 @@ adroit import --from-assessment assessment.yaml --dry-run -o json
 
 reads an exported assessment and seeds one Proposed ADR per practice
 (`-o json` emits a machine summary of the seeds). The seam is guarded
-mechanically from both sides: this repo's `golden_export` test pins the
+mechanically from both sides: assessments' `golden_export` test pins the
 producer shape (above), and adroit's contract test pins its importer
-against a vendored copy of this app's export — so contract drift on either
-side fails that side's CI without a model. The full story, including the
-live ollama-authored variant and the current state of the vendored copy,
-is on the [Dogfood](./dogfood.md) page.
+against the same canonical golden (`contract/fixtures/golden-assessment.yaml`
+at the workspace root) — so contract drift on either side fails the
+workspace gate without a model. The full story, including the
+live ollama-authored variant, is on the [Dogfood](./dogfood.md) page.

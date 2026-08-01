@@ -38,12 +38,12 @@ fresh space as above.
 
 ## CI gate (self-hosted)
 
-`just ci` includes the **`adr-check`** recipe — the bootstrap pattern: build
-adroit, create an ephemeral space, `seed` it from `docs/src/adr`, and `check`
-the seeded space —
+The workspace-root `just ci` includes the **`adr-check`** recipe — the
+bootstrap pattern: build the in-tree adroit, create an ephemeral space,
+`seed` it from `docs/src/adr`, and `check` the seeded space —
 
 ```sh
-just adr-check
+just adr-check   # from the workspace root
 ```
 
 — so a structurally broken corpus (an unparseable document, duplicate

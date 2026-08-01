@@ -6,7 +6,7 @@ request never reaches the app (or the Anthropic API) without an allowed
 Google identity. There is no auth code in the app: IAP is the whole story.
 
 Access is an **allowlist** kept in the repo at
-[`deploy/iap-allowlist.txt`](https://github.com/como-technologies/assessments/blob/main/deploy/iap-allowlist.txt)
+[`deploy/iap-allowlist.txt`](https://github.com/como-technologies/taps/blob/main/assessments/deploy/iap-allowlist.txt)
 and synced to IAM by `just iap-sync` — the modern equivalent of an
 `htpasswd` file, except it's auditable and version-controlled.
 

@@ -8,7 +8,7 @@ vendor.
 conduit is the **Adopt**-stage engine of the Como TAPS portfolio loop
 (Assess → Prescribe → **Adopt** → Measure). It reads accepted Architecture
 Decision Records and their implementation plans over
-[adroit](https://github.com/como-technologies/adroit)'s machine-readable seam
+[adroit](https://github.com/como-technologies/taps/tree/main/adroit)'s machine-readable seam
 (`manifest` / `-o json`), and drives a commodity coding engine to turn each
 decision into issues and reviewable pull requests — tagged so the Measure
 stage (tuesday) can trace effort back to the decision that prompted it.

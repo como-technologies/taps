@@ -46,14 +46,14 @@ lint-server:
 
 # The four cargo lanes pinned by .github/workflows/ci.yml (the branch gate)
 lanes:
-    cargo test --workspace
+    cargo test -p tuesday-core -p tuesday-cli -p tuesday-web
     cargo check -p tuesday-web --features web
     cargo check -p tuesday-web --no-default-features --features server
     cargo check -p tuesday-core --target wasm32-unknown-unknown
 
-# Run tests, whole workspace
+# Run tests, all tuesday crates (the whole suite is the root justfile's job)
 test *ARGS:
-    cargo test --workspace {{ARGS}}
+    cargo test -p tuesday-core -p tuesday-cli -p tuesday-web {{ARGS}}
 
 # Run tests, headless server lane
 test-server *ARGS:

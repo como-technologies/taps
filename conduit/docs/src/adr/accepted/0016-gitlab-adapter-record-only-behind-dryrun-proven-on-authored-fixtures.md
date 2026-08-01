@@ -12,7 +12,8 @@ Created: 2026-06-12
 conduit maintainers (the forge-adapter keystone and its conformance
 obligations live here) and the Como portfolio owner, whose forge-neutrality
 claim — proven at N=2, GitLab queued, pinned two-sided by the portfolio's
-verify-claims — this adapter widens to N=3.
+verify-claims (since retired by portfolio ADR-0011) — this adapter widens
+to N=3.
 
 ## Context and Problem Statement
 
@@ -52,9 +53,10 @@ author timestamp, or body.
 - The N=3 proof must ride the exact same conformance suite body and the
   same shared transcript normalization as N=2 did — a third adapter that
   needed its own assertions would prove nothing about neutrality
-- The portfolio's verify-claims pins the gap two-sided by design: landing
-  the adapter flips its forge-list assertion red, forcing the book claim to
-  widen in the same motion
+- The portfolio's verify-claims pinned the gap two-sided by design: landing
+  the adapter flipped its forge-list assertion red, forcing the book claim
+  to widen in the same motion (verify-claims was retired by portfolio
+  ADR-0011)
 
 ## Considered Options
 

@@ -79,11 +79,12 @@ just lint-web    # the `web` feature
 ```
 
 `just ci` runs `fmt-check → lint-core → lint → lint-web → test-core → test →
-test-web → adr-check → book → crate-outdated → crate-audit`. Because **`ai` and
+test-web → book → crate-outdated → crate-audit`. Because **`ai` and
 `forge` are in the default build**, `lint` / `test` already exercise them — there
-are no separate per-feature recipes for `ai` or `forge`. `adr-check` is the
-self-hosted dogfood gate: the freshly built binary bootstraps an **ephemeral KB
-space** (ADR-0020), seeds it from adroit's own committed legacy
+are no separate per-feature recipes for `ai` or `forge`. The workspace-root
+`just adr-check` is the
+self-hosted dogfood gate: the freshly built in-tree binary bootstraps an
+**ephemeral KB space** (ADR-0020), seeds it from each product's committed legacy
 [decision corpus](./decisions.md) (`adroit seed --from docs/src/adr --dir <space>`),
 and validates the seeded space (`adroit check --dir <space>`), so a broken
 corpus fails CI.

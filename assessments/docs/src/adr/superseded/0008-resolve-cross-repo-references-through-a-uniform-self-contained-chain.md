@@ -1,10 +1,10 @@
-# ADR-0011: Resolve cross-repo references through a uniform self-contained chain
+# ADR-0008: Resolve cross-repo references through a uniform self-contained chain
 
-> State: Accepted
+> State: Superseded
 
 ## Status
 
-Accepted
+Superseded by portfolio ADR-0012 (the single-workspace move, portfolio#8): the suite collapsed into one Cargo workspace, so there are no cross-repo references left to resolve — every product is in-tree, binaries build from the workspace, and the resolver machinery this convention specified is deleted.
 
 ## Stakeholders
 
@@ -15,15 +15,15 @@ portfolio, general-business, docs).
 ## Context and Problem Statement
 
 Cross-repo references across the Como TAPS suite assumed a fixed sibling
-workspace layout: this repo's `adr-check` probed a PATH-installed adroit
-and then fell back to a hardcoded `../adroit/target/debug/adroit`. That
-breaks every single-repo clone, hides which binary a gate actually ran,
-and behaves differently per repo (some PATH-first, some sibling-only).
-Meanwhile some suite repos have no public remote at all (conduit,
-docs is local-only by explicit policy) and adroit's public
-remote currently lags the local checkout — so any remote-based resolution
-must verify what it fetched and degrade cleanly rather than assume the
-network has what the workspace has.
+workspace layout: this repo hardcoded `../adroit/target/debug/adroit` for
+its seam and ADR gates and `../docs/...` for dogfood context defaults.
+That breaks every single-repo clone, hides which revision a gate actually
+ran against, and behaves differently per repo (some PATH-first, some
+sibling-only). Meanwhile some suite repos have no public remote at all
+(docs is local-only by explicit policy) and adroit's
+public remote currently lags the local checkout — so any remote-based
+resolution must verify what it fetched and degrade cleanly rather than
+assume the network has what the workspace has.
 
 ## Decision Drivers
 
@@ -37,9 +37,8 @@ network has what the workspace has.
 
 ## Considered Options
 
-1. **Status quo** — keep the ad-hoc PATH-then-`../sibling` probe; works
-   only in the curated workspace, silently skips everywhere else, and
-   orders legs differently from the other repos.
+1. **Status quo** — keep hardcoded `../sibling` paths; works only in the
+   curated workspace, silently skips or fails everywhere else.
 2. **Shared resolver helper** — one resolver script maintained in a single
    repo and sourced by the others; creates the very cross-repo bootstrap
    dependency the resolver exists to remove.
@@ -78,8 +77,9 @@ produce now, so nothing breaks before the owner pushes them.
 
 ### Positive Consequences
 
-- `just adr-check` works in a single-repo clone, an offline workspace, and
-  the curated sibling layout alike, with one set of knob names suite-wide
+- `just ci` (adr-check, seam-check) and the dogfood seam assertion work in
+  a single-repo clone, an offline workspace, and the curated sibling layout
+  alike, with one set of knob names suite-wide
 - The notice text names every knob, so a degraded gate tells the operator
   exactly how to un-degrade it
 - The clone cache is gitignored and read-only — no new push surface, no
@@ -96,15 +96,15 @@ produce now, so nothing breaks before the owner pushes them.
   behind the sibling fallback
 - The first cache install turns a previously-instant skip into a network
   `cargo install --git` build unless COMO_OFFLINE=1 or a local leg resolves
-- Standardizing env → sibling → PATH changes precedence for this repo,
-  which was PATH-first: a fresh sibling build now beats a stale installed
-  binary
+- Standardizing env → sibling → PATH changes precedence for repos that were
+  PATH-first: a fresh sibling build now beats a stale installed binary
 
 ## Implementation
 
 Carried out in this repo by `justfile`: a private `_adroit-resolve` recipe
 implements the chain (ADROIT_BIN → `${COMO_ADROIT_DIR:-../adroit}`
 release/debug → PATH → tag-pinned `cargo install --git … --locked --root
-.como/tools` → unresolved) and `adr-check` skips with the knobs named when
-nothing resolves; `.como/` is gitignored. No other pulse reference needed
-work — the book and README URLs already point at the canonical remote.
+.como/tools` → unresolved); `adr-check` and `seam-check` skip with the
+knobs named, `seam-assert` fails hard with the same knobs; the
+`dogfood-with-context` defaults use `${COMO_DOCS_DIR:-../docs}` with no
+clone leg (docs is local-only by policy); `.como/` is gitignored.

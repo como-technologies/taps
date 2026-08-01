@@ -187,7 +187,7 @@ leak; shipping a leaky artifact is the only failure.
 
 The repository carries a worked example authored by this command:
 
-- [`examples/dogfood/brief.md`](https://github.com/como-technologies/assessments/blob/master/examples/dogfood/brief.md)
+- [`examples/dogfood/brief.md`](https://github.com/como-technologies/taps/blob/main/assessments/examples/dogfood/brief.md)
   — a generic software-engineering-maturity brief
 - `examples/dogfood/assessment.yaml` — the assessment llama3.2 (3B) authored
   from it, unedited

@@ -30,4 +30,4 @@ seam.
 
 Como runs conduit on its own work every iteration — the engine is
 exercised the same way it's offered. Demos, evidence, and internals live
-in the [conduit repo](https://github.com/como-technologies/conduit).
+in the [conduit repo](https://github.com/como-technologies/taps/tree/main/conduit).

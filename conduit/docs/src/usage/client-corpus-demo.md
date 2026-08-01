@@ -17,13 +17,10 @@ Three demo-shape points over the [original walkthrough](./demo.md):
    `seed` bootstraps a KB space from)
    into `docs/src/adr/` of a fresh single-commit git repo under the
    gitignored `.como/build/client-corpus`, and prints its path. The
-   llm-wiki checkout itself resolves through the suite resolution
-   convention (ADR-0014): `COMO_LLM_WIKI_DIR` → the sibling `../llm-wiki` →
-   a read-only clone into the gitignored `.como/deps/llm-wiki` cache from
-   `${COMO_LLM_WIKI_GIT:-${COMO_GIT_BASE:-https://github.com/como-technologies}/llm-wiki.git}`
-   → a hard, actionable error naming those knobs. `COMO_OFFLINE=1` uses a
-   populated cache as-is and never clones. llm-wiki is only ever read;
-   the built repo is wiped and rebuilt on every run.
+   llm-wiki source resolves in-tree: an explicit `LLM_WIKI_DIR` /
+   `COMO_LLM_WIKI_DIR` override → the workspace's own `../llm-wiki`
+   product → a hard, actionable error naming those knobs. llm-wiki is
+   only ever read; the built repo is wiped and rebuilt on every run.
 2. **Parameterized seeding.** `demo/gitea-init.sh` takes `SEED_REPO_DIR`
    (which local repo's `main` seeds the forge) and `REPO_NAME` (the forge
    repo under org `como`). Defaults preserve the self-dogfood demo
@@ -48,7 +45,7 @@ invokes the builder itself before failing with the knob-naming error.)
 Captured:
 
 ```text
-client-corpus-build: llm-wiki -> ../llm-wiki (sibling checkout)
+client-corpus-build: llm-wiki -> ../llm-wiki (in-tree)
 client-corpus-build: built .../conduit/.como/build/client-corpus (corpus: docs/src/adr, from .../llm-wiki/kit/starter/decisions)
 created user conduit-bot
 created user reviewer
@@ -68,7 +65,7 @@ cd "$RUN_DIR"
 
 The script takes an already-built corpus repo via `CLIENT_CORPUS_DIR`
 (demo-up and the tests pass one) or builds it via
-`demo/client-corpus-build.sh` (the llm-wiki resolution chain above),
+`demo/client-corpus-build.sh` (the llm-wiki resolution above),
 refuses to reuse an existing dir (unique per run; default
 `demo/runs/<UTC timestamp>`, gitignored), and stocks the workdir with
 everything `conduit` resolves from its cwd:
@@ -200,7 +197,7 @@ The merged PR's diff was the FakeEngine's deterministic artifact
 corpus repo is disposable by construction (wiped and rebuilt from
 llm-wiki's starter content on every run), so there is nothing to harvest
 and nothing to protect: work merged on the throwaway forge simply dies with
-it. The llm-wiki checkout the content came from is only ever read — seeding
+it. The llm-wiki product the content came from is only ever read — seeding
 pushes *from* the built copy; nothing ever pushes *to* llm-wiki.
 
 ```sh

@@ -2,7 +2,7 @@
 
 Amaker deploys as **three independent Cloud Run services** — `amaker-author`,
 `amaker-assess`, `amaker-analyze` — sharing one blob-storage bucket. Each is a
-container built from the repo's single [`Dockerfile`](https://github.com/como-technologies/assessments/blob/main/Dockerfile).
+container built from the repo's single [`Dockerfile`](https://github.com/como-technologies/taps/blob/main/assessments/Dockerfile).
 
 This is a runbook, not a GCP tutorial — work through
 [Google Cloud setup](./gcp-setup.md) first (gcloud installed, project created,
@@ -51,7 +51,7 @@ All three services point at this one bucket so they read each other's writes.
 
 > The S3-compatible backend (`STORAGE_BACKEND=s3_compatible`) also works against
 > Cloudflare R2, Backblaze B2, Hetzner, etc. — set the `*_S3_*` vars instead.
-> See [.env.example](https://github.com/como-technologies/assessments/blob/main/.env.example).
+> See [.env.example](https://github.com/como-technologies/taps/blob/main/assessments/.env.example).
 
 ## 2. Secret — the Anthropic API key
 

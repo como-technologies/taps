@@ -19,4 +19,4 @@ TOML). Not a deck: the export is exactly what the
 the hand-off is a file format, not a re-keying exercise.
 
 Details, walkthroughs, and the full authoring pipeline live in the
-[assessments repo](https://github.com/como-technologies/assessments).
+[assessments repo](https://github.com/como-technologies/taps/tree/main/assessments).

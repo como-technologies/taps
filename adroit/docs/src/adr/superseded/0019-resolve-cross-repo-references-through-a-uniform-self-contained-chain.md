@@ -1,10 +1,10 @@
 # ADR-0019: Resolve cross-repo references through a uniform self-contained chain
 
-> State: Accepted
+> State: Superseded
 
 ## Status
 
-Accepted
+Superseded by portfolio ADR-0012 (the single-workspace move, portfolio#8): the suite collapsed into one Cargo workspace, so there are no cross-repo references left to resolve — every product is in-tree, binaries build from the workspace, and the resolver machinery this convention specified is deleted.
 Created: 2026-06-12
 
 ## Stakeholders

@@ -9,7 +9,9 @@ option; the [cron example below](#scheduling-host-cron-not-a-daemon) is the
 documented wrapper.
 
 Prerequisites for everything on this page: a Rust toolchain
-([rustup](https://rustup.rs/)) and a clone of this repository.
+([rustup](https://rustup.rs/)) and a clone of the
+[taps](https://github.com/como-technologies/taps) workspace (tuesday lives
+in `tuesday/`).
 
 ## The headless CLI (no web stack needed)
 
