@@ -34,8 +34,6 @@ Thumbs.db
 # Tailwind CLI binary (downloaded on demand by `just tailwind-cli`)
 /.bin/
 
-# Suite tool cache (adroit resolver's `cargo install --git` leg, ADR-0008)
-/.como/
 
 # golden_export's on-mismatch dump (review, promote to the golden, delete)
 crates/amaker-core/tests/fixtures/*.actual.yaml

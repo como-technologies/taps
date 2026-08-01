@@ -13,5 +13,3 @@
 *.debug*
 .env
 
-# Suite resolution convention: gitignored per-repo clone/install cache
-.como/

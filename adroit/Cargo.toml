@@ -1,7 +1,9 @@
 [package]
 name = "adroit"
 version = "0.2.0"
-edition = "2024"
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
 license = "Apache-2.0"
 description = "A snappy tool for managing Architecture Decision Records"
 
@@ -62,115 +64,88 @@ keychain = ["dep:keyring", "dep:keyring-core"]
 # are still gated at runtime by the `ai.enabled` kill-switch (default off).
 ai = ["dep:rig", "dep:tokio", "keychain"]
 
+# Versions live in the workspace root Cargo.toml. Grouped by the feature that
+# pulls them in.
 [dependencies]
-# Use the LATEST published version when adding or bumping any dependency (see
-# CLAUDE.md). Grouped by the feature that pulls them in.
-
 # ── Core — always compiled (lib + CLI). `--no-default-features` builds these alone.
-anyhow = "1"
-clap = { version = "4", features = ["derive", "env"] }
-clap_complete = "4"
-# Human-output color (status, graph edges). Auto-disabled off-tty / `-o json` / `NO_COLOR`.
-colored = "3"
-dialoguer = "0.12"
-directories = "6"
-dotenvy = "0.15"
-edit = "0.1"
-serde = { version = "1", features = ["derive"] }
+anyhow.workspace = true
+clap.workspace = true
+clap_complete.workspace = true
+colored.workspace = true
+dialoguer.workspace = true
+directories.workspace = true
+dotenvy.workspace = true
+edit.workspace = true
+serde.workspace = true
 # `-o json` output for the read verbs; also the `mcp` server's JSON-RPC framing.
-serde_json = "1"
-serde_yaml_ng = "0.10"
-shellexpand = "3"
-strum = { version = "0.28", features = ["derive"] }
-thiserror = "2"
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+shellexpand.workspace = true
+strum.workspace = true
+thiserror.workspace = true
 # `adroit import` reads an assessment export in JSON, YAML, or TOML — `assessments`
 # exports all three; TOML deserializes the same lenient serde structs.
-toml = "1"
-time = { version = "0.3", features = ["serde-human-readable", "formatting", "parsing", "macros", "local-offset"] }
-uuid = { version = "1", features = ["v4", "serde"] }
-which = "8"
+toml.workspace = true
+time.workspace = true
+uuid.workspace = true
+ulid.workspace = true
+which.workspace = true
 
 # ── manifest feature (and `mcp`, which depends on it) ──
 # Derive JSON Schema for the `view` types so `adroit manifest` publishes the exact
 # `-o json` shapes. No runtime cost when off.
-schemars = { version = "1", optional = true }
+schemars = { workspace = true, optional = true }
 
 # ── tui feature — the interactive two-pane terminal app ──
-crossterm = { version = "0.29", optional = true }
-ratatui = { version = "0.30", optional = true }
-# GitHub-Flavored Markdown → ratatui Text for the preview pane. Targets
-# ratatui-core 0.1 (the 0.30-era core) — no duplicate ratatui in the tree.
-the-other-tui-markdown = { version = "0.1.0", optional = true }
-# Fuzzy matcher behind the command palette + ADR picker (helix/telescope engine).
-nucleo-matcher = { version = "0.3", optional = true }
-# Syntax highlighting for preview code blocks. Pure-Rust regex (fancy-regex, no
-# onig/C) + embedded default syntaxes/themes; we convert syntect styles to ratatui
-# spans ourselves (syntect-tui targets an older ratatui).
-syntect = { version = "5", default-features = false, features = [
-    "parsing",
-    "default-syntaxes",
-    "default-themes",
-    "regex-fancy",
-], optional = true }
-# Animated spinner shown while a reload runs on a worker thread.
-throbber-widgets-tui = { version = "0.11", optional = true }
+crossterm = { workspace = true, optional = true }
+ratatui = { workspace = true, optional = true }
+the-other-tui-markdown = { workspace = true, optional = true }
+nucleo-matcher = { workspace = true, optional = true }
+syntect = { workspace = true, optional = true }
+throbber-widgets-tui = { workspace = true, optional = true }
 
 # ── web feature — read-only dashboard (Axum JSON API + embedded Vue SPA) ──
-axum = { version = "0.8", optional = true }
+axum = { workspace = true, optional = true }
 # Async runtime — web only (the `ai` feature also enables tokio).
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "signal", "sync", "time"], optional = true }
+tokio = { workspace = true, optional = true }
 # Bridges the live-reload `broadcast` channel into an SSE response stream.
-tokio-stream = { version = "0.1", features = ["sync"], optional = true }
-tower = { version = "0.5", features = ["util"], optional = true }
-tower-http = { version = "0.6", features = ["trace"], optional = true }
+tokio-stream = { workspace = true, optional = true }
+tower = { workspace = true, optional = true }
+tower-http = { workspace = true, optional = true }
 # Server-side markdown → HTML for the dashboard.
-pulldown-cmark = { version = "0.13", default-features = false, features = ["html"], optional = true }
-rust-embed = { version = "8", optional = true }
-mime_guess = { version = "2", optional = true }
+pulldown-cmark = { workspace = true, optional = true }
+rust-embed = { workspace = true, optional = true }
+mime_guess = { workspace = true, optional = true }
 # Filesystem watcher driving auto live-reload (recursive watch on the ADR dir).
-notify = { version = "8", optional = true }
+notify = { workspace = true, optional = true }
 
 # ── forge feature — issue + PR/MR adapters ──
 # A small *blocking* HTTP client (rustls TLS) — deliberately blocking so the core
 # CLI has no async runtime (tokio is web/ai only).
-ureq = { version = "3", features = ["json"], optional = true }
+ureq = { workspace = true, optional = true }
 
 # ── ai feature — rig (async LLM framework), bridged via block_on at the CLI edge ──
 # (also enables `tokio`). Anthropic + Ollama providers; embeddings/RAG are future.
-rig = { package = "rig-core", version = "0.38", optional = true }
+rig = { workspace = true, optional = true }
 
 # ── keychain feature (enabled by ai + forge) — OS keychain for stored tokens ──
-# keyring 4 split into a `keyring-core` (the `Entry` type) + a `keyring` facade that
-# registers the platform store (`use_native_store()`): macOS Keychain / Windows
-# Credential Manager / Linux kernel keyutils — pure-Rust, no C / system build deps.
-keyring = { version = "4", optional = true }
-keyring-core = { version = "1", optional = true }
-ulid = { version = "3.0.0", features = ["serde"] }
+keyring = { workspace = true, optional = true }
+keyring-core = { workspace = true, optional = true }
 
 [dev-dependencies]
-assert_cmd = "2"
-predicates = "3"
-tempfile = "3"
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true
 # Parse + assert on the `-o json` output of the read verbs.
-serde_json = "1"
+serde_json.workspace = true
 # Used by the web feature's request-level tests (BodyExt::collect on responses).
-http-body-util = "0.1"
+http-body-util.workspace = true
 # Model-based / property testing for the hardening blitz (tests/model.rs):
 # random command sequences against an in-memory oracle, asserting adroit's
 # documented invariants after every step.
-proptest = "1"
+proptest.workspace = true
 # Coverage-guided fuzzing for the parsers (tests/fuzz_parsers.rs). The same target
 # runs as a stable property test under `cargo test` (CI) and coverage-guided under
-# `cargo bolero test <name>` (nightly + the cargo-bolero CLI).
-bolero = "0.13"
-
-# cargo-bolero builds its instrumented (coverage-guided) target with
-# `--profile fuzz`; without this section it fails with
-# "error: profile `fuzz` is not defined". Release-like for fuzz throughput, but
-# keep debug + assertions on so the targets' *logic* assertions (not just memory
-# crashes) fire under the fuzzer.
-[profile.fuzz]
-inherits = "release"
-debug = true
-debug-assertions = true
-overflow-checks = true
+# `cargo bolero test <name>` (nightly + the cargo-bolero CLI). Its `--profile fuzz`
+# lives in the workspace root (profiles are root-only).
+bolero.workspace = true

@@ -208,7 +208,7 @@ fn main() -> Result<()> {
             } => {
                 let id =
                     match id.as_deref() {
-                        Some("auto") => Some(ulid::Ulid::new()),
+                        Some("auto") => Some(ulid::Ulid::generate()),
                         Some(s) => Some(ulid::Ulid::from_string(s).map_err(|e| {
                             anyhow::anyhow!("invalid --id (must be a ULID): {s}: {e}")
                         })?),

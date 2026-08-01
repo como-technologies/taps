@@ -4,7 +4,7 @@ description = "Domain models, storage, and analysis primitives shared across the
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+license = "MIT"
 repository.workspace = true
 authors.workspace = true
 
@@ -51,10 +51,10 @@ futures = { workspace = true }
 
 # Loop AI provider stack — the config-switchable LlmProvider seam
 # (Anthropic via SDK, plus ollama local inference) ported from the loop line.
-async-trait = "0.1"
-reqwest = { version = "0.12", features = ["json"] }
-dotenvy = "0.15"
-anthropic-sdk-rust = "0.1"
+async-trait.workspace = true
+reqwest.workspace = true
+dotenvy.workspace = true
+anthropic-sdk-rust.workspace = true
 
 [dev-dependencies]
 tempfile = { workspace = true }

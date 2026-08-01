@@ -176,42 +176,15 @@ decision lifecycle over raw JSON-RPC). tuesday closes the ring's loop:
 the decisions it prices, and a search over the space answers "what did
 this decision cost?" from pages alone.
 
-## The pre-review cold gate — `scripts/cold-sim`
+## The pre-review cold gate
 
-Rings 1–3 are what a cold reviewer runs mechanically; `scripts/cold-sim`
-(in this repo) rehearses exactly those before a review, as one command
-(ring 4's mechanical leg is rehearsed where its content lives — the kit's
-starter README in llm-wiki — and isn't in cold-sim yet; the conversational
-leg needs a human with a harness by definition). It clones
-the suite side by side into a fresh sandbox and runs the runbook verbatim
-under a contributor-default environment a warm workspace never exercises: a
-hostile global git config (`commit.gpgsign = true` with a throwaway
-identity, `/dev/null` system config) and every `COMO_*` knob scrubbed from
-the child environment.
-
-```sh
-portfolio/scripts/cold-sim                            # all three rings, fresh /tmp sandbox
-portfolio/scripts/cold-sim --ring 3 --leg preflight   # stepwise: one ring, one leg
-```
-
-- `--from local` (default) clones each repo from its sibling working copy
-  via `file://` — the future *pushed* state of any unpushed local commits
-  (a clone carries committed history only, never the dirty tree).
-  `--from github` clones `https://github.com/como-technologies/<repo>`
-  instead — the published reality.
-- The sandbox clones **llm-wiki** like every other suite repo, so ring 3's
-  `demo-up` must fully stand up — the client corpus builds from its starter
-  content, and a failure to resolve it is a real `FAIL`, not a documented
-  stop.
-- What it cannot simulate it records instead of faking: ollama-on-PATH and
-  docker-daemon reachability are printed as env facts, and a down daemon
-  degrades the docker-dependent ring-3 legs to `ENV-LIMITED` — preflight
-  still runs regardless, because its honest reporting is part of the check.
-- Per-leg logs land under `<sandbox>/logs/`, the last output line is one
-  JSON result object for tooling, and the exit is nonzero only on a `FAIL`.
-  Stepwise runs (`--ring`, `--repo`, `--leg`, `--soak N`) reuse a `--dir`
-  sandbox. The caller's cargo registry cache is reused — fresh clones
-  already force cold `target/` builds.
+`scripts/cold-sim` was retired at workspace formation (ADR-0012,
+portfolio#8): its purpose was rehearsing a cold *multi-repo* checkout —
+cloning the suite side by side and running the runbook against sibling
+paths — and a cold clone of the workspace repo now IS the suite. The
+pre-review rehearsal is `git clone` into a fresh directory + `just ci`
+at the root. (This section is rewritten wholesale with the rings in the
+wave-4 pass of portfolio#8.)
 
 ## Publishing
 

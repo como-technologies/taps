@@ -1,8 +1,4 @@
 /target
 .claude/settings.local.json
 
-# Suite resolution convention (ADR-0004): gitignored clone/install cache
-.como/
 
-# Python bytecode from running scripts/ (verify-claims, cold-sim)
-__pycache__/

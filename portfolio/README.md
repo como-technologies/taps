@@ -63,6 +63,5 @@ docs/src/       book content (Markdown); SUMMARY.md is the table of contents
 docs/book.toml  mdBook configuration
 docs/gruvbox/   theme assets
 justfile        all tasks — run `just` to list them
-scripts/        cold-sim, the pre-review cold-checkout rehearsal (see OPERATIONS.md)
 OPERATIONS.md   the suite-wide stand-up and verification runbook
 ```

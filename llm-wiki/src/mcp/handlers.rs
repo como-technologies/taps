@@ -211,7 +211,7 @@ pub fn handle_content_new(server: &McpServer, args: &Map<String, Value>) -> Tool
     let name = arg_str(args, "name");
     let type_ = arg_str(args, "type");
     let id = if arg_bool(args, "auto_id") {
-        Some(ulid::Ulid::new())
+        Some(ulid::Ulid::generate())
     } else if let Some(s) = arg_str(args, "id") {
         Some(ulid::Ulid::from_string(&s).map_err(|e| format!("invalid id (must be a ULID): {e}"))?)
     } else {

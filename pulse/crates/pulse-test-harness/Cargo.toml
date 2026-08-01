@@ -2,7 +2,7 @@
 name = "pulse-test-harness"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+license = "UNLICENSED"
 description = "Test harness and simulation framework for Pulse protocol"
 
 [dependencies]

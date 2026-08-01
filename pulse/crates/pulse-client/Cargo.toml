@@ -2,7 +2,7 @@
 name = "pulse-client"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+license = "UNLICENSED"
 description = "Platform-agnostic protocol client for Pulse anonymous polling"
 
 [dependencies]

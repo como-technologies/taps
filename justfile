@@ -2,12 +2,26 @@
 default:
     @just --list
 
-# Run all CI checks. Placeholder: cargo refuses to run against a virtual
-# workspace with no members, so until wave 1 (portfolio#8) copies the
-# products in, the gate has nothing to check. Wave 1 replaces this with the
-# real fmt/lint/test recipes.
-ci:
-    @echo "wave 0 skeleton: no workspace members yet; gate is a no-op"
+# Run all CI checks. This local gate is the source of truth; later waves of
+# the workspace migration (portfolio#8) add books, ADR validation, the
+# per-product invariant lanes, and the dependency audit.
+ci: fmt-check lint test
 
 # House vocabulary for the full local gate
 alias gate := ci
+
+# Format code
+fmt:
+    cargo fmt
+
+# Check formatting without modifying files
+fmt-check:
+    cargo fmt --check
+
+# Lint the whole workspace including tests and examples
+lint:
+    cargo clippy --workspace --all-targets -- -D warnings
+
+# Run the workspace test suite
+test:
+    cargo test --workspace

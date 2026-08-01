@@ -2,7 +2,7 @@
 name = "pulse-relay"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
+license = "UNLICENSED"
 
 [dependencies]
 axum = { workspace = true }

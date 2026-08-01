@@ -1,3 +1,210 @@
 [workspace]
 resolver = "3"
-members = []
+members = [
+    "adroit",
+    "assessments/crates/*",
+    "conduit",
+    "llm-wiki",
+    "pulse/crates/*",
+    "tuesday/crates/*",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+authors = ["Mike Sandman <mike@thesandmans.com>"]
+repository = "https://github.com/como-technologies/taps"
+# No workspace-level `license`: the products carry three regimes (Apache-2.0,
+# MIT, MIT OR Apache-2.0, UNLICENSED), so each crate declares its own.
+
+# One version per dependency, suite-wide (portfolio ADR-0012). Feature lists
+# are the union of what the products request — feature unification would give
+# every in-workspace build that union anyway. Use the LATEST published version
+# when adding or bumping anything.
+#
+# Deliberately NOT here: tuesday's heads keep tokio and the Dioxus/wasm stack
+# (dioxus, web-sys, js-sys, gloo-timers, urlencoding) inline — the wasm32 lane
+# (tuesday ADR-0002) and the dx 0.7 toolchain are version- and
+# feature-sensitive, and must not inherit `tokio = full`.
+[workspace.dependencies]
+# ── Web / async ──
+axum = { version = "0.8.8", features = ["multipart", "macros"] }
+axum-extra = { version = "0.12", features = ["form"] }
+tokio = { version = "1.50", features = ["full"] }
+# Bridges live-reload broadcast channels into SSE response streams (adroit web).
+tokio-stream = { version = "0.1", features = ["sync"] }
+tokio-util = { version = "0.7", features = ["compat"] }
+tower = { version = "0.5.3", features = ["util"] }
+tower-http = { version = "0.6.8", features = ["fs", "cors", "trace", "request-id", "util"] }
+# rustls-only: tuesday-core must stay wasm32-compatible and TLS-portable
+# (ADR-0002); pulse and assessments work identically on rustls.
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# Small *blocking* HTTP client (rustls) — the conduit core and adroit's forge
+# adapters are deliberately synchronous, no tokio.
+ureq = { version = "3", features = ["json"] }
+rust-embed = "8"
+mime_guess = "2"
+async-trait = "0.1"
+futures = "0.3"
+# Filesystem watcher (adroit web live-reload, llm-wiki ACP).
+notify = "8"
+
+# ── Serialization ──
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+serde_yaml_ng = "0.10"
+toml = "1"
+postcard = { version = "1.1", features = ["alloc"] }
+bytes = "1"
+
+# ── CLI ──
+clap = { version = "4", features = ["derive", "env"] }
+clap_complete = "4"
+# Human-output color (status, graph edges). Auto-disabled off-tty / `-o json` / `NO_COLOR`.
+colored = "3"
+dialoguer = "0.12"
+directories = "6"
+dotenvy = "0.15"
+edit = "0.1"
+shellexpand = "3"
+strum = { version = "0.28", features = ["derive"] }
+which = "8"
+
+# ── TUI (adroit) ──
+crossterm = "0.29"
+ratatui = "0.30"
+# GitHub-Flavored Markdown → ratatui Text for the preview pane. Targets
+# ratatui-core 0.1 (the 0.30-era core) — no duplicate ratatui in the tree.
+the-other-tui-markdown = "0.1.0"
+# Fuzzy matcher behind the command palette + ADR picker (helix/telescope engine).
+nucleo-matcher = "0.3"
+# Pure-Rust regex (fancy-regex, no onig/C) + embedded default syntaxes/themes.
+syntect = { version = "5", default-features = false, features = [
+    "parsing",
+    "default-syntaxes",
+    "default-themes",
+    "regex-fancy",
+] }
+throbber-widgets-tui = "0.11"
+
+# ── Templating / markdown / search / graph ──
+askama = "0.16"
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+regex = "1"
+tantivy = "0.26"
+petgraph = "0.8"
+petgraph-live = { version = "0.4.0", features = ["snapshot-lz4", "snapshot-zstd"] }
+walkdir = "2"
+git2 = { version = "0.21", default-features = false, features = ["vendored-libgit2"] }
+
+# ── LLM / agent protocol ──
+# assessments' rig: pinned to a post-0.35.0 main revision that contains the
+# fix for issue #1642 / PR #1659 — empty-content end_turn responses from
+# Anthropic after a tool round-trip used to surface as fatal ResponseErrors.
+# Switch back to a release tag once one ships including this commit.
+rig-core = { git = "https://github.com/0xPlaygrounds/rig", rev = "ac51cf4" }
+# adroit's rig: registry release, renamed key so both sources can coexist
+# until the two products converge on one revision.
+rig = { package = "rig-core", version = "0.38" }
+anthropic-sdk-rust = "0.1"
+rmcp = { version = "1.7", features = ["server", "transport-io", "transport-streamable-http-server"] }
+agent-client-protocol = "0.14"
+
+# ── Schema / validation ──
+schemars = { version = "1.2", features = ["uuid1", "chrono04"] }
+jsonschema = "0.46"
+
+# ── Crypto (pulse) ──
+blind-rsa-signatures = "0.17.1"
+rsa = "0.9.10"
+sha2 = "0.11"
+# hmac 0.13 is the digest-0.11 line, matching sha2 0.11 (the pre-workspace
+# pulse paired hmac 0.12 with sha2 0.10).
+hmac = "0.13"
+aes-gcm = "0.10.3"
+rand = "0.9.2"
+rand_chacha = "0.9"
+hex = "0.4.3"
+base64 = "0.22.1"
+
+# ── Time / identity ──
+chrono = { version = "0.4", features = ["serde"] }
+time = { version = "0.3", features = [
+    "serde-human-readable",
+    "formatting",
+    "parsing",
+    "macros",
+    "local-offset",
+] }
+uuid = { version = "1", features = ["v4", "serde"] }
+ulid = { version = "3.0.0", features = ["serde"] }
+
+# ── Errors / observability ──
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+# Google Cloud Logging structured-JSON formatter — see amaker_core::observability.
+tracing-stackdriver = "0.10"
+
+# ── Storage ──
+# Cloud-agnostic blob storage abstraction (amaker-core). Backends:
+# LocalFileSystem, InMemory, AmazonS3 (S3 protocol: rustfs, R2, B2,
+# GCS-via-interop), GoogleCloudStorage.
+object_store = { version = "0.13", features = ["aws", "gcp"] }
+rusqlite = { version = "0.35", features = ["bundled"] }
+dashmap = "6"
+
+# ── Secrets ──
+# keyring 4 = keyring-core (the Entry type) + a facade registering the
+# platform store — pure-Rust backends only, no C / system build deps.
+# 4.1 split the facade: the default `v1` mode drops `use_native_store` and
+# forces Secret Service on Linux; the `cli` feature keeps explicit store
+# registration so adroit stays on kernel keyutils (its documented choice).
+# The lockfile holds 4.1.5: 4.1.6's `cli` requires db-keystore ^0.5.1, which
+# was never published — unpin once a fixed keyring release ships.
+keyring = { version = "4.1", default-features = false, features = ["cli"] }
+keyring-core = "1"
+
+# ── Testing ──
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+proptest = "1.10"
+insta = { version = "1", features = ["yaml"] }
+tracing-test = "0.2"
+tokio-test = "0.4"
+http-body-util = "0.1"
+bolero = "0.13"
+
+# Profiles are root-only in a workspace; these merge the products' profiles.
+# release = assessments' + llm-wiki's (identical except llm-wiki's
+# `panic = "abort"`, which served upstream binary distribution and is dropped
+# rather than imposed workspace-wide).
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+
+# cargo-bolero builds adroit's instrumented (coverage-guided) fuzz targets
+# with `--profile fuzz`. Release-like for throughput, but keep debug +
+# assertions on so the targets' *logic* assertions fire under the fuzzer.
+[profile.fuzz]
+inherits = "release"
+debug = true
+debug-assertions = true
+overflow-checks = true
+
+# tuesday's per-target dev profiles (ADR-0002 lanes).
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

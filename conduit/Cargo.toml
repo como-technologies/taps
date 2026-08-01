@@ -1,31 +1,34 @@
 [package]
 name = "conduit"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
 license = "Apache-2.0"
 description = "Forge-neutral agentic development harness — the Adopt-stage engine of the Como TAPS loop"
 
+# Versions live in the workspace root Cargo.toml.
 [dependencies]
 # ── Core — fully synchronous, no tokio (spec §Stack: poll-tick loop, one task at a time).
 # Binary-layer errors; typed thiserror enums live in the lib modules.
-anyhow = "1"
-clap = { version = "4", features = ["derive", "env"] }
-serde = { version = "1", features = ["derive"] }
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
 # `-o json` output, transcript JSONL, adroit/engine JSON envelopes, snapshot persistence.
-serde_json = "1"
+serde_json.workspace = true
 # Plan-snapshot integrity hash + FakeEngine's deterministic output.
-sha2 = "0.11"
+sha2.workspace = true
 # Typed errors in the forge/store/machine/adroit layers (anyhow stays in main.rs).
-thiserror = "2"
+thiserror.workspace = true
 # Snapshot timestamps + review submitted_at.
-time = { version = "0.3", features = ["serde-human-readable", "formatting", "parsing", "macros"] }
+time.workspace = true
 # conduit.toml config (not in the spec dep list, required by §Module layout src/config.rs).
-toml = "1"
+toml.workspace = true
 # Blocking HTTP (rustls) — only ever called through the HttpTransport seam.
 # `json` gates send_json/into_json, the surface the forge adapters speak.
-ureq = { version = "3", features = ["json"] }
+ureq.workspace = true
 
 [dev-dependencies]
-assert_cmd = "2"
-predicates = "3"
-tempfile = "3"
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true

@@ -1,0 +1,52 @@
+# cargo-audit configuration (honored by `just crate-audit` locally and in CI).
+# Merged from the products' per-repo accepted-advisory files at workspace
+# formation (portfolio#8); each acceptance keeps its dated owner rationale.
+
+[advisories]
+ignore = [
+    # ── llm-wiki ──
+    # RUSTSEC-2019-0040 — boxfnonce unmaintained; transitive via
+    # agent-client-protocol 0.11.
+    "RUSTSEC-2019-0040",
+
+    # ── pulse ──
+    # RUSTSEC-2023-0071 — rsa: Marvin Attack, potential key recovery through
+    # timing side-channels. Accepted 2026-07-04; decision recorded in
+    # pulse/docs/src/adr/proposed/0012-accept-the-rsa-marvin-timing-side-channel-advisory.md.
+    #
+    # Why accepted rather than fixed:
+    # - Structural: the RFC 9474 blind-signature core (blind-rsa-signatures ->
+    #   rsa 0.10-rc) and pulse-crypto's direct rsa 0.9 line both sit on the
+    #   RustCrypto `rsa` crate; the advisory has NO fixed upstream release, so
+    #   the one ignore entry covers both versions in the lockfile.
+    # - Threat model: exploiting Marvin requires an attacker who can drive the
+    #   signer with chosen inputs AND measure a per-operation timing oracle
+    #   against it. Pulse's signer runs server-side in the Identity zone behind
+    #   HTTP; parked at M0 nothing is deployed, so no such oracle is exposed.
+    # - Removal trigger: an rsa release that fixes RUSTSEC-2023-0071 ships ->
+    #   delete this entry, `cargo update`, and confirm `cargo audit` is clean.
+    "RUSTSEC-2023-0071",
+
+    # ── assessments ──
+    # RUSTSEC-2026-0194 — quick-xml: quadratic run time when checking a start
+    # tag for duplicate attribute names. RUSTSEC-2026-0195 — quick-xml:
+    # unbounded namespace-declaration allocation in `NsReader`
+    # (memory-exhaustion DoS). Both hit quick-xml 0.39.4. Accepted 2026-07-04.
+    #
+    # Why accepted rather than fixed:
+    # - Structural: no fix path exists today. quick-xml is pulled in only by
+    #   object_store 0.13.2 (amaker-core's blob-storage layer), which pins
+    #   quick-xml ^0.39 — `cargo update -p quick-xml` locks 0 packages — and
+    #   the newer object_store 0.14.0 still resolves quick-xml 0.40.1, below
+    #   the advisories' patched range (`cargo audit` reports the fix as
+    #   ">=0.41.0" for both).
+    # - Threat model: quick-xml here only parses XML replies from the
+    #   operator-configured S3-compatible/GCS endpoint (object_store list and
+    #   multipart responses) — trusted, configured infrastructure, not
+    #   untrusted user input.
+    # - Removal trigger: an object_store release that resolves quick-xml
+    #   >=0.41.0 ships -> delete both entries, `cargo update`, and confirm
+    #   `cargo audit` is clean.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+]

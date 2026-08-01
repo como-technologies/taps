@@ -15,15 +15,15 @@ path = "src/main.rs"
 
 [dependencies]
 tuesday-core = { path = "../tuesday-core" }
-clap = { version = "4", features = ["derive"] }
+clap.workspace = true
 serde_json.workspace = true
 # The CLI is a native head: a tokio reactor here is fine (ADR-0002 only
 # forbids tokio inside tuesday-core, which must stay wasm32-compatible).
 tokio = { version = "1", features = ["rt", "macros"] }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber.workspace = true
 
 [dev-dependencies]
-assert_cmd = "2"
+assert_cmd.workspace = true
 chrono.workspace = true
 # temp KB spaces for the --kb page-emission tests
-tempfile = "3.27.0"
+tempfile.workspace = true

@@ -33,7 +33,7 @@ tracing.workspace = true
 urlencoding = "2.1"
 futures.workspace = true
 gloo-timers = "0.3"
-dotenvy = "0.15"
+dotenvy.workspace = true
 js-sys = "0.3"
 
 [features]
