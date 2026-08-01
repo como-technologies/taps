@@ -1,0 +1,39 @@
+[package]
+name = "amaker-analyze"
+description = "Analyst binary — read-only scorecard, gaps, roadmap, narrative."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+amaker-core = { path = "../amaker-core" }
+
+# Web framework
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Templating
+askama = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Utilities
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+dotenvy = { workspace = true }
+
+# Deliberately no rig-core. Narrative regeneration (the only LLM-using
+# analysis route) stays in amaker-author; this binary just reads the
+# cached `report.md` and points its "Regenerate" button cross-origin
+# at the author's endpoint.

@@ -1,0 +1,76 @@
+{% match message.clarifying_question %}
+{% when Some(question) %}
+{# Render answered clarifying question (from history) #}
+<div class="flex justify-start">
+    <div class="chat-bubble chat-bubble--agent max-w-[85%]">
+        <div class="font-medium text-foreground mb-2">
+            {{ question.question }}
+        </div>
+        <div class="text-sm text-foreground-muted italic">
+            [Pending answer]
+        </div>
+        {% if !message.content.is_empty() %}
+        <div class="prose prose-sm max-w-none text-inherit [&_*]:text-inherit mt-2 pt-2 border-t">
+            {{ message.content_html()|safe }}
+        </div>
+        {% endif %}
+        <div class="text-xs mt-2 text-foreground-muted">
+            {{ message.timestamp.format("%H:%M") }}
+        </div>
+    </div>
+</div>
+{% when None %}
+{# Render regular message #}
+<div class="flex flex-col {% if message.role == amaker_core::models::ChatRole::User %}items-end{% else %}items-start{% endif %}">
+    <div class="chat-bubble max-w-[80%]
+                {% if message.role == amaker_core::models::ChatRole::User %}
+                chat-bubble--user
+                {% else %}
+                chat-bubble--agent
+                {% endif %}">
+        {% if let Some(qg) = message.questions_generated.as_ref() %}
+        <div class="flex items-center gap-2 text-sm mb-3 pb-3 border-b">
+            <span class="text-success font-medium">✓</span>
+            <span>Generated <strong>{{ qg.count }}</strong> question{% if qg.count != 1 %}s{% endif %} for <a href="#practice-{{ qg.practice_id }}" class="entity-link"><strong>{{ qg.practice_name }}</strong></a></span>
+            <span class="text-xs text-foreground-muted ml-auto">see assessment →</span>
+        </div>
+        {% endif %}
+        <div class="prose prose-sm {% if message.role == amaker_core::models::ChatRole::User %}prose-invert{% endif %} max-w-none text-inherit [&_*]:text-inherit">
+            {% if message.role == amaker_core::models::ChatRole::User %}
+            <span class="whitespace-pre-wrap">{{ message.content }}</span>
+            {% else %}
+            {{ message.content_html()|safe }}
+            {% endif %}
+        </div>
+        <div class="text-xs mt-2 {% if message.role == amaker_core::models::ChatRole::User %}text-primary-fg/70{% else %}text-foreground-muted{% endif %}">
+            {{ message.timestamp.format("%H:%M") }}
+        </div>
+    </div>
+    {% if !message.suggestions.is_empty() %}
+    <div class="suggestion-pills mt-2 max-w-[80%] flex flex-wrap gap-2">
+        {% for label in message.suggestions %}
+        <form hx-post="/api/projects/{{ project_id }}/chat"
+              hx-target="#message-list"
+              hx-swap="beforeend"
+              hx-indicator="#spinner"
+              hx-vals='js:{model: localStorage.getItem("selectedModel") || document.getElementById("model-picker").value || ""}'
+              hx-on::before-request="
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'flex justify-end';
+                const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+                msgDiv.innerHTML = `<div class='chat-bubble chat-bubble--user max-w-[80%]'><div class='prose prose-sm prose-invert max-w-none whitespace-pre-wrap text-inherit [&_*]:text-inherit'>${escapeHtml(this.querySelector('input[name=content]').value)}</div><div class='text-xs mt-2 text-primary-fg/70'>${time}</div></div>`;
+                document.getElementById('message-list').appendChild(msgDiv);
+                document.getElementById('message-list').scrollTop = document.getElementById('message-list').scrollHeight;
+              "
+              hx-on::after-request="document.getElementById('message-list').scrollTop = document.getElementById('message-list').scrollHeight;">
+            <input type="hidden" name="content" value="{{ label }}">
+            <button type="submit"
+                    class="suggestion-pill htmx-hide-on-request">
+                {{ label }}
+            </button>
+        </form>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endmatch %}

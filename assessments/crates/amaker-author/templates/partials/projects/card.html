@@ -1,0 +1,34 @@
+<div class="bg-surface-card rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+    <div class="flex justify-between items-start">
+        <div class="flex-1">
+            <a href="/projects/{{ card.project.id }}" class="text-lg font-medium text-foreground hover:text-primary">
+                {{ card.project.name }}
+            </a>
+            {% if let Some(description) = card.project.description %}
+            <p class="text-sm text-foreground-secondary mt-1">{{ description }}</p>
+            {% endif %}
+            <div class="flex items-center space-x-4 mt-2 text-sm text-foreground-muted">
+                <span class="px-2 py-1 rounded bg-surface-page">
+                    Authoring / {{ card.project.focus_substate }}
+                </span>
+                {% if let Some(p) = card.progress %}
+                <span class="px-2 py-1 rounded bg-surface-page">{{ p.answered }} / {{ p.total }} answered</span>
+                {% endif %}
+                <span>Updated {{ card.project.updated_at.format("%b %d, %Y") }}</span>
+            </div>
+        </div>
+        <div class="flex space-x-2">
+            <a href="/projects/{{ card.project.id }}"
+               class="px-3 py-1 text-sm bg-primary text-primary-fg rounded hover:bg-primary-hv">
+                Open
+            </a>
+            <button hx-delete="/api/projects/{{ card.project.id }}"
+                    hx-target="closest div.bg-surface-card"
+                    hx-swap="outerHTML"
+                    hx-confirm="Are you sure you want to delete this assessment?"
+                    class="px-3 py-1 text-sm text-danger hover:bg-danger-soft rounded">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>

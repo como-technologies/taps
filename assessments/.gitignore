@@ -1,0 +1,47 @@
+# Rust
+/target/
+# Cargo.lock IS committed — this workspace produces deployable binaries,
+# so builds (incl. container images) must be reproducible.
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Data directory (runtime storage)
+/data/
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Build artifacts
+/dist/
+/build/
+
+# Tailwind CLI binary (downloaded on demand by `just tailwind-cli`)
+/.bin/
+
+# Suite tool cache (adroit resolver's `cargo install --git` leg, ADR-0008)
+/.como/
+
+# golden_export's on-mismatch dump (review, promote to the golden, delete)
+crates/amaker-core/tests/fixtures/*.actual.yaml
+
+# Tailwind build output (generated from assets/app.src.css)
+/assets/app.css
+
+# Claude workspace
+.claude/

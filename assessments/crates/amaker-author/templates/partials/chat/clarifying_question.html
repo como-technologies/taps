@@ -1,0 +1,163 @@
+<div class="flex justify-start" id="question-card-{{ question.id }}">
+    <div class="chat-bubble chat-bubble--agent max-w-[85%]">
+        {% if !preamble_html.is_empty() %}
+        <div class="prose prose-sm max-w-none text-inherit [&_*]:text-inherit mb-3 pb-3 border-b">
+            {{ preamble_html|safe }}
+        </div>
+        {% endif %}
+        <!-- Question header -->
+        <div class="font-medium text-foreground mb-3">
+            {{ question.question }}
+        </div>
+
+        <!-- Options form -->
+        <form id="question-form-{{ question.id }}"
+              hx-post="/api/projects/{{ project_id }}/chat/respond"
+              hx-target="#message-list"
+              hx-swap="beforeend"
+              hx-indicator="#spinner"
+              class="space-y-2">
+            <input type="hidden" name="question_id" value="{{ question.id }}">
+            <input type="hidden" name="model" id="question-model-{{ question.id }}" value="">
+
+            <!-- Option cards -->
+            <div class="space-y-2" id="options-{{ question.id }}">
+                {% for option in question.options %}
+                <label class="block cursor-pointer">
+                    <input type="{% if question.multi_select %}checkbox{% else %}radio{% endif %}"
+                           name="selections"
+                           value="{{ option.label }}"
+                           class="peer sr-only">
+                    <div class="p-3 rounded-lg border-2 border-transparent bg-surface-page
+                                peer-checked:border-primary peer-checked:bg-primary-soft
+                                hover:bg-surface-overlay transition-colors">
+                        <div class="font-medium text-sm">{{ option.label }}</div>
+                        {% if let Some(desc) = option.description %}
+                        <div class="text-xs text-foreground-muted mt-1">{{ desc }}</div>
+                        {% endif %}
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            {% if question.allow_custom %}
+            <!-- Custom answer option -->
+            <div class="mt-3">
+                <label class="block cursor-pointer">
+                    <input type="{% if question.multi_select %}checkbox{% else %}radio{% endif %}"
+                           name="selections"
+                           value="__custom__"
+                           id="custom-radio-{{ question.id }}"
+                           class="peer sr-only"
+                           onchange="document.getElementById('custom-text-{{ question.id }}').focus()">
+                    <div class="p-3 rounded-lg border-2 border-transparent bg-surface-page
+                                peer-checked:border-primary peer-checked:bg-primary-soft
+                                hover:bg-surface-overlay transition-colors">
+                        <div class="font-medium text-sm">Something else...</div>
+                        <textarea name="custom_text"
+                                  id="custom-text-{{ question.id }}"
+                                  rows="2"
+                                  placeholder="Type your answer here..."
+                                  onfocus="document.getElementById('custom-radio-{{ question.id }}').checked = true"
+                                  class="mt-2 w-full px-2 py-1 text-sm bg-surface-card border rounded
+                                         focus:outline-none focus:ring-1 focus:ring-focus resize-none"></textarea>
+                    </div>
+                </label>
+            </div>
+            {% endif %}
+
+            <!-- Submit + skip -->
+            <div class="mt-4 flex justify-end gap-2">
+                <button type="button"
+                        id="skip-btn-{{ question.id }}"
+                        hx-post="/api/projects/{{ project_id }}/chat/skip-question"
+                        hx-vals='js:{question_id: "{{ question.id }}", model: localStorage.getItem("selectedModel") || document.getElementById("model-picker").value || ""}'
+                        hx-target="#message-list"
+                        hx-swap="beforeend"
+                        hx-indicator="#spinner"
+                        class="px-4 py-2 bg-surface-page text-foreground-muted text-sm font-medium rounded-lg
+                               border hover:bg-surface-overlay
+                               transition-colors htmx-hide-on-request">
+                    Skip
+                </button>
+                <button type="submit"
+                        onclick="document.getElementById('question-model-{{ question.id }}').value = localStorage.getItem('selectedModel') || document.getElementById('model-picker').value || '';"
+                        class="px-4 py-2 bg-primary text-primary-fg text-sm font-medium rounded-lg
+                               hover:bg-primary-hv disabled:opacity-50 disabled:cursor-not-allowed
+                               transition-colors htmx-hide-on-request">
+                    Continue
+                </button>
+            </div>
+        </form>
+
+        <!-- Timestamp -->
+        <div class="text-xs mt-2 text-foreground-muted">
+            {{ timestamp.format("%H:%M") }}
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    const form = document.getElementById('question-form-{{ question.id }}');
+    const messageList = document.getElementById('message-list');
+    let submittedAnswer = null;
+
+    // Derive the human-readable answer from the form state.
+    function readAnswer() {
+        const custom = document.getElementById('custom-radio-{{ question.id }}');
+        if (custom && custom.checked) {
+            const text = document.getElementById('custom-text-{{ question.id }}');
+            const t = text && text.value.trim();
+            if (t) return t;
+        }
+        const checked = form.querySelectorAll('input[name="selections"]:checked');
+        const labels = [];
+        checked.forEach(input => {
+            if (input.value !== '__custom__') labels.push(input.value);
+        });
+        return labels.length ? labels.join(', ') : null;
+    }
+
+    // Optimistically render the user's selection as a chat bubble so the
+    // conversation flow stays coherent (matches the main chat-form pattern).
+    form.addEventListener('htmx:beforeRequest', function() {
+        const answer = readAnswer();
+        if (!answer) return;
+        submittedAnswer = answer;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'flex justify-end';
+        const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+        msgDiv.innerHTML = `<div class='chat-bubble chat-bubble--user max-w-[80%]'><div class='prose prose-sm prose-invert max-w-none whitespace-pre-wrap text-inherit [&_*]:text-inherit'>${escapeHtml(answer)}</div><div class='text-xs mt-2 text-primary-fg/70'>${time}</div></div>`;
+        messageList.appendChild(msgDiv);
+        messageList.scrollTop = messageList.scrollHeight;
+    });
+
+    // After the request completes, replace the interactive form with a
+    // readonly "answered" view so the question stays in the chat log but
+    // can't be re-submitted.
+    form.addEventListener('htmx:afterRequest', function() {
+        const answer = submittedAnswer || readAnswer() || '';
+        form.outerHTML = `<div class="text-sm text-foreground-muted italic mt-2">✓ Answered: ${escapeHtml(answer)}</div>`;
+        messageList.scrollTop = messageList.scrollHeight;
+    });
+
+    // Skip button mirrors the same optimistic-render + readonly-swap dance,
+    // but with a fixed "(skipped)" user bubble and "Skipped" readonly footer.
+    const skipBtn = document.getElementById('skip-btn-{{ question.id }}');
+    if (skipBtn) {
+        skipBtn.addEventListener('htmx:beforeRequest', function() {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'flex justify-end';
+            const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+            msgDiv.innerHTML = `<div class='chat-bubble chat-bubble--user max-w-[80%]'><div class='prose prose-sm prose-invert max-w-none whitespace-pre-wrap text-inherit [&_*]:text-inherit italic'>(skipped)</div><div class='text-xs mt-2 text-primary-fg/70'>${time}</div></div>`;
+            messageList.appendChild(msgDiv);
+            messageList.scrollTop = messageList.scrollHeight;
+        });
+        skipBtn.addEventListener('htmx:afterRequest', function() {
+            form.outerHTML = `<div class="text-sm text-foreground-muted italic mt-2">Skipped</div>`;
+            messageList.scrollTop = messageList.scrollHeight;
+        });
+    }
+})();
+</script>

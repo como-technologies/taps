@@ -1,0 +1,36 @@
+{% if roadmap.priority_ordered.is_empty() %}
+<div class="p-6 text-center text-foreground-secondary text-sm rounded-lg bg-surface-card border">
+    Nothing on the roadmap — no gaps to prioritize.
+</div>
+{% else %}
+<div class="mb-3 text-sm text-foreground-secondary">
+    Gaps grouped by owner role, ordered by inverse-effort (quick wins first). The narrative layer (M4) will re-rank with risk semantics.
+</div>
+{% for (role, entries) in roadmap.by_role.iter() %}
+<section class="mb-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-foreground-secondary mb-2">
+        {{ role }}
+        <span class="text-foreground-muted font-normal">({{ entries.len() }})</span>
+    </h2>
+    <ul class="space-y-2">
+        {% for entry in entries.iter() %}
+        <li class="rounded border bg-surface-card p-2 text-sm">
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex-1">
+                    <div class="text-xs text-foreground-muted">
+                        {{ entry.gap.domain_name }} · {{ entry.gap.practice_name }}
+                    </div>
+                    <div>{{ entry.gap.question_text }}</div>
+                </div>
+                {% if let Some(e) = entry.gap.effort %}
+                <div class="flex-shrink-0 text-xs text-foreground-muted">
+                    {{ e.min_hours }}–{{ e.max_hours }} hrs
+                </div>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endfor %}
+{% endif %}

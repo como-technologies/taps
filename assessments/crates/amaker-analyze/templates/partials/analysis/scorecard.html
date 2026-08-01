@@ -1,0 +1,72 @@
+{% if scorecard.overall.has_definite_answers() %}
+<div class="mb-6 p-4 rounded-lg bg-surface-card border flex items-center gap-6 flex-wrap">
+    <div class="flex-1 min-w-[14rem]">
+        <div class="text-4xl font-bold leading-none">{{ scorecard.overall.percent }}%</div>
+        <div class="text-sm text-foreground-secondary mt-2">Overall pass rate<br><span class="text-xs">(weighted by question count)</span></div>
+    </div>
+    <dl class="grid grid-cols-4 gap-x-6 gap-y-1 text-sm">
+        <dt class="text-xs uppercase tracking-wide text-foreground-muted">Passed</dt>
+        <dt class="text-xs uppercase tracking-wide text-foreground-muted">Failed</dt>
+        <dt class="text-xs uppercase tracking-wide text-foreground-muted">Unknown</dt>
+        <dt class="text-xs uppercase tracking-wide text-foreground-muted">Unanswered</dt>
+        <dd class="text-xl font-semibold text-success">{{ scorecard.overall.passed }}</dd>
+        <dd class="text-xl font-semibold text-danger">{{ scorecard.overall.failed }}</dd>
+        <dd class="text-xl font-semibold text-warning">{{ scorecard.overall.unknown }}</dd>
+        <dd class="text-xl font-semibold text-foreground-muted">{{ scorecard.overall.unanswered }}</dd>
+    </dl>
+</div>
+{% else %}
+<div class="mb-6 p-4 rounded-lg bg-surface-card border text-foreground-secondary text-sm">
+    No definite answers yet. The scorecard will appear once any question has been answered Yes or No.
+</div>
+{% endif %}
+
+<table class="w-full text-sm table-fixed">
+    <colgroup>
+        <col>
+        <col class="w-16">
+        <col class="w-16">
+        <col class="w-12">
+        <col class="w-12">
+        <col class="w-20">
+    </colgroup>
+    <thead class="text-foreground-muted text-xs uppercase tracking-wide">
+        <tr class="border-b border-current/10">
+            <th class="text-left font-medium py-2 pr-2">Practice</th>
+            <th class="text-right font-medium py-2">Pass</th>
+            <th class="text-right font-medium py-2">Fail</th>
+            <th class="text-right font-medium py-2">?</th>
+            <th class="text-right font-medium py-2">—</th>
+            <th class="text-right font-medium py-2">%</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for domain in scorecard.domains %}
+        <tr class="border-t-2 border-current/10 bg-surface-overlay/50 entity-target scroll-mt-4" id="domain-{{ domain.id }}">
+            <th scope="rowgroup" class="text-left font-semibold py-2 pr-2 text-foreground">
+                {% if let Some(term) = domain.terminology %}{{ term }}{% else %}Domain{% endif %}:
+                {{ domain.name }}
+            </th>
+            <td class="text-right font-semibold text-success">{{ domain.summary.passed }}</td>
+            <td class="text-right font-semibold text-danger">{{ domain.summary.failed }}</td>
+            <td class="text-right font-semibold text-warning">{{ domain.summary.unknown }}</td>
+            <td class="text-right font-semibold text-foreground-muted">{{ domain.summary.unanswered }}</td>
+            <td class="text-right font-semibold">
+                {% if domain.summary.has_definite_answers() %}{{ domain.summary.percent }}%{% else %}—{% endif %}
+            </td>
+        </tr>
+        {% for practice in domain.practices %}
+        <tr class="border-t border-current/5 entity-target scroll-mt-4" id="practice-{{ practice.id }}">
+            <td class="py-1.5 pr-2 pl-4">{{ practice.name }}</td>
+            <td class="text-right text-success">{{ practice.summary.passed }}</td>
+            <td class="text-right text-danger">{{ practice.summary.failed }}</td>
+            <td class="text-right text-warning">{{ practice.summary.unknown }}</td>
+            <td class="text-right text-foreground-muted">{{ practice.summary.unanswered }}</td>
+            <td class="text-right font-semibold">
+                {% if practice.summary.has_definite_answers() %}{{ practice.summary.percent }}%{% else %}—{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,0 +1,17 @@
+# IAP access allowlist — who may use the deployed apps.
+#
+# `just iap-sync` applies this file to the IAP allowlist
+# (roles/iap.httpsResourceAccessor) on all three Cloud Run services.
+# The file is the source of truth: an identity removed here is revoked
+# on the next sync.
+#
+# One member per line. Blank lines and `#` comments are ignored. Forms:
+#   domain:<workspace-domain>   — every account in a Google Workspace org
+#   user:<email>                — one individual Google account
+#   group:<email>               — a Google Group
+
+# The whole Workspace org.
+domain:comotechnologies.io
+
+# Individual Google accounts (outside the org). Uncomment / add as needed:
+# user:someone@gmail.com

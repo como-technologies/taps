@@ -1,0 +1,2 @@
+tailwindcss=4.3.3
+htmx=2.0.9

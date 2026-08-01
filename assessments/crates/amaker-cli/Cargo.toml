@@ -1,0 +1,24 @@
+[package]
+name = "amaker-cli"
+description = "Headless CLI for amaker — author (config-switchable ollama), export, validate, schema."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "amaker"
+path = "src/main.rs"
+
+[dependencies]
+amaker-core = { path = "../amaker-core" }
+clap = { version = "4", features = ["derive"] }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+dotenvy = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

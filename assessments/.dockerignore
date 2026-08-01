@@ -1,0 +1,14 @@
+# Keep the build context small + reproducible. Everything the image
+# needs is: crates/, assets/, templates-shared/, Cargo.toml, Cargo.lock.
+target/
+data/
+.git/
+.github/
+.bin/
+.claude/
+*.log
+.env
+.env.*
+all-issue-issues.txt
+# app.css is rebuilt inside the image by the Tailwind CLI.
+assets/app.css

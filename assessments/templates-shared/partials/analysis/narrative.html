@@ -1,0 +1,50 @@
+<div id="narrative-body">
+    {# Loading state — shown only while a regenerate request is in flight.
+       The buttons carry `hx-indicator="#narrative-body"`, so htmx adds
+       `.htmx-request` to this wrapper for the duration of the request; the
+       rules in app.src.css then swap the report body out for this spinner,
+       giving the click an immediate visible effect. #}
+    <div class="narrative-loading flex items-center gap-3 p-6 text-sm text-foreground-secondary">
+        <svg class="w-5 h-5 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        Generating findings — this can take a moment.
+    </div>
+
+    <div class="narrative-content">
+        {% if let Some(md) = markdown %}
+        <div class="flex items-center justify-between mb-3">
+            <div class="text-xs text-foreground-muted">
+                {% if cached %}Cached findings · <span class="italic">unchanged since last generation</span>{% else %}Just generated{% endif %}
+            </div>
+            <button type="button"
+                    hx-post="{{ author_base_url }}/api/projects/{{ project_id }}/analysis/narrative/regenerate"
+                    hx-target="#narrative-body"
+                    hx-swap="outerHTML"
+                    hx-indicator="#narrative-body"
+                    class="text-xs px-3 py-1.5 rounded-lg border bg-surface-page hover:bg-surface-overlay text-foreground-secondary">
+                Regenerate
+            </button>
+        </div>
+        <div class="prose prose-sm max-w-none dark:prose-invert">
+            {{ html|safe }}
+        </div>
+        {% else %}
+        <div class="p-6 rounded-lg bg-surface-card border text-sm">
+            <p class="text-foreground-secondary mb-3">
+                No narrative yet. Generate a findings report from the
+                scorecard, gap inventory, and roadmap.
+            </p>
+            <button type="button"
+                    hx-post="{{ author_base_url }}/api/projects/{{ project_id }}/analysis/narrative/regenerate"
+                    hx-target="#narrative-body"
+                    hx-swap="outerHTML"
+                    hx-indicator="#narrative-body"
+                    class="px-3 py-1.5 rounded bg-primary text-primary-fg hover:bg-primary-hv">
+                Generate findings
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,15 @@
+# nginx config for the mdBook docs site. The nginx image renders ${PORT}
+# (Cloud Run injects it; default 8080) via envsubst at container start.
+server {
+    listen       ${PORT};
+    server_name  _;
+
+    root   /usr/share/nginx/html;
+    index  index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    error_page 404 /404.html;
+}

@@ -1,0 +1,16 @@
+<section class="mb-8 entity-target scroll-mt-4" id="domain-{{ domain.id }}">
+    <h2 class="text-xl font-semibold mb-3 pb-2 border-b border-current/10">
+        {% if let Some(term) = domain.terminology %}{{ term }}{% else %}Domain{% endif %}:
+        {{ domain.name }}
+    </h2>
+
+    <div class="space-y-2 mb-4 text-sm">
+        <p><span class="font-medium text-context">Context:</span> {{ domain.context }}</p>
+        <p><span class="font-medium text-value">Value:</span> {{ domain.value }}</p>
+        <p><span class="font-medium text-risk">Risk:</span> {{ domain.risk }}</p>
+    </div>
+
+    {% for practice in domain.practices %}
+    {% include "partials/preview/practice.html" %}
+    {% endfor %}
+</section>

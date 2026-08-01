@@ -1,0 +1,61 @@
+[package]
+name = "amaker-core"
+description = "Domain models, storage, and analysis primitives shared across the amaker binaries."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Web framework — axum is a dep here because `AppError` implements
+# `IntoResponse`. All three planned binaries (author, respond, analyze)
+# are axum-based, so this isn't load-bearing for binary size. When that
+# stops being true, feature-gate the `IntoResponse` impl.
+axum = { workspace = true }
+
+# LLM framework — same rationale: the `AppError` type carries a `From<rig::...>`
+# impl so AI errors flow through one error enum. When `amaker-respond` /
+# `amaker-analyze` exist and don't need rig, feature-gate this.
+rig-core = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+schemars = { workspace = true }
+jsonschema = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+regex = { workspace = true }
+pulldown-cmark = { workspace = true }
+
+# Tracing setup lives in `observability` so all three binaries share one
+# format-selection path (pretty text locally, Cloud Logging JSON in prod).
+tracing-subscriber = { workspace = true }
+tracing-stackdriver = { workspace = true }
+
+# Cloud-agnostic object-store abstraction. See workspace Cargo.toml for the
+# enabled backends.
+object_store = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+
+# Loop AI provider stack — the config-switchable LlmProvider seam
+# (Anthropic via SDK, plus ollama local inference) ported from the loop line.
+async-trait = "0.1"
+reqwest = { version = "0.12", features = ["json"] }
+dotenvy = "0.15"
+anthropic-sdk-rust = "0.1"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

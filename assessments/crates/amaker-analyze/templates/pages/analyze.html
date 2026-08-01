@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} — Analyze{% endblock %}
+
+{% block head %}
+{# The narrative "Regenerate" button POSTs cross-origin to the author binary.
+   htmx 2.x blocks cross-origin requests by default (selfRequestsOnly); allow
+   them here — the author binary's CORS layer is what actually gates the call. #}
+<meta name="htmx-config" content='{"selfRequestsOnly":false}'>
+{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col">
+    <header class="bg-surface-panel border-b px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <a href="{{ author_base_url }}/projects/{{ project.id }}" class="text-foreground-muted hover:text-foreground" title="Back to authoring">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+            <h1 class="text-xl font-semibold text-foreground">{{ project.name }}</h1>
+            <span class="px-2 py-1 rounded bg-primary text-primary-fg text-sm">Analyzing</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{{ assess_base_url }}/assess/{{ project.id }}" class="px-3 py-2 text-sm bg-surface-page hover:bg-surface-overlay rounded-lg text-foreground-secondary">Edit response</a>
+            <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-surface-page hover:bg-surface-overlay" title="Toggle dark mode">
+                <svg class="w-5 h-5 hidden dark:block text-warning" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                </svg>
+                <svg class="w-5 h-5 block dark:hidden text-foreground-secondary" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <div id="analysis-tabs"
+         class="flex-1 overflow-y-auto bg-surface-page p-6"
+         hx-get="/api/projects/{{ project.id }}/analysis"
+         hx-trigger="load">
+        <!-- Analysis tabs loaded via HTMX -->
+    </div>
+</div>
+{% endblock %}

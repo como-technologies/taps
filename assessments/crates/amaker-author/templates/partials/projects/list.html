@@ -1,0 +1,7 @@
+{% for card in cards %}
+{% include "partials/projects/card.html" %}
+{% else %}
+<div class="bg-surface-card rounded-lg shadow p-6 text-center text-foreground-muted">
+    <p>No assessments yet. Create your first one above!</p>
+</div>
+{% endfor %}

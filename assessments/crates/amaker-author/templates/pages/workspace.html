@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - Amaker{% endblock %}
+
+{% block content %}
+<div class="h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-surface-panel border-b px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <a href="/" class="text-foreground-muted hover:text-foreground">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+            <h1 class="text-xl font-semibold text-foreground">{{ project.name }}</h1>
+            <!-- Focus indicator with controls -->
+            <div hx-get="/api/projects/{{ project.id }}/phase"
+                 hx-trigger="load, focusChanged from:body"
+                 hx-swap="innerHTML">
+                <!-- Focus indicator loaded via HTMX -->
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <!-- Audience-view links: the project is authored here; respond
+                 and analyze are separate processes on their own URLs. -->
+            <a href="{{ assess_base_url }}/assess/{{ project.id }}"
+               class="px-3 py-2 text-sm bg-surface-page hover:bg-surface-overlay rounded-lg text-foreground-secondary"
+               title="Open the respondent form for this project">
+                Respond
+            </a>
+            <a href="{{ analyze_base_url }}/analyze/{{ project.id }}"
+               class="px-3 py-2 text-sm bg-surface-page hover:bg-surface-overlay rounded-lg text-foreground-secondary"
+               title="Open the analyst view (scorecard, gaps, narrative)">
+                Analyze
+            </a>
+            <!-- Model picker -->
+            <select id="model-picker"
+                    onchange="localStorage.setItem('selectedModel', this.value)"
+                    class="px-3 py-2 rounded-lg bg-surface-page text-foreground border hover:bg-surface-overlay focus:ring-2 focus:ring-focus focus:outline-none">
+                {% for model in models %}
+                <option value="{{ model.value }}">{{ model.label }}</option>
+                {% endfor %}
+            </select>
+            <!-- Dark mode toggle -->
+            <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-surface-page hover:bg-surface-overlay">
+                <!-- Sun icon (shown in dark mode) -->
+                <svg class="w-5 h-5 hidden dark:block text-warning" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                </svg>
+                <!-- Moon icon (shown in light mode) -->
+                <svg class="w-5 h-5 block dark:hidden text-foreground-secondary" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                </svg>
+            </button>
+            <a href="/api/projects/{{ project.id }}/export"
+               class="px-4 py-2 bg-success text-success-fg rounded hover:bg-success-hv">
+                Export YAML
+            </a>
+        </div>
+    </header>
+
+    <!-- Split View -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Chat Panel (Left) -->
+        <div class="w-1/2 flex flex-col border-r bg-surface-page">
+            <!-- Messages -->
+            <div id="message-list"
+                 class="flex-1 overflow-y-auto p-4 space-y-4"
+                 hx-get="/api/projects/{{ project.id }}/chat"
+                 hx-trigger="load"
+                 hx-on::after-settle="this.scrollTop = this.scrollHeight">
+                <!-- Messages loaded via HTMX -->
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="spinner" class="htmx-indicator px-4 py-3 bg-surface-page border-t">
+                <div class="flex items-center space-x-3 text-foreground-secondary">
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 0ms;"></div>
+                        <div class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 150ms;"></div>
+                        <div class="w-2 h-2 bg-primary rounded-full animate-bounce" style="animation-delay: 300ms;"></div>
+                    </div>
+                    <span id="spinner-text">Noodling...</span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="border-t p-4">
+                <form id="chat-form"
+                      hx-post="/api/projects/{{ project.id }}/chat"
+                      hx-target="#message-list"
+                      hx-swap="beforeend"
+                      hx-indicator="#spinner"
+                      hx-vals='js:{model: localStorage.getItem("selectedModel") || "{{ default_model }}"}'
+                      hx-on::before-request="
+                        const textarea = this.querySelector('textarea[name=content]');
+                        const content = textarea.value.trim();
+                        if (content) {
+                          const msgDiv = document.createElement('div');
+                          msgDiv.className = 'flex justify-end';
+                          const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+                          msgDiv.innerHTML = `<div class='chat-bubble chat-bubble--user max-w-[80%]'><div class='prose prose-sm prose-invert max-w-none whitespace-pre-wrap text-inherit [&_*]:text-inherit'>${escapeHtml(content)}</div><div class='text-xs mt-2 text-primary-fg/70'>${time}</div></div>`;
+                          document.getElementById('message-list').appendChild(msgDiv);
+                          textarea.value = '';
+                          document.getElementById('message-list').scrollTop = document.getElementById('message-list').scrollHeight;
+                        }
+                      "
+                      hx-on::after-request="document.getElementById('message-list').scrollTop = document.getElementById('message-list').scrollHeight;">
+                    <div class="flex space-x-2">
+                        <textarea name="content"
+                                  rows="3"
+                                  class="flex-1 border rounded-lg p-3 resize-none focus:ring-2 focus:ring-focus bg-surface-card text-foreground placeholder:text-foreground-muted"
+                                  placeholder="Describe your assessment needs..."></textarea>
+                        <div class="flex flex-col space-y-2">
+                            <label class="cursor-pointer px-4 py-2 border rounded-lg hover:bg-surface-page text-center text-sm text-foreground-secondary htmx-hide-on-request">
+                                <span>Upload</span>
+                                <input type="file"
+                                       class="hidden"
+                                       name="document"
+                                       hx-post="/api/projects/{{ project.id }}/upload"
+                                       hx-encoding="multipart/form-data"
+                                       hx-target="#document-list"
+                                       hx-swap="beforeend">
+                            </label>
+                            <!-- Assist button (generates SME response for testing) -->
+                            <button type="button"
+                                    hx-get="/api/projects/{{ project.id }}/assist"
+                                    hx-vals="js:{model: localStorage.getItem('selectedModel') || '{{ default_model }}'}"
+                                    hx-target="#assist-target"
+                                    hx-swap="innerHTML"
+                                    hx-indicator="#spinner"
+                                    hx-on::after-request="
+                                      const target = document.getElementById('assist-target');
+                                      const textarea = document.querySelector('textarea[name=content]');
+                                      if (target.textContent) {
+                                        textarea.value = target.textContent;
+                                        textarea.focus();
+                                      }
+                                    "
+                                    class="px-4 py-2 bg-accent text-accent-fg rounded-lg hover:bg-accent-hv htmx-hide-on-request">
+                                Assist
+                            </button>
+                            <div id="assist-target" class="hidden" aria-hidden="true"></div>
+                            <!-- Send button (hidden during request) -->
+                            <button type="submit"
+                                    class="px-4 py-2 bg-primary text-primary-fg rounded-lg hover:bg-primary-hv htmx-hide-on-request">
+                                Send
+                            </button>
+                            <!-- Stop button (shown during request) -->
+                            <button type="button"
+                                    onclick="htmx.trigger(document.getElementById('chat-form'), 'htmx:abort')"
+                                    class="px-4 py-2 bg-danger text-danger-fg rounded-lg hover:bg-danger-hv htmx-show-on-request hidden">
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Document List -->
+                <div id="document-list" class="mt-2 flex flex-wrap gap-2">
+                    <!-- Documents added via HTMX -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel (Right) -->
+        <div id="preview-panel"
+             class="w-1/2 overflow-y-auto bg-surface-page p-6"
+             hx-get="/api/projects/{{ project.id }}/preview"
+             hx-trigger="load, assessmentUpdated from:body, focusChanged from:body">
+            <!-- Assessment preview loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize model picker from localStorage, validating the saved id is
+    // still a valid option (model ids rotate as Anthropic deprecates versions).
+    (function() {
+        const picker = document.getElementById('model-picker');
+        const defaultModel = '{{ default_model }}';
+        const savedModel = localStorage.getItem('selectedModel');
+        const validIds = Array.from(picker.options).map(o => o.value);
+        const initial = savedModel && validIds.includes(savedModel) ? savedModel : defaultModel;
+        picker.value = initial;
+        localStorage.setItem('selectedModel', initial);
+    })();
+
+    // Entity link click handler: intercept #practice-* / #domain-* links in the
+    // chat and scroll the preview pane (not the window) to the target, with a
+    // brief flash so the user can see where they landed.
+    (function() {
+        const messageList = document.getElementById('message-list');
+        const preview = document.getElementById('preview-panel');
+        if (!messageList || !preview) return;
+
+        messageList.addEventListener('click', function(e) {
+            const link = e.target.closest('a[href^="#practice-"], a[href^="#domain-"]');
+            if (!link) return;
+            e.preventDefault();
+            const id = link.getAttribute('href').slice(1);
+            const target = preview.querySelector('#' + CSS.escape(id));
+            if (!target) return;
+            // scrollIntoView targets the nearest scrollable ancestor.
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            target.classList.remove('entity-flash');
+            // Re-trigger by forcing reflow, then re-add the class.
+            void target.offsetWidth;
+            target.classList.add('entity-flash');
+        });
+    })();
+
+    // Playful spinner messages that rotate while an AI request is in flight.
+    // Uses the picker's display label so the message reflects the actual model.
+    (function() {
+        const GERUNDS = [
+            'cogitating', 'ruminating', 'pondering', 'deliberating', 'ideating',
+            'synthesizing', 'calibrating', 'triangulating', 'orchestrating',
+            'combobulating', 'rejiggering', 'tinkering', 'noodling', 'unfurling',
+            'brewing', 'percolating', 'marinating', 'untangling', 'wrangling',
+            'finagling', 'concocting', 'conjuring', 'hatching', 'hypothesizing',
+            'scaffolding', 'blueprinting', 'drafting', 'sleuthing', 'pontificating',
+            'philosophizing', 'mulling', 'brainstorming',
+        ];
+
+        function modelLabel() {
+            const picker = document.getElementById('model-picker');
+            const opt = picker && picker.options[picker.selectedIndex];
+            if (!opt) return 'The AI';
+            // "Claude Sonnet 4.5" -> "Sonnet 4.5" (keeps it snappy)
+            return opt.text.replace(/^Claude\s+/i, '');
+        }
+
+        function pickGerund() {
+            return GERUNDS[Math.floor(Math.random() * GERUNDS.length)];
+        }
+
+        function renderSpinnerText() {
+            const el = document.getElementById('spinner-text');
+            if (el) el.textContent = `${modelLabel()} is ${pickGerund()}...`;
+        }
+
+        let tick = null;
+        document.body.addEventListener('htmx:beforeRequest', function() {
+            renderSpinnerText();
+            if (tick) clearInterval(tick);
+            tick = setInterval(renderSpinnerText, 3000);
+        });
+        document.body.addEventListener('htmx:afterRequest', function() {
+            if (tick) { clearInterval(tick); tick = null; }
+        });
+    })();
+</script>
+{% endblock %}

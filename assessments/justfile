@@ -1,0 +1,422 @@
+# Default: list available recipes
+default:
+    @just --list
+
+# Install project dependencies and tools
+init:
+    rustup component add clippy rustfmt
+    cargo install cargo-watch mdbook cargo-outdated cargo-edit cargo-audit
+
+# Run all CI checks (used by .github/workflows/ci.yml). `adr-check` validates
+# the in-book ADR corpus with adroit, resolved per the suite convention
+# (ADR-0008) — it skips with a notice when no adroit binary resolves.
+ci: fmt-check lint test book adr-check crate-outdated crate-audit vendor-outdated tailwind-build
+
+# Format code
+fmt:
+    cargo fmt
+
+# Check formatting without modifying files
+fmt-check:
+    cargo fmt --check
+
+# Run clippy lints
+lint:
+    cargo clippy -- -D warnings
+
+# Run all tests
+test *ARGS:
+    cargo test {{ARGS}}
+
+# Run only unit tests (skip integration tests)
+unit:
+    cargo test --lib
+
+# Live ollama smoke test (env-gated; not part of `just ci`): structure
+# generation against a local ollama must yield schema-valid YAML. Needs a
+# running ollama with $OLLAMA_MODEL (default llama3.2).
+smoke-ollama:
+    ASSESSMENTS_E2E_OLLAMA=1 cargo test -p amaker-core --lib live_ollama -- --nocapture
+
+# Type-check without building
+check:
+    cargo check
+
+# Build in debug mode
+build: tailwind-build
+    cargo build
+
+# Build in release mode
+release: tailwind-build
+    cargo build --release
+
+# Bring the whole stack up: author + assess + analyze (filesystem backend, browser opens). Ctrl-C stops all three.
+run: tailwind-build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cargo build -p amaker-author -p amaker-assess -p amaker-analyze
+    just _open-when-ready 3000 http://localhost:3000/ &
+    ( cargo run -p amaker-author  2>&1 | awk '{print "[author]   " $0; fflush()}' ) &
+    ( cargo run -p amaker-assess  2>&1 | awk '{print "[assess]   " $0; fflush()}' ) &
+    ( cargo run -p amaker-analyze 2>&1 | awk '{print "[analyze]  " $0; fflush()}' ) &
+    wait
+
+# Run the author binary only.
+run-author *ARGS: tailwind-build
+    #!/usr/bin/env bash
+    just _open-when-ready 3000 http://localhost:3000/ &
+    cargo run -p amaker-author -- {{ARGS}}
+
+# Run the respondent binary.
+run-assess *ARGS: tailwind-build
+    #!/usr/bin/env bash
+    just _open-when-ready 3001 http://localhost:3001/ &
+    cargo run -p amaker-assess -- {{ARGS}}
+
+# Run the analyst binary.
+run-analyze *ARGS: tailwind-build
+    #!/usr/bin/env bash
+    just _open-when-ready 3002 http://localhost:3002/ &
+    cargo run -p amaker-analyze -- {{ARGS}}
+
+# Wait for a local port to start listening, then open URL in the default browser.
+_open-when-ready PORT URL:
+    #!/usr/bin/env bash
+    for _ in $(seq 1 600); do
+        if (echo > /dev/tcp/127.0.0.1/{{PORT}}) 2>/dev/null; then
+            (command -v xdg-open >/dev/null && xdg-open "{{URL}}" >/dev/null 2>&1) \
+                || (command -v open >/dev/null && open "{{URL}}" >/dev/null 2>&1) \
+                || echo "no browser opener (xdg-open/open) on PATH" >&2
+            exit 0
+        fi
+        sleep 0.5
+    done
+    echo "timeout waiting for port {{PORT}}" >&2
+
+# === RustFS S3-compatible backend (local dev) ===
+#
+# Workflow:
+#   1. `just rustfs-serve`          — start rustfs in one terminal (foreground)
+#   2. `just rustfs-init`           — once, in another terminal, to create the bucket
+#   3. `just run-author-rustfs`     — run a binary against rustfs
+#
+# Defaults can be overridden via env, e.g. `RUSTFS_BUCKET=other just run-author-rustfs`.
+
+RUSTFS_DATA_DIR := env_var_or_default("RUSTFS_DATA_DIR", "./data/rustfs")
+RUSTFS_ENDPOINT := env_var_or_default("RUSTFS_ENDPOINT", "http://localhost:9000")
+RUSTFS_BUCKET := env_var_or_default("RUSTFS_BUCKET", "amaker")
+RUSTFS_REGION := env_var_or_default("RUSTFS_REGION", "us-east-1")
+RUSTFS_ACCESS_KEY := env_var_or_default("RUSTFS_ACCESS_KEY", "rustfsadmin")
+RUSTFS_SECRET_KEY := env_var_or_default("RUSTFS_SECRET_KEY", "rustfsadmin")
+
+# Start a local rustfs server in the foreground. Requires `rustfs` on PATH.
+rustfs-serve:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p {{RUSTFS_DATA_DIR}}
+    exec rustfs {{RUSTFS_DATA_DIR}}
+
+# Configure the rustfs alias and create the bucket (idempotent). Requires `rc`.
+rustfs-init:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v rc >/dev/null; then
+        echo "missing 'rc' — install rustfs's S3 CLI via one of:" >&2
+        echo "  brew install rustfs/tap/rc" >&2
+        echo "  cargo install rustfs-cli" >&2
+        echo "  https://github.com/rustfs/cli/releases" >&2
+        exit 1
+    fi
+    rc alias set rustfs-local {{RUSTFS_ENDPOINT}} {{RUSTFS_ACCESS_KEY}} {{RUSTFS_SECRET_KEY}} >/dev/null
+    if rc ls rustfs-local/{{RUSTFS_BUCKET}}/ >/dev/null 2>&1; then
+        echo "bucket '{{RUSTFS_BUCKET}}' already exists at {{RUSTFS_ENDPOINT}}"
+    else
+        rc mb rustfs-local/{{RUSTFS_BUCKET}}
+    fi
+
+# Run the author binary against rustfs.
+run-author-rustfs *ARGS: tailwind-build
+    #!/usr/bin/env bash
+    just _open-when-ready 3000 http://localhost:3000/ &
+    AUTHOR_STORAGE_BACKEND=s3_compatible \
+    AUTHOR_S3_ENDPOINT={{RUSTFS_ENDPOINT}} \
+    AUTHOR_S3_BUCKET={{RUSTFS_BUCKET}} \
+    AUTHOR_S3_REGION={{RUSTFS_REGION}} \
+    AUTHOR_S3_ACCESS_KEY_ID={{RUSTFS_ACCESS_KEY}} \
+    AUTHOR_S3_SECRET_ACCESS_KEY={{RUSTFS_SECRET_KEY}} \
+    cargo run -p amaker-author -- {{ARGS}}
+
+# Run the respondent binary against rustfs.
+run-assess-rustfs *ARGS: tailwind-build
+    #!/usr/bin/env bash
+    just _open-when-ready 3001 http://localhost:3001/ &
+    ASSESS_STORAGE_BACKEND=s3_compatible \
+    ASSESS_S3_ENDPOINT={{RUSTFS_ENDPOINT}} \
+    ASSESS_S3_BUCKET={{RUSTFS_BUCKET}} \
+    ASSESS_S3_REGION={{RUSTFS_REGION}} \
+    ASSESS_S3_ACCESS_KEY_ID={{RUSTFS_ACCESS_KEY}} \
+    ASSESS_S3_SECRET_ACCESS_KEY={{RUSTFS_SECRET_KEY}} \
+    cargo run -p amaker-assess -- {{ARGS}}
+
+# Run the analyst binary against rustfs.
+run-analyze-rustfs *ARGS: tailwind-build
+    #!/usr/bin/env bash
+    just _open-when-ready 3002 http://localhost:3002/ &
+    ANALYZE_STORAGE_BACKEND=s3_compatible \
+    ANALYZE_S3_ENDPOINT={{RUSTFS_ENDPOINT}} \
+    ANALYZE_S3_BUCKET={{RUSTFS_BUCKET}} \
+    ANALYZE_S3_REGION={{RUSTFS_REGION}} \
+    ANALYZE_S3_ACCESS_KEY_ID={{RUSTFS_ACCESS_KEY}} \
+    ANALYZE_S3_SECRET_ACCESS_KEY={{RUSTFS_SECRET_KEY}} \
+    cargo run -p amaker-analyze -- {{ARGS}}
+
+# Build, push, and deploy the mdBook docs site as a Cloud Run service.
+# Run `just iap-enable && just iap-sync` afterward to gate it behind IAP.
+deploy-docs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    project=$(gcloud config get-value project 2>/dev/null)
+    region=$(gcloud config get-value run/region 2>/dev/null)
+    img="${region}-docker.pkg.dev/${project}/amaker/amaker-docs:latest"
+    docker build -f Dockerfile.docs -t "$img" .
+    docker push "$img"
+    gcloud run deploy amaker-docs --image "$img" --region "$region"
+
+# === IAP authentication (Cloud Run) ===
+# Identity-Aware Proxy fronts every deployed service; access is the
+# allowlist in deploy/iap-allowlist.txt. See docs/src/operations/auth.md.
+
+IAP_SERVICES := "amaker-author amaker-assess amaker-analyze amaker-docs"
+IAP_ROLE := "roles/iap.httpsResourceAccessor"
+IAP_ALLOWLIST := "deploy/iap-allowlist.txt"
+
+# Enable IAP on every Cloud Run service (one-time; needs the OAuth consent screen configured).
+iap-enable:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    region=$(gcloud config get-value run/region 2>/dev/null)
+    for svc in {{IAP_SERVICES}}; do
+        echo "enabling IAP on $svc…"
+        gcloud run services update "$svc" --region "$region" --iap
+    done
+
+# Sync deploy/iap-allowlist.txt to the IAP allowlist on every service (the file is the source of truth).
+iap-sync:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    region=$(gcloud config get-value run/region 2>/dev/null)
+    desired=$(grep -vE '^\s*(#|$)' {{IAP_ALLOWLIST}} | tr -d '[:blank:]')
+    for svc in {{IAP_SERVICES}}; do
+        current=$(gcloud iap web get-iam-policy \
+            --resource-type=cloud-run --service="$svc" --region="$region" \
+            --flatten='bindings[].members' \
+            --filter='bindings.role={{IAP_ROLE}}' \
+            --format='value(bindings.members)' 2>/dev/null || true)
+        for m in $desired; do
+            grep -qxF "$m" <<<"$current" || {
+                echo "+ $svc  $m"
+                gcloud iap web add-iam-policy-binding \
+                    --resource-type=cloud-run --service="$svc" --region="$region" \
+                    --member="$m" --role={{IAP_ROLE}} >/dev/null
+            }
+        done
+        for m in $current; do
+            [ -z "$m" ] && continue
+            grep -qxF "$m" <<<"$desired" || {
+                echo "- $svc  $m"
+                gcloud iap web remove-iam-policy-binding \
+                    --resource-type=cloud-run --service="$svc" --region="$region" \
+                    --member="$m" --role={{IAP_ROLE}} >/dev/null
+            }
+        done
+    done
+    echo "allowlist synced."
+
+# Show the current IAP allowlist on each service.
+iap-status:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    region=$(gcloud config get-value run/region 2>/dev/null)
+    for svc in {{IAP_SERVICES}}; do
+        echo "$svc:"
+        gcloud iap web get-iam-policy \
+            --resource-type=cloud-run --service="$svc" --region="$region" \
+            --flatten='bindings[].members' \
+            --filter='bindings.role={{IAP_ROLE}}' \
+            --format='value(bindings.members)' | sed 's/^/  /'
+    done
+
+# Check for outdated direct dependencies (ignore transitive graph; skipped
+# if cargo-outdated isn't installed — `just init` installs it and GitHub CI
+# always runs it)
+crate-outdated:
+    @if command -v cargo-outdated >/dev/null 2>&1; then cargo outdated --root-deps-only; else echo "skip: cargo-outdated not installed (run 'just init')"; fi
+
+# Upgrade dependencies (including incompatible versions)
+crate-upgrade:
+    cargo upgrade --incompatible
+
+# Update Cargo.lock to latest compatible versions
+crate-update:
+    cargo update
+
+# Audit dependencies for known vulnerabilities (honors .cargo/audit.toml;
+# skipped if cargo-audit isn't installed — `just init` installs it and
+# GitHub CI always runs it)
+crate-audit:
+    @if command -v cargo-audit >/dev/null 2>&1; then cargo audit; else echo "skip: cargo-audit not installed (run 'just init')"; fi
+
+# Upgrade deps, update lockfile, audit, and test
+crate-refresh: crate-upgrade crate-update crate-audit test
+
+# Compile assets/app.src.css → assets/app.css (runs vendor-update if CLI missing)
+tailwind-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [ -x .bin/tailwindcss ] || just vendor-update
+    .bin/tailwindcss -i assets/app.src.css -o assets/app.css --minify
+
+# Watch templates and rebuild CSS on change
+tailwind-watch:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [ -x .bin/tailwindcss ] || just vendor-update
+    .bin/tailwindcss -i assets/app.src.css -o assets/app.css --watch
+
+# Latest *stable* release tag for a GitHub repo. Skips pre-releases — both
+# the `prerelease` flag and any semver pre-release tag (a `-` in the tag,
+# e.g. `v4.0.0-beta3`), since some projects ship betas without the flag.
+_latest-stable REPO:
+    @gh api 'repos/{{REPO}}/releases?per_page=30' \
+        --jq '[.[] | select(.prerelease == false) | .tag_name | select(test("-") | not)] | .[0]' \
+        | sed 's/^v//'
+
+# Check vendored assets (tailwindcss CLI, htmx) against latest upstream
+vendor-outdated:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source assets/vendor/versions.txt
+    latest_tw=$(just _latest-stable tailwindlabs/tailwindcss || true)
+    latest_htmx=$(just _latest-stable bigskysoftware/htmx || true)
+    printf '%-13s pinned %-10s latest %s\n' tailwindcss "$tailwindcss" "${latest_tw:-(unknown)}"
+    printf '%-13s pinned %-10s latest %s\n' htmx "$htmx" "${latest_htmx:-(unknown)}"
+    if [ -z "$latest_tw" ] || [ -z "$latest_htmx" ]; then
+        echo "skip: could not reach the upstream release API (no GH_TOKEN / offline) — freshness check not blocking" >&2
+        exit 0
+    fi
+    if [ "$tailwindcss" != "$latest_tw" ] || [ "$htmx" != "$latest_htmx" ]; then
+        echo "vendored assets are out of date — run \`just vendor-upgrade\`" >&2
+        exit 1
+    fi
+
+# Re-download vendored assets at pinned versions (idempotent; useful on fresh clones)
+vendor-update:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source assets/vendor/versions.txt
+    case "$(uname -s)-$(uname -m)" in
+        Linux-x86_64)   plat=linux-x64 ;;
+        Linux-aarch64)  plat=linux-arm64 ;;
+        Darwin-x86_64)  plat=macos-x64 ;;
+        Darwin-arm64)   plat=macos-arm64 ;;
+        *) echo "unsupported platform: $(uname -s)-$(uname -m)" >&2; exit 1 ;;
+    esac
+    mkdir -p .bin
+    curl -fsSL -o .bin/tailwindcss "https://github.com/tailwindlabs/tailwindcss/releases/download/v$tailwindcss/tailwindcss-$plat"
+    chmod +x .bin/tailwindcss
+    curl -fsSL -o assets/vendor/htmx.min.js "https://unpkg.com/htmx.org@$htmx/dist/htmx.min.js"
+    echo "vendored: tailwindcss $tailwindcss ($plat), htmx $htmx"
+
+# Upgrade vendored assets to latest stable upstream and rewrite versions.txt
+vendor-upgrade:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    latest_tw=$(just _latest-stable tailwindlabs/tailwindcss)
+    latest_htmx=$(just _latest-stable bigskysoftware/htmx)
+    printf 'tailwindcss=%s\nhtmx=%s\n' "$latest_tw" "$latest_htmx" > assets/vendor/versions.txt
+    just vendor-update
+    just tailwind-build
+
+# Upgrade vendored assets, rebuild CSS, and run tests
+vendor-refresh: vendor-upgrade test
+
+# Clean build artifacts
+clean:
+    cargo clean
+
+# Watch for changes and run tests (requires cargo-watch)
+watch:
+    cargo watch -x test
+
+# Generate and open API docs
+doc:
+    cargo doc --open --no-deps
+
+# Build the user manual (mdbook)
+book:
+    mdbook build docs
+
+# Serve the book locally with live reload
+book-serve:
+    mdbook serve docs --port 4000 --open
+
+# Clean built book artifacts
+book-clean:
+    rm -rf target/book
+
+# Optional tag pin for the resolver's cached-install leg (always --locked).
+# If the remote doesn't have the tag yet, the install fails and the chain
+# degrades to the skip notice — it never installs an unpinned build.
+# Resolve the adroit binary per the suite convention (ADR-0008):
+# ADROIT_BIN → sibling checkout (${COMO_ADROIT_DIR:-../adroit}, release
+# preferred over debug) → adroit on PATH → cached `cargo install --git`
+# under .como/tools (gitignored) → unresolved (caller skips with notice).
+# COMO_OFFLINE=1 skips the network leg; a populated .como/ cache is used
+# as-is and never auto-updated (refresh = rm -rf .como/tools).
+_adroit-resolve:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    if [ -n "${ADROIT_BIN:-}" ]; then echo "$ADROIT_BIN"; exit 0; fi
+    sibling="${COMO_ADROIT_DIR:-$root/../adroit}"
+    for b in "$sibling/target/release/adroit" "$sibling/target/debug/adroit"; do
+        if [ -x "$b" ]; then echo "$b"; exit 0; fi
+    done
+    if command -v adroit >/dev/null 2>&1; then command -v adroit; exit 0; fi
+    cached="$root/.como/tools/bin/adroit"
+    if [ -x "$cached" ]; then echo "$cached"; exit 0; fi
+    if [ "${COMO_OFFLINE:-0}" = "1" ]; then
+        echo "adroit resolver: COMO_OFFLINE=1 and no local binary or .como cache" >&2
+        exit 0
+    fi
+    if ! command -v cargo >/dev/null 2>&1; then
+        echo "adroit resolver: cargo not found — cannot populate .como/tools" >&2
+        exit 0
+    fi
+    url="${COMO_ADROIT_GIT:-${COMO_GIT_BASE:-https://github.com/como-technologies}/adroit.git}"
+    echo "adroit resolver: installing adroit from $url (HEAD of main) into .como/tools ..." >&2
+    if cargo install --git "$url" --locked --root "$root/.como/tools" adroit 1>&2 \
+        && [ -x "$cached" ]; then
+        echo "$cached"; exit 0
+    fi
+    echo "adroit resolver: install from $url failed — set ADROIT_BIN, build ../adroit, or set COMO_GIT_BASE / check network)" >&2
+
+# Validate the ADR corpus with adroit (resolved per the suite chain).
+# Advisory gate: skips gracefully — with the knobs named — if no binary
+# resolves.
+adr-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    adroit="$(just _adroit-resolve)"
+    if [ -n "$adroit" ] && [ -x "$adroit" ]; then
+        # KB-only adroit (adroit ADR-0020): the gate seeds the committed
+        # corpus into an ephemeral space and validates it there.
+        tmp="$(mktemp -d)"
+        trap 'rm -rf "$tmp"' EXIT
+        printf 'name = "adrs"\n' > "$tmp/wiki.toml"
+        mkdir -p "$tmp/wiki/decisions"
+        "$adroit" seed --from docs/src/adr --dir "$tmp"
+        "$adroit" check --dir "$tmp"
+    else
+        echo "skip: no adroit binary (set ADROIT_BIN, build ../adroit, install adroit on PATH, or set COMO_GIT_BASE for the .como/tools install)"
+    fi

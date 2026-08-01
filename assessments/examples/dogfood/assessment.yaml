@@ -1,0 +1,443 @@
+id: 48386a6f-31c6-44d4-826c-6a66705ce648
+name: Engineering Practice Assessment
+description: Evaluates day-to-day engineering practices of a software team
+goal: Identify riskiest gaps in everyday practice and provide prioritized improvement backlog
+domains:
+- id: 43e07957-2c06-4b0a-9938-4fd05bc1d2b6
+  name: Delivery Pipeline
+  context: Version control discipline, continuous integration, release management
+  value: Ensures reliable and repeatable delivery process
+  risk: Delays or failures due to pipeline issues
+  practices:
+  - id: b6f7168d-7e6f-40a7-8e5f-87a79a1e496a
+    name: Version Control Discipline
+    context: Code versioning, branching, merging
+    value: Maintains a clean and organized codebase
+    risk: Code corruption or loss of work
+    questions:
+    - id: bcd6b1b3-4448-4c9f-b334-42d267094f65
+      text: Are all team members using the same version control system?
+      polarity: positive
+      guidance: Check for consistency in Git repositories
+      evidence: null
+      remediation: null
+    - id: 03aa2e13-5ffc-4635-a3c2-305cf9d9e2e1
+      text: Do you have a clear branching strategy in place?
+      polarity: positive
+      guidance: Review branch naming conventions and policies
+      evidence: null
+      remediation: null
+    - id: 98f7e42d-57a7-4140-8f18-9ba8e678576b
+      text: Are automated tests run on every code commit?
+      polarity: positive
+      guidance: null
+      evidence: Dashboard showing test coverage metrics
+      remediation: null
+    - id: 6fa0aab6-9998-4d76-9a4c-dd5c3e913f42
+      text: Is there a process for regularly cleaning up stale branches?
+      polarity: positive
+      guidance: Check for abandoned branches in Git history
+      evidence: null
+      remediation: null
+    - id: 3b3b2f9a-447e-4270-b328-b07c75de8ab4
+      text: Do you have a policy for merging changes from feature branches into main?
+      polarity: positive
+      guidance: Review merge request guidelines and approval processes
+      evidence: null
+      remediation: null
+    - id: 3d3526e9-165b-43bb-b695-66f98f9b2c63
+      text: Are there any known issues with the version control system?
+      polarity: negative
+      guidance: Check for open issues in the version control repository
+      evidence: null
+      remediation: Prioritize and address known issues before using the system
+    - id: 8fb01edd-79da-4c62-bc4e-4f9873e340b1
+      text: Is code review required for all changes to main?
+      polarity: positive
+      guidance: null
+      evidence: Code review checklist or process documentation
+      remediation: null
+    - id: c522ae66-33c1-42d6-ae1e-b0ff3efb783d
+      text: Do you have a plan for handling conflicts between team members' changes?
+      polarity: positive
+      guidance: Review conflict resolution policies and procedures
+      evidence: null
+      remediation: null
+    - id: 6bee257a-5c1c-4db1-b2f4-641c90b7ca05
+      text: Are there any automated tools used to enforce coding standards?
+      polarity: positive
+      guidance: null
+      evidence: Dashboard showing code quality metrics
+      remediation: null
+    guidance: null
+    roles: []
+    effort: null
+    terminology: null
+  - id: 2f735268-5658-4143-aca8-383779830172
+    name: Continuous Integration
+    context: Automated testing and validation
+    value: Ensures code quality and reduces errors
+    risk: Delayed or failed builds
+    questions:
+    - id: 089d747e-02c7-4c02-be05-83093e81f438
+      text: Are automated tests run as part of every code commit?
+      polarity: positive
+      guidance: Check for CI/CD pipelines that trigger on each commit
+      evidence: null
+      remediation: null
+    - id: 1af6471c-a4bf-409e-90af-282766aa876e
+      text: Is there a continuous integration server (e.g. Jenkins, Travis CI) in use?
+      polarity: positive
+      guidance: null
+      evidence: Server logs showing recent builds and tests
+      remediation: null
+    - id: 0dd14dcc-3e60-4555-aec8-f12951340045
+      text: Are code changes validated against a set of automated tests before deployment?
+      polarity: positive
+      guidance: Review test suites and ensure they cover key functionality
+      evidence: null
+      remediation: null
+    - id: c7bbdc46-8559-4e93-b181-43bd6cc0bc9b
+      text: Is there a process for re-running failed or incomplete tests after a fix is applied?
+      polarity: positive
+      guidance: null
+      evidence: Test results showing successful retries
+      remediation: null
+    - id: bff241bf-8b68-45cd-9432-3737c70f4949
+      text: Are automated builds and deployments performed on a regular schedule (e.g. daily, hourly)?
+      polarity: positive
+      guidance: Check for scheduled build and deployment scripts
+      evidence: null
+      remediation: null
+    - id: b4f3b8da-983c-428f-847e-5e64c3bcb908
+      text: Is there a mechanism for quickly rolling back to a previous working version in case of issues?
+      polarity: positive
+      guidance: null
+      evidence: Version control history showing recent commits and merges
+      remediation: null
+    - id: 18f23afa-9cec-4d7b-a941-d5163b25b136
+      text: Are code quality metrics (e.g. code coverage, linting) tracked and reported regularly?
+      polarity: positive
+      guidance: Review reporting tools and ensure they're configured correctly
+      evidence: null
+      remediation: null
+    - id: 68974d18-c7c1-4f86-ae9c-ac7ecdd2b6ec
+      text: Is there a process for addressing and resolving automated test failures in a timely manner?
+      polarity: positive
+      guidance: null
+      evidence: Test failure reports showing resolved issues
+      remediation: null
+    - id: 5c8f90ad-1879-41f8-8843-a84dc3b43120
+      text: Are there known issues or defects that have not been addressed due to lack of testing resources?
+      polarity: negative
+      guidance: Review defect tracking systems and prioritize fixes
+      evidence: null
+      remediation: Allocate resources to address outstanding defects and improve testing coverage
+    guidance: null
+    roles: []
+    effort: null
+    terminology: null
+  terminology: null
+- id: dbd1a7c3-8b1b-4306-867d-71f1109065cc
+  name: Code Quality
+  context: Code review practice, coding standards, technical debt management
+  value: Promotes maintainable and efficient code
+  risk: Inefficient or unmaintainable codebase
+  practices:
+  - id: 275cea41-8fa2-49c9-ab6e-e017308e725b
+    name: Code Review Practice
+    context: Regular peer review of code changes
+    value: Improves code quality and reduces errors
+    risk: Poorly reviewed code
+    questions:
+    - id: 10a40ffb-5f6e-44f8-8e97-c1fe80953079
+      text: Is there a regular schedule for code reviews?
+      polarity: positive
+      guidance: Check team meeting calendars or review schedules
+      evidence: null
+      remediation: null
+    - id: 872286d8-f402-4508-b1f1-4d52f1fa47a1
+      text: Are code changes reviewed by at least two peers?
+      polarity: positive
+      guidance: null
+      evidence: Code review checklist with multiple reviewers
+      remediation: null
+    - id: 8a92b5d5-bcec-462c-a8d3-5887ba6f0f3e
+      text: Do reviewers provide actionable feedback on code changes?
+      polarity: positive
+      guidance: Review feedback from previous code reviews to ensure consistency
+      evidence: null
+      remediation: null
+    - id: 35ccc89c-7945-41f4-b8d7-aa88e660e8c2
+      text: Is there a clear understanding of the coding standards and best practices?
+      polarity: positive
+      guidance: null
+      evidence: Code style guide or documentation on coding standards
+      remediation: null
+    - id: 7f730c86-b1a7-4dc3-b191-d2e674bbc819
+      text: Are code reviews conducted in a timely manner, ideally within 24 hours?
+      polarity: positive
+      guidance: Check review timelines to ensure prompt feedback
+      evidence: null
+      remediation: null
+    - id: 534f74e8-b17b-4e2a-8678-5c35b70fd00c
+      text: Do reviewers test the code changes before approving them?
+      polarity: positive
+      guidance: null
+      evidence: Test plan or automated testing scripts
+      remediation: null
+    - id: 27f22207-4666-4537-a86e-38762b76843b
+      text: Is there a process for addressing and resolving conflicts between reviewers?
+      polarity: positive
+      guidance: Review conflict resolution procedures to ensure fair feedback
+      evidence: null
+      remediation: null
+    - id: 016d27f1-36b0-45ad-957a-e1a7fcefe3cd
+      text: Are code reviews conducted in a private, secure environment?
+      polarity: positive
+      guidance: null
+      evidence: Code review meeting notes or documentation on secure communication
+      remediation: null
+    - id: e5962c8f-ccc7-4aff-9de7-143daa5a380b
+      text: Do reviewers provide constructive feedback that helps improve the code quality?
+      polarity: positive
+      guidance: Review feedback from previous code reviews to ensure consistency
+      evidence: null
+      remediation: null
+    - id: da4f88c3-e26b-479b-afd4-61db78955454
+      text: Is there a clear understanding of the code's functionality and requirements?
+      polarity: positive
+      guidance: null
+      evidence: Code documentation or comments explaining the code's purpose
+      remediation: null
+    - id: 040adde5-5af3-4f90-9bb5-c9fccd5cbd73
+      text: Are code changes reviewed for security vulnerabilities before deployment?
+      polarity: negative
+      guidance: Review security scans or vulnerability reports to identify potential issues
+      evidence: null
+      remediation: Prioritize and address identified vulnerabilities based on severity
+    - id: a72f0c4a-ba28-484d-b03c-7515e4078849
+      text: Do reviewers provide feedback on the code's performance and scalability?
+      polarity: positive
+      guidance: null
+      evidence: Performance metrics or benchmarking results
+      remediation: null
+    guidance: null
+    roles: []
+    effort: null
+    terminology: null
+  - id: 2707ef78-b2e7-4b6b-9d1f-5a70da3ac603
+    name: Coding Standards
+    context: Adherence to established coding conventions
+    value: Ensures consistency and readability
+    risk: Inconsistent or hard-to-read code
+    questions:
+    - id: 78bc2fbe-e9a8-49e1-a793-1dd7a9e07cb8
+      text: Are all team members following the same coding style?
+      polarity: positive
+      guidance: Check for consistency in naming conventions, indentation, and commenting
+      evidence: null
+      remediation: null
+    - id: a7997482-d099-4966-9027-ca27d5979654
+      text: Do you have a documented coding standard policy?
+      polarity: positive
+      guidance: null
+      evidence: Company-wide documentation or code review process
+      remediation: null
+    - id: 8f19c305-e081-4ebe-ac0a-0da88d1f612e
+      text: Are there automated checks for coding standards compliance?
+      polarity: positive
+      guidance: Check for tools like linters, formatters, and code analyzers
+      evidence: null
+      remediation: null
+    - id: 2c606e0f-559f-43c8-9c09-269181ea5c0a
+      text: Is the team's coding standard up-to-date with industry best practices?
+      polarity: positive
+      guidance: null
+      evidence: Regular updates to documentation or code review process
+      remediation: null
+    - id: 08c9ebd6-5346-485d-bdcf-36ba8553d8e3
+      text: Do you have a clear definition of what constitutes 'good' code?
+      polarity: positive
+      guidance: Check for a documented set of principles and guidelines
+      evidence: null
+      remediation: null
+    - id: 913264e4-7f50-4406-bdae-c5bc9c5e1f2c
+      text: Are there consequences for not following the coding standard?
+      polarity: negative
+      guidance: Review company policies or code review process
+      evidence: null
+      remediation: Address non-compliance through feedback, coaching, or disciplinary action
+    - id: 0b939251-90bc-4dbe-9bec-8a74b95ea3c0
+      text: Is the team's coding standard enforced consistently across all projects?
+      polarity: positive
+      guidance: null
+      evidence: Regular audits or code reviews to ensure compliance
+      remediation: null
+    - id: 70689e6d-3b15-4032-8149-ec422302fb85
+      text: Do you have a process for updating the coding standard when it changes?
+      polarity: positive
+      guidance: Check for regular updates to documentation or code review process
+      evidence: null
+      remediation: null
+    - id: bf76c7f3-c0e2-477a-8596-960dd01abcf3
+      text: Are there clear guidelines for handling exceptions to the coding standard?
+      polarity: positive
+      guidance: null
+      evidence: Documented process for reviewing and approving deviations
+      remediation: null
+    - id: 8c736367-2e4f-4a49-9a2f-e126c3b6c37f
+      text: Do you have a mechanism for reporting and addressing coding standard issues?
+      polarity: positive
+      guidance: Check for a bug tracking system or issue report process
+      evidence: null
+      remediation: null
+    - id: 141a2acc-ad33-4bb5-a324-3331ea402663
+      text: Is the team's coding standard aligned with company goals and values?
+      polarity: positive
+      guidance: null
+      evidence: Regular alignment of coding standards with company objectives
+      remediation: null
+    - id: c8d7a3b8-4ef1-4eed-909e-fe4890ea898b
+      text: Are there opportunities for feedback and improvement on code quality?
+      polarity: positive
+      guidance: Check for regular code reviews or pair programming sessions
+      evidence: null
+      remediation: null
+    guidance: null
+    roles: []
+    effort: null
+    terminology: null
+  terminology: null
+- id: b45da02a-ec59-48f8-803b-7d0060151472
+  name: Testing
+  context: Automated test coverage, tests gating merges and releases
+  value: Ensures confidence in software quality
+  risk: Undetected bugs or issues
+  practices:
+  - id: 1024380d-dc89-4a83-99d9-66f570c6c653
+    name: Automated Test Coverage
+    context: Percentage of code covered by automated tests
+    value: Reduces manual testing effort and improves reliability
+    risk: Insufficient test coverage
+    questions:
+    - id: 90b6c5de-3921-4f75-a471-8fedf0083c80
+      text: Is our automated test suite covering at least 80% of the codebase?
+      polarity: positive
+      guidance: Check the test coverage report in your CI/CD pipeline
+      evidence: null
+      remediation: null
+    - id: 4a2a6968-8e98-4609-af27-294a5aef141e
+      text: Are there any areas of the codebase with no automated tests?
+      polarity: negative
+      guidance: Review the test coverage report and identify gaps
+      evidence: null
+      remediation: Write additional unit tests to cover these areas
+    - id: ccb57577-66be-4742-be55-c443092e02f8
+      text: Is our automated testing framework up-to-date with the latest dependencies?
+      polarity: positive
+      guidance: null
+      evidence: Check the version numbers of the testing library in your project
+      remediation: null
+    - id: 2e4993ce-1df2-483e-bf06-c169079fac69
+      text: Do we have a process for regularly reviewing and updating our test suite?
+      polarity: positive
+      guidance: Review your team's testing cadence and update as needed
+      evidence: null
+      remediation: null
+    - id: 85978289-56a1-4f9c-ac30-aaf885e2fa31
+      text: Are there any areas of the codebase with high complexity that may require additional testing effort?
+      polarity: negative
+      guidance: Use static analysis tools to identify complex areas and prioritize testing efforts
+      evidence: null
+      remediation: null
+    - id: 1c846ec0-e13a-4cb4-bca1-cddea67914e9
+      text: Is our automated test suite able to detect regressions introduced by new features or changes?
+      polarity: positive
+      guidance: null
+      evidence: Check the number of false positives in your test results
+      remediation: null
+    guidance: null
+    roles: []
+    effort: null
+    terminology: null
+  terminology: null
+- id: 835f3269-6482-4e5d-a9a0-185d0857e01d
+  name: Operations
+  context: Monitoring and alerting, incident response, learning from failure
+  value: Ensures proactive monitoring and swift recovery
+  risk: System downtime or data loss
+  practices:
+  - id: 46a80fec-dfb5-4fa0-8587-b75f73717c65
+    name: Monitoring and Alerting
+    context: Real-time system monitoring and alerts
+    value: Detects issues before they impact users
+    risk: Delayed detection of critical issues
+    questions:
+    - id: cd200c4d-aa66-4a05-ad87-c821aea146e8
+      text: Are there real-time metrics being collected from all critical services?
+      polarity: positive
+      guidance: Check for monitoring tools like Prometheus or Grafana
+      evidence: null
+      remediation: null
+    - id: 9eeee111-a9fa-4da2-9cbb-9bbc6d7d29bd
+      text: Do you have a clear incident response plan in place?
+      polarity: positive
+      guidance: null
+      evidence: Incident response document or training records
+      remediation: null
+    - id: d29b187a-e3b9-4b77-b38d-397540e882b3
+      text: Are alerts being sent to the right people at the right time?
+      polarity: negative
+      guidance: Review alert configuration and recipient lists
+      evidence: null
+      remediation: Verify that critical personnel are notified promptly
+    - id: b703af96-9077-40c5-8415-d30af2cc9730
+      text: Is there a process for escalating alerts to on-call teams?
+      polarity: positive
+      guidance: null
+      evidence: On-call rotation schedule or escalation procedures
+      remediation: null
+    - id: fd94fc39-bbcc-4cca-8e59-162465af8dad
+      text: Are there automated checks for service availability?
+      polarity: positive
+      guidance: Check for tools like Nagios or Zabbix
+      evidence: null
+      remediation: null
+    - id: a38acae7-7e7b-457d-b941-7fccbd9e90fc
+      text: Do you have a dashboard showing key performance indicators (KPIs) in real-time?
+      polarity: positive
+      guidance: null
+      evidence: Dashboard screenshot or access logs
+      remediation: null
+    - id: a4b7e49b-55f3-42e2-9439-0bff08f84907
+      text: Are there procedures for investigating and resolving alerts?
+      polarity: positive
+      guidance: Review incident response plan and training records
+      evidence: null
+      remediation: null
+    - id: 4f6a11f4-54e1-4b2f-8b68-27dd6dfcf891
+      text: Is there a process for reviewing and updating alert thresholds?
+      polarity: positive
+      guidance: null
+      evidence: Alert threshold documentation or review history
+      remediation: null
+    - id: ae637212-c3fb-4038-8edf-351b94390f97
+      text: Do you have a clear understanding of your system's performance bottlenecks?
+      polarity: positive
+      guidance: Review performance metrics and logs
+      evidence: null
+      remediation: null
+    - id: 47033a26-7277-48ce-a9a5-63efd7f2d920
+      text: Are there automated checks for security threats and vulnerabilities?
+      polarity: negative
+      guidance: Check for security scanning tools like Nessus or OpenVAS
+      evidence: null
+      remediation: Prioritize and address identified vulnerabilities promptly
+    guidance: null
+    roles: []
+    effort: null
+    terminology: null
+  terminology: null
+created_at: 1970-01-01T00:00:00Z
+updated_at: 1970-01-01T00:00:00Z

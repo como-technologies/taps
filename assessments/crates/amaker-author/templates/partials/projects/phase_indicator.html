@@ -1,0 +1,40 @@
+<div id="phase-indicator" class="flex items-center space-x-1">
+    {% for step in phases %}
+    <div class="flex items-center">
+        <!-- Phase step -->
+        <button hx-post="/api/projects/{{ project_id }}/phase"
+                hx-vals='{"target_focus": "{{ step.value }}"}'
+                hx-target="#phase-indicator"
+                hx-swap="outerHTML"
+                class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm transition-colors
+                       {% if step.is_current %}
+                       bg-primary text-primary-fg
+                       {% else if step.is_completed %}
+                       bg-phase-complete-bg text-phase-complete-fg hover:brightness-110
+                       {% else %}
+                       bg-surface-overlay text-foreground-muted hover:bg-surface-page
+                       {% endif %}"
+                title="{{ step.description }}">
+            <!-- Status icon -->
+            {% if step.is_completed %}
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            {% else if step.is_current %}
+            <span class="w-2 h-2 bg-primary-fg rounded-full"></span>
+            {% else %}
+            <span class="w-2 h-2 bg-current opacity-50 rounded-full"></span>
+            {% endif %}
+            <!-- Phase name -->
+            <span class="hidden sm:inline">{{ step.name }}</span>
+        </button>
+
+        <!-- Arrow between phases (except last) -->
+        {% if !loop.last %}
+        <svg class="w-4 h-4 mx-1 text-foreground-muted opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>

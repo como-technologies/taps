@@ -1,0 +1,6 @@
+{% match question.polarity %}
+    {% when amaker_core::models::Polarity::Positive %}
+    <span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-success-soft text-success-soft-fg">positive</span>
+    {% when amaker_core::models::Polarity::Negative %}
+    <span class="ml-2 text-xs px-1.5 py-0.5 rounded bg-danger-soft text-danger-soft-fg">negative</span>
+{% endmatch %}

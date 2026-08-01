@@ -1,0 +1,281 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@source "../crates/amaker-author/templates";
+@source "../crates/amaker-assess/templates";
+@source "../crates/amaker-analyze/templates";
+@source "../templates-shared";
+
+/* Class-based dark mode (the `dark` variant matches when an ancestor has `.dark`). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Narrative regenerate loading state. The regenerate button POSTs
+   cross-origin to the author binary; while that request is in flight htmx
+   adds `.htmx-request` to #narrative-body (via `hx-indicator`). Swap the
+   report body out for the spinner so the click registers immediately.
+───────────────────────────────────────────────────────────────────────── */
+#narrative-body:not(.htmx-request) .narrative-loading { display: none; }
+#narrative-body.htmx-request .narrative-content { display: none; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME TOKENS — the single source of truth for the entire palette.
+
+   Every bg-*, text-*, border-* class used in templates should resolve to
+   one of these. To reskin the app, edit only the values in `@theme` and
+   in the `.dark { ... }` override below.
+
+   Naming convention:
+     surface-*   : layered backgrounds (page → panel → card → overlay)
+     foreground-*: body text hierarchy
+     border-*    : hairline dividers (border, border-muted, border-strong)
+     <intent>    : filled action color (primary/accent/success/danger/warning)
+     <intent>-fg : text/icon color that sits ON the filled intent
+     <intent>-hv : hover state of the filled intent
+     <intent>-soft    : muted/tinted background variant (badges, pills)
+     <intent>-soft-fg : text that sits ON the soft background
+     chat-<role>-* : per-role chat bubble overrides (swap without touching primary)
+     suggestion-* : quick-reply pill colors (swap without touching primary)
+     entity-link / entity-link-hv : in-chat references to domains/practices
+───────────────────────────────────────────────────────────────────────── */
+@theme {
+    /* Surfaces */
+    --color-surface-page: #f9fafb;
+    --color-surface-panel: #ffffff;
+    --color-surface-card: #ffffff;
+    --color-surface-overlay: #ffffff;
+
+    /* Foreground text */
+    --color-foreground: #111827;
+    --color-foreground-secondary: #4b5563;
+    --color-foreground-muted: #9ca3af;
+
+    /* Borders — `border-strong` for cards/bubbles that need visible edges. */
+    --color-border: #e5e7eb;
+    --color-border-muted: #f3f4f6;
+    --color-border-strong: #d1d5db;  /* gray-300 */
+
+    /* Primary — main actions, links, user chat bubbles */
+    --color-primary: #2563eb;        /* blue-600 */
+    --color-primary-fg: #ffffff;
+    --color-primary-hv: #1d4ed8;     /* blue-700 */
+    --color-primary-soft: #eff6ff;   /* blue-50 */
+
+    /* Accent — secondary/assist actions */
+    --color-accent: #4f46e5;         /* indigo-600 */
+    --color-accent-fg: #ffffff;
+    --color-accent-hv: #4338ca;      /* indigo-700 */
+
+    /* Success — positive polarity, confirmations */
+    --color-success: #16a34a;        /* green-600 */
+    --color-success-fg: #ffffff;
+    --color-success-hv: #15803d;     /* green-700 */
+    --color-success-soft: #dcfce7;   /* green-100 */
+    --color-success-soft-fg: #15803d;/* green-700 */
+
+    /* Danger — destructive actions, negative polarity */
+    --color-danger: #dc2626;         /* red-600 */
+    --color-danger-fg: #ffffff;
+    --color-danger-hv: #b91c1c;      /* red-700 */
+    --color-danger-soft: #fee2e2;    /* red-100 */
+    --color-danger-soft-fg: #b91c1c; /* red-700 */
+
+    /* Warning — context/advisory, bold emphasis in dark mode */
+    --color-warning: #d97706;        /* amber-600 */
+    --color-warning-fg: #ffffff;
+    --color-warning-hv: #b45309;     /* amber-700 */
+
+    /* Focus ring — usually mirrors primary */
+    --color-focus: var(--color-primary);
+
+    /* Chat bubble roles — derived from primary/surface by default, so the
+       base palette still controls them, but overridable independently. */
+    --color-chat-user-bg: var(--color-primary);
+    --color-chat-user-fg: var(--color-primary-fg);
+    --color-chat-agent-bg: var(--color-surface-card);
+    --color-chat-agent-fg: var(--color-foreground);
+
+    /* Suggested-reply pills — secondary-action, so use the accent (indigo)
+       family to stand off from the blue primary chat color rather than
+       sitting in the same hue as the surrounding bubbles. */
+    --color-suggestion-bg: color-mix(in oklab, var(--color-accent) 14%, var(--color-surface-page));
+    --color-suggestion-fg: var(--color-accent);
+    --color-suggestion-border: color-mix(in oklab, var(--color-accent) 55%, transparent);
+
+    /* Entity links (domain/practice cross-refs in chat prose) — warning hue
+       so they read as "cross-ref" rather than "primary action". */
+    --color-entity-link: var(--color-warning);
+    --color-entity-link-hv: var(--color-warning-hv);
+
+    /* Phase indicator — "completed" pills. Tracks success-soft by default
+       so reskins flow through, but lives in its own token so it can diverge
+       (e.g. if success-soft ever stops contrasting with the surface). */
+    --color-phase-complete-bg: var(--color-success-soft);
+    --color-phase-complete-fg: var(--color-success-soft-fg);
+
+    /* Assessment axis labels (Context / Value / Risk) — distinct domain
+       concepts, not generic intents. Defaults derive from the intent
+       palette so reskins flow through, but each is overridable on its own. */
+    --color-context: var(--color-warning);  /* the setting */
+    --color-value: var(--color-success);    /* what we gain */
+    --color-risk: var(--color-danger);      /* what we risk losing */
+}
+
+@layer base {
+    /* Dark-mode overrides — rebinds the same tokens when `.dark` is present.
+       Tokens defined via `var()` chains (chat-*, suggestion-*, entity-link*)
+       update automatically; only explicit values need restating here. */
+    .dark {
+        --color-surface-page: #111827;       /* gray-900 */
+        --color-surface-panel: #1f2937;      /* gray-800 */
+        --color-surface-card: #1f2937;       /* gray-800 */
+        --color-surface-overlay: #374151;    /* gray-700 */
+
+        --color-foreground: #f3f4f6;         /* gray-100 */
+        --color-foreground-secondary: #d1d5db;/* gray-300 */
+        --color-foreground-muted: #9ca3af;   /* gray-400 */
+
+        --color-border: #374151;             /* gray-700 */
+        --color-border-muted: #1f2937;       /* gray-800 */
+        --color-border-strong: #4b5563;      /* gray-600 */
+
+        --color-primary: #3b82f6;            /* blue-500 */
+        --color-primary-hv: #2563eb;         /* blue-600 */
+        --color-primary-soft: #1e3a8a33;     /* blue-900/20 */
+
+        --color-accent: #6366f1;             /* indigo-500 */
+        --color-accent-hv: #4f46e5;          /* indigo-600 */
+
+        --color-success: #22c55e;            /* green-500 */
+        --color-success-hv: #16a34a;         /* green-600 */
+        --color-success-soft: #14532d33;     /* green-900/20 */
+        --color-success-soft-fg: #86efac;    /* green-300 */
+
+        --color-danger: #ef4444;             /* red-500 */
+        --color-danger-hv: #dc2626;          /* red-600 */
+        --color-danger-soft: #7f1d1d33;      /* red-900/20 */
+        --color-danger-soft-fg: #fca5a5;     /* red-300 */
+
+        --color-warning: #f59e0b;            /* amber-500 */
+        --color-warning-hv: #d97706;         /* amber-600 */
+    }
+
+    /* v4 changed the default border color from gray-200 to currentColor;
+       restore gray-border default so `border` without an explicit color works. */
+    *, ::before, ::after {
+        border-color: var(--color-border);
+    }
+
+    *, *::before, *::after {
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    /* Bind typography plugin to theme tokens so prose content inherits the
+       bubble/page foreground and highlights align with the intent palette.
+       Without this, `.prose` forces its own gray color on top of bubble bg. */
+    .prose {
+        --tw-prose-body: var(--color-foreground);
+        --tw-prose-headings: var(--color-foreground);
+        --tw-prose-lead: var(--color-foreground-secondary);
+        --tw-prose-links: var(--color-primary);
+        --tw-prose-bold: var(--color-warning);
+        --tw-prose-counters: var(--color-foreground-muted);
+        --tw-prose-bullets: var(--color-foreground-muted);
+        --tw-prose-hr: var(--color-border);
+        --tw-prose-quotes: var(--color-foreground);
+        --tw-prose-quote-borders: var(--color-border);
+        --tw-prose-captions: var(--color-foreground-muted);
+        --tw-prose-code: var(--color-foreground);
+        --tw-prose-pre-code: var(--color-foreground);
+        --tw-prose-pre-bg: var(--color-surface-overlay);
+        --tw-prose-th-borders: var(--color-border);
+        --tw-prose-td-borders: var(--color-border-muted);
+    }
+}
+
+@layer components {
+    /* Chat bubbles — shared shape, role-specific colors.
+       Templates still supply max-w-* inline since widths vary (80% vs 85%). */
+    .chat-bubble {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+    }
+    .chat-bubble--agent {
+        background-color: var(--color-chat-agent-bg);
+        color: var(--color-chat-agent-fg);
+        /* ring-style elevation: 1px colored ring + subtle drop shadow
+           reads as "floating above" rather than a flat border. */
+        box-shadow:
+            0 0 0 1px color-mix(in oklab, var(--color-border-strong) 60%, transparent),
+            0 1px 3px 0 color-mix(in oklab, black 8%, transparent),
+            0 1px 2px -1px color-mix(in oklab, black 6%, transparent);
+    }
+    .chat-bubble--user {
+        background-color: var(--color-chat-user-bg);
+        color: var(--color-chat-user-fg);
+    }
+
+    /* Suggested-reply pills — presented as tappable invitations in the tinted
+       primary soft color rather than blending with the bubble behind them. */
+    .suggestion-pill {
+        padding: 0.375rem 0.875rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        border-radius: 9999px;
+        border: 1px solid var(--color-suggestion-border);
+        background-color: var(--color-suggestion-bg);
+        color: var(--color-suggestion-fg);
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .suggestion-pill:hover {
+        background-color: color-mix(in oklab, var(--color-suggestion-fg) 22%, var(--color-surface-page));
+        border-color: var(--color-suggestion-fg);
+    }
+
+    /* HTMX request-state visibility toggles */
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator,
+    .htmx-request.htmx-indicator { display: block; }
+    form.htmx-request textarea {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    .htmx-request .htmx-hide-on-request { display: none !important; }
+    .htmx-request .htmx-show-on-request { display: block !important; }
+    body:has(#spinner.htmx-request) .htmx-hide-on-request { display: none !important; }
+
+    /* Suggestion pills only visible on the most recent message */
+    #message-list .suggestion-pills { display: none; }
+    #message-list > *:last-child .suggestion-pills { display: flex; }
+
+    /* Flash when a preview section is scrolled into view via entity link */
+    @keyframes entityFlash {
+        0%, 15% { background-color: color-mix(in oklab, var(--color-primary) 18%, transparent); }
+        100% { background-color: transparent; }
+    }
+    .entity-flash { animation: entityFlash 1.2s ease-out; border-radius: 0.375rem; }
+}
+
+/* Entity links — domain/practice cross-refs in chat prose.
+   Placed in @layer utilities (not components) so they outrank the
+   `[&_*]:text-inherit` descendant-inherit utility that prose wrappers use.
+   The attribute-selector variant covers AI-generated markdown (no class
+   hook available); the `.entity-link` class is for template-rendered refs. */
+@layer utilities {
+    .entity-link,
+    #message-list a[href^="#practice-"],
+    #message-list a[href^="#domain-"] {
+        color: var(--color-entity-link);
+        border-bottom: 1px dashed color-mix(in oklab, var(--color-entity-link) 55%, transparent);
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .entity-link:hover,
+    #message-list a[href^="#practice-"]:hover,
+    #message-list a[href^="#domain-"]:hover {
+        color: var(--color-entity-link-hv);
+        border-bottom-style: solid;
+        border-bottom-color: currentColor;
+    }
+}

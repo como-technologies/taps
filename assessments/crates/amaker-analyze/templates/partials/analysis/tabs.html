@@ -1,0 +1,46 @@
+<article class="max-w-none text-foreground">
+    <header class="mb-4 pb-3 border-b border-current/20">
+        <h1 class="text-2xl font-bold mb-1">{{ assessment.name }}</h1>
+        <p class="text-sm text-foreground-secondary">{{ assessment.description }}</p>
+    </header>
+
+    <nav id="analysis-tabs" class="flex gap-1 border-b mb-4 text-sm" role="tablist">
+        <button type="button"
+                hx-get="/api/projects/{{ project_id }}/analysis/scorecard"
+                hx-target="#analysis-tab-body"
+                hx-swap="innerHTML"
+                hx-on::after-request="document.querySelectorAll('#analysis-tabs button').forEach(b => b.classList.remove('border-primary','text-primary')); this.classList.add('border-primary','text-primary')"
+                class="px-3 py-2 border-b-2 border-primary text-primary font-medium">
+            Scorecard
+        </button>
+        <button type="button"
+                hx-get="/api/projects/{{ project_id }}/analysis/gaps"
+                hx-target="#analysis-tab-body"
+                hx-swap="innerHTML"
+                hx-on::after-request="document.querySelectorAll('#analysis-tabs button').forEach(b => b.classList.remove('border-primary','text-primary')); this.classList.add('border-primary','text-primary')"
+                class="px-3 py-2 border-b-2 border-transparent text-foreground-secondary hover:text-foreground font-medium">
+            Gaps
+        </button>
+        <button type="button"
+                hx-get="/api/projects/{{ project_id }}/analysis/roadmap"
+                hx-target="#analysis-tab-body"
+                hx-swap="innerHTML"
+                hx-on::after-request="document.querySelectorAll('#analysis-tabs button').forEach(b => b.classList.remove('border-primary','text-primary')); this.classList.add('border-primary','text-primary')"
+                class="px-3 py-2 border-b-2 border-transparent text-foreground-secondary hover:text-foreground font-medium">
+            Roadmap
+        </button>
+        <button type="button"
+                hx-get="/api/projects/{{ project_id }}/analysis/narrative"
+                hx-target="#analysis-tab-body"
+                hx-swap="innerHTML"
+                hx-on::after-request="document.querySelectorAll('#analysis-tabs button').forEach(b => b.classList.remove('border-primary','text-primary')); this.classList.add('border-primary','text-primary')"
+                class="px-3 py-2 border-b-2 border-transparent text-foreground-secondary hover:text-foreground font-medium">
+            Narrative
+        </button>
+    </nav>
+
+    <div id="analysis-tab-body"
+         hx-get="/api/projects/{{ project_id }}/analysis/scorecard"
+         hx-trigger="load, responseUpdated from:body">
+    </div>
+</article>

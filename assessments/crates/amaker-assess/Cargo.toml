@@ -1,0 +1,39 @@
+[package]
+name = "amaker-assess"
+description = "Respondent binary — form-only UI for filling out a published assessment."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+amaker-core = { path = "../amaker-core" }
+
+# Web framework
+axum = { workspace = true }
+axum-extra = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Templating
+askama = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Utilities
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+dotenvy = { workspace = true }
+
+# Deliberately no rig-core / no anthropic deps — the respondent binary
+# never talks to an LLM. If respondent-assist features land later, the
+# minimal LLM client gets added here, not pulled in from amaker-author.

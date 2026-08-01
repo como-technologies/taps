@@ -1,0 +1,12 @@
+<li class="flex items-start space-x-2">
+    <input type="checkbox" class="mt-1.5 accent-primary" disabled>
+    <div>
+        <span>{{ question.text }}</span>
+        {% include "partials/preview/polarity_badge.html" %}
+        {% if let Some(guidance) = question.guidance %}
+        <div class="text-sm text-foreground-secondary italic ml-4">
+            {{ guidance }}
+        </div>
+        {% endif %}
+    </div>
+</li>

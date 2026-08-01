@@ -1,0 +1,66 @@
+{% if let Some(assessment) = assessment %}
+{% let evidence_types = assessment.evidence_types.clone() %}
+{% let blocker_types = assessment.blocker_types.clone() %}
+<article class="max-w-none text-foreground">
+    <header class="mb-6 pb-4 border-b border-current/20">
+        <div class="flex items-center justify-between gap-4 mb-2">
+            <h1 class="text-2xl font-bold">{{ assessment.name }}</h1>
+            <div class="flex items-center gap-2">
+                {% include "partials/collection/progress_badge.html" %}
+            </div>
+        </div>
+        <p class="text-foreground-secondary mb-3">{{ assessment.description }}</p>
+        <p class="text-sm"><span class="font-semibold text-foreground-secondary">Goal:</span> {{ assessment.goal }}</p>
+    </header>
+
+    {% for domain in assessment.domains %}
+    <section class="mb-8 entity-target scroll-mt-4" id="domain-{{ domain.id }}">
+        <h2 class="text-xl font-semibold mb-3 pb-2 border-b border-current/10">
+            {% if let Some(term) = domain.terminology %}{{ term }}{% else %}Domain{% endif %}:
+            {{ domain.name }}
+        </h2>
+
+        {% for practice in domain.practices %}
+        <section class="ml-4 mb-6 pl-4 border-l-2 border-current/10 entity-target scroll-mt-4" id="practice-{{ practice.id }}">
+            <h3 class="text-lg font-medium mb-3">
+                {% if let Some(term) = practice.terminology %}{{ term }}{% else %}Practice{% endif %}:
+                {{ practice.name }}
+            </h3>
+
+            <div class="space-y-2">
+                {% for question in practice.questions %}
+                {% let answer = answers.get(question.id) %}
+                {% include "partials/collection/answer_row.html" %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </section>
+    {% endfor %}
+
+    <div class="mt-8 pt-6 border-t border-current/20 flex items-center justify-between">
+        <div class="text-sm text-foreground-secondary">
+            {% if submitted %}
+            Submitted. View the analysis below or in the Analysis phase.
+            {% else %}
+            When you're done answering, submit to move to Analysis.
+            {% endif %}
+        </div>
+        {% if !submitted %}
+        <button type="button"
+                hx-post="/api/projects/{{ project_id }}/response/submit"
+                hx-target="#preview-panel"
+                hx-swap="innerHTML"
+                class="px-4 py-2 bg-primary text-primary-fg rounded-lg hover:bg-primary-hv disabled:opacity-50"
+                {% if answered == 0 %} disabled{% endif %}>
+            Submit Response
+        </button>
+        {% endif %}
+    </div>
+</article>
+{% else %}
+<div class="text-center text-foreground-muted py-12">
+    <h3 class="text-lg font-medium mb-2 text-foreground-secondary">No Assessment Yet</h3>
+    <p>Finish authoring the assessment before you can start collecting answers.</p>
+</div>
+{% endif %}
