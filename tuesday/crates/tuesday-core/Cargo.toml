@@ -1,0 +1,21 @@
+[package]
+name = "tuesday-core"
+version = "0.1.0"
+edition = "2024"
+description = "Forge-neutral PR effort engine: calculator, report model, and read-only PR sources"
+
+[dependencies]
+chrono.workspace = true
+futures.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+# Dev-only: native reqwest needs a tokio reactor, so the live Gitea
+# integration test (tests/gitea_live.rs, gated on TUESDAY_E2E_GITEA=1)
+# carries its own runtime. Dev-dependencies are not part of the library
+# build, so the ADR-0002 wasm32 lane (`cargo check -p tuesday-core
+# --target wasm32-unknown-unknown`) stays tokio-free.
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros"] }

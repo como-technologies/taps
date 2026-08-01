@@ -1,0 +1,15 @@
+[
+    {
+        "id": 3,
+        "name": "como",
+        "full_name": "",
+        "email": "",
+        "avatar_url": "http://localhost:3000/avatars/ba5c7624c65e30bb05fa2450eb717b77",
+        "description": "",
+        "website": "",
+        "location": "",
+        "visibility": "public",
+        "repo_admin_change_team_access": false,
+        "username": "como"
+    }
+]

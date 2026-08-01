@@ -1,0 +1,12 @@
+[book]
+title = "tuesday User Manual"
+authors = ["Como Technologies"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+
+[output.html]
+git-repository-url = "https://github.com/como-technologies/tuesday"
+edit-url-template = "https://github.com/como-technologies/tuesday/edit/main/docs/src/{path}"

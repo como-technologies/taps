@@ -1,0 +1,78 @@
+{
+  "adr_totals": {
+    "ADR-0007": 261.8181818181818,
+    "ADR-0009": 32.72727272727273
+  },
+  "allocations": [
+    {
+      "adr_id": "ADR-0007",
+      "allocated_hours": 163.63636363636363,
+      "categories": {
+        "feature": 81.81818181818181,
+        "parser": 81.81818181818181
+      },
+      "effort_score": "FeltLikeForever",
+      "percentage_of_total": 45.45454545454545,
+      "pr_number": 101,
+      "pr_title": "Implement the parser",
+      "repository": "alpha"
+    },
+    {
+      "adr_id": "ADR-0007",
+      "allocated_hours": 98.18181818181819,
+      "categories": {
+        "bug-fix": 98.18181818181819
+      },
+      "effort_score": "Average",
+      "percentage_of_total": 27.27272727272727,
+      "pr_number": 102,
+      "pr_title": "Fix parser edge case",
+      "repository": "alpha"
+    },
+    {
+      "adr_id": null,
+      "allocated_hours": 65.45454545454545,
+      "categories": {
+        "refactor": 65.45454545454545
+      },
+      "effort_score": "NotLong",
+      "percentage_of_total": 18.181818181818183,
+      "pr_number": 201,
+      "pr_title": "Refactor config loading",
+      "repository": "beta"
+    },
+    {
+      "adr_id": "ADR-0009",
+      "allocated_hours": 32.72727272727273,
+      "categories": {
+        "Uncategorized": 32.72727272727273
+      },
+      "effort_score": "SuperQuick",
+      "percentage_of_total": 9.090909090909092,
+      "pr_number": 103,
+      "pr_title": "Tidy module docs",
+      "repository": "alpha"
+    }
+  ],
+  "category_totals": {
+    "Uncategorized": 32.72727272727273,
+    "bug-fix": 98.18181818181819,
+    "feature": 81.81818181818181,
+    "parser": 81.81818181818181,
+    "refactor": 65.45454545454545
+  },
+  "hours_per_point": 32.72727272727273,
+  "month": "January",
+  "organization": "como",
+  "total_effort_points": 11,
+  "total_hours": 360.0,
+  "unallocated_hours": 0.0,
+  "unallocated_prs": [
+    [
+      "beta",
+      204,
+      "Spike: label experiment"
+    ]
+  ],
+  "year": 2026
+}

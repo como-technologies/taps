@@ -1,0 +1,29 @@
+[package]
+name = "tuesday-cli"
+version = "0.1.0"
+edition = "2024"
+description = "Headless CLI head over tuesday-core: emits the canonical MonthlyReport JSON (ADR-0004)"
+
+# The executable is `tuesday-report`, NOT `tuesday`: the web head's binary
+# keeps the `tuesday` name because the generic self-host path (Containerfile,
+# scripts/build-static-release.sh, dx's target/dx/tuesday output dir —
+# ADR-0008) points at that path — see crates/tuesday-web/Cargo.toml. A
+# distinct name also keeps both heads installable side by side.
+[[bin]]
+name = "tuesday-report"
+path = "src/main.rs"
+
+[dependencies]
+tuesday-core = { path = "../tuesday-core" }
+clap = { version = "4", features = ["derive"] }
+serde_json.workspace = true
+# The CLI is a native head: a tokio reactor here is fine (ADR-0002 only
+# forbids tokio inside tuesday-core, which must stay wasm32-compatible).
+tokio = { version = "1", features = ["rt", "macros"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+chrono.workspace = true
+# temp KB spaces for the --kb page-emission tests
+tempfile = "3.27.0"

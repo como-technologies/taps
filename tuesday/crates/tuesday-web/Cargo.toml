@@ -1,0 +1,49 @@
+[package]
+name = "tuesday-web"
+version = "0.1.0"
+authors = ["Mike Sandman <mike@thesandmans.com>"]
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# Keep the executable (and dx's target/dx/tuesday output dir) named
+# "tuesday" so the generic self-host path — Containerfile and
+# scripts/build-static-release.sh, the survivors of the ADR-0008 GCP
+# retirement — keeps pointing at real paths.
+[[bin]]
+name = "tuesday"
+path = "src/main.rs"
+
+[dependencies]
+tuesday-core = { path = "../tuesday-core" }
+dioxus = { version = "0.7", features = ["router", "fullstack"] }
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio = { version = "1", features = ["rt", "macros"] }
+chrono.workspace = true
+web-sys = { version = "0.3", features = [
+  "console",
+  "Window",
+  "Location",
+  "Storage",
+  "UrlSearchParams",
+] }
+tracing.workspace = true
+urlencoding = "2.1"
+futures.workspace = true
+gloo-timers = "0.3"
+dotenvy = "0.15"
+js-sys = "0.3"
+
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+desktop = ["dioxus/desktop"]
+mobile = ["dioxus/mobile"]
+server = ["dioxus/server"]
+
+[dev-dependencies]
+# The parity pin in src/server_fns.rs drives the CLI's run pipeline against
+# the same stub forge the web export reads, asserting one canonical JSON.
+tuesday-cli = { path = "../tuesday-cli" }

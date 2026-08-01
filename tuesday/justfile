@@ -1,0 +1,178 @@
+# tuesday dev recipes — the union of the core-split lanes and the house
+# recipes (three-way reconciliation, iteration-2 integration step I6):
+# core-split's `lanes` is folded into the house `ci`, and the house
+# pre-split single-crate recipes are rewritten onto the four post-split
+# lanes (workspace tests; tuesday-web's web and server feature checks;
+# the ADR-0002 wasm32 guard on tuesday-core).
+
+# Default: list available recipes
+default:
+    @just --list
+
+# Install toolchain components and doc tooling
+init:
+    rustup component add clippy rustfmt
+    cargo install mdbook cargo-edit cargo-audit
+
+# Run all CI checks: the blocking format gate, both clippy lanes, the four
+# cargo lanes (`lanes` covers the workspace test run, so `ci` does not also
+# run `test`), the server-feature test lane, the book build, the ADR
+# corpus gate, and the dependency vulnerability audit.
+ci: fmt-check lint lint-server lanes test-server book adr-check crate-audit
+
+# Format code
+fmt:
+    cargo fmt
+
+# Fail ci on any formatting drift (blocking since the M2 hedge removal:
+# the pre-split edition-2024 drift was cleared by one pure style commit)
+fmt-check:
+    cargo fmt --check
+
+# Clippy, whole workspace (web lane via tuesday-web's default `web` feature).
+# Warnings are errors (M2 hedge removal: the pre-split web head's warning
+# backlog — dead code, deprecated Dioxus server-fn structs, unused imports —
+# was cleared, not silenced).
+lint:
+    cargo clippy --workspace -- -D warnings
+
+# Clippy, headless server lane (warnings are errors here too)
+lint-server:
+    cargo clippy -p tuesday-web --no-default-features --features server -- -D warnings
+
+# Lane detail: workspace tests, tuesday-web's web and server feature checks,
+# and the ADR-0002 guard that tuesday-core keeps compiling for wasm32.
+
+# The four cargo lanes pinned by .github/workflows/ci.yml (the branch gate)
+lanes:
+    cargo test --workspace
+    cargo check -p tuesday-web --features web
+    cargo check -p tuesday-web --no-default-features --features server
+    cargo check -p tuesday-core --target wasm32-unknown-unknown
+
+# Run tests, whole workspace
+test *ARGS:
+    cargo test --workspace {{ARGS}}
+
+# Run tests, headless server lane
+test-server *ARGS:
+    cargo test -p tuesday-web --no-default-features --features server {{ARGS}}
+
+# Type-check without building (whole workspace)
+check:
+    cargo check --workspace
+
+# Build, whole workspace
+build:
+    cargo build --workspace
+
+# Build the headless server binary
+build-server:
+    cargo build -p tuesday-web --no-default-features --features server
+
+# Run the fullstack web app with hot reload (requires a dioxus-cli release
+# matching the dioxus 0.7 dependency: `cargo install dioxus-cli`)
+serve:
+    cd crates/tuesday-web && dx serve
+
+# The strict canonical-JSON report over the dogfood repo on the throwaway
+# Gitea at localhost:3000. Bring the forge up and drive a PR through its
+# lifecycle first (`just forge-up` in the conduit checkout —
+# ${COMO_CONDUIT_DIR:-../conduit} — then conduit's demo walkthrough). The
+# reviewer token is a runtime secret, resolved env-first and never via git:
+# --token-file → TUESDAY_GITEA_TOKEN → the documented
+# ${COMO_CONDUIT_DIR:-../conduit}/.secrets/reviewer.token (see
+# crates/tuesday-cli/src/token.rs).
+# --monthly-hours is pinned to 160 (run-1 learnings, ledger item 4): the
+# CLI's 360 default models a multi-person team and misallocates the
+# one-engineer dogfood month; 160 is the referee-parity budget.
+# `repo` selects the forge repo: conduit-dogfood for conduit's self-dogfood
+# seeding the client corpus (run-2's referee shape).
+
+# Measure the conduit dogfood forge (Adopt→Measure loop closure, M5)
+dogfood-report repo='conduit-dogfood' year=`date -u +%Y` month=`date -u +%-m`:
+    cargo run -q -p tuesday-cli -- --source gitea --owner como \
+        --repo {{repo}} --year {{year}} --month {{month}} \
+        --monthly-hours 160 -o json --strict
+
+# Assert `conduit verify -o json` and the dogfood report above agree on the
+# same ground truth: PR number, effort label, ADR reference.
+
+# Cross-check Adopt against Measure (scripts/cross-check.sh)
+cross-check verify_json report_json:
+    bash scripts/cross-check.sh {{verify_json}} {{report_json}}
+
+# Build the user manual (mdbook)
+book:
+    mdbook build docs
+    @echo "Book built -> docs/book"
+
+# Serve the book locally with live reload
+book-serve:
+    mdbook serve docs --open
+
+# Clean built book artifacts
+book-clean:
+    rm -rf docs/book
+
+# Validate the ADR corpus with adroit, resolved by the suite's uniform
+# convention (self-contained — never sourced from a sibling): ADROIT_BIN →
+# sibling ../adroit build (release preferred over debug; NOTE: a fresh
+# sibling build now beats a stale PATH install) → PATH → gitignored
+# .como/tools clone cache (an existing cache is always used; a fresh
+# `cargo install --git` is attempted only when COMO_GIT_BASE is set and
+# COMO_OFFLINE isn't, keeping `just ci` fast and offline-safe) →
+# skip-with-notice. Advisory gate: it never fails the build.
+adr-check:
+    #!/usr/bin/env bash
+    set -u
+    bin=""
+    if [ -n "${ADROIT_BIN:-}" ]; then
+        bin="${ADROIT_BIN}"
+    elif [ -x ../adroit/target/release/adroit ]; then
+        bin=../adroit/target/release/adroit
+    elif [ -x ../adroit/target/debug/adroit ]; then
+        bin=../adroit/target/debug/adroit
+    elif command -v adroit >/dev/null 2>&1; then
+        bin=adroit
+    elif [ -x .como/tools/bin/adroit ]; then
+        bin=.como/tools/bin/adroit
+    elif [ "${COMO_OFFLINE:-0}" != "1" ] && [ -n "${COMO_GIT_BASE:-}" ]; then
+        url="${COMO_GIT_BASE}/adroit.git"
+        echo "adr-check: installing adroit from ${url} into .como/tools (first run only)"
+        if cargo install --git "${url}" --locked --root .como/tools adroit; then
+            bin=.como/tools/bin/adroit
+        fi
+    fi
+    if [ -n "${bin}" ]; then
+        # KB-only adroit (adroit ADR-0020): the gate seeds the committed
+        # corpus into an ephemeral space and validates it there.
+        tmp="$(mktemp -d)"
+        trap 'rm -rf "$tmp"' EXIT
+        printf 'name = "adrs"\n' > "$tmp/wiki.toml"
+        mkdir -p "$tmp/wiki/decisions"
+        "${bin}" seed --from docs/src/adr --dir "$tmp"
+        "${bin}" check --dir "$tmp"
+    else
+        echo "skip: adroit not found (set ADROIT_BIN, build ../adroit, install adroit on PATH, or set COMO_GIT_BASE to arm the .como/tools cached install)"
+    fi
+
+# Upgrade dependencies (including incompatible versions)
+crate-upgrade:
+    cargo upgrade --incompatible
+
+# Update Cargo.lock to latest compatible versions
+crate-update:
+    cargo update
+
+# Audit dependencies for known vulnerabilities (skipped if cargo-audit isn't
+# installed; `just init` installs it and GitHub CI always runs it)
+crate-audit:
+    @if command -v cargo-audit >/dev/null 2>&1; then cargo audit; else echo "skip: cargo-audit not installed (run 'just init')"; fi
+
+# Upgrade deps, update lockfile, audit, and test
+crate-refresh: crate-upgrade crate-update crate-audit test
+
+# Clean build artifacts
+clean:
+    cargo clean

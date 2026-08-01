@@ -1,0 +1,45 @@
+# Multi-stage build for tuesday — the generic self-host path (ADR-0008),
+# alongside scripts/build-static-release.sh. Not exercised by CI; treat it
+# as the recipe for any OCI host.
+# Uses Dioxus fullstack for combined server + web client
+
+# Stage 1: Build environment
+FROM rust:slim-bookworm AS builder
+
+# Install required dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Provide a dioxus-cli matching the dioxus 0.7 dependency at tools/dx
+# before building (tools/ is not committed; e.g. `cargo install dioxus-cli`
+# and copy the resulting binary in)
+COPY tools/dx /usr/local/bin/dx
+RUN chmod +x /usr/local/bin/dx
+
+# Set working directory
+WORKDIR /app
+
+# Copy all source files
+COPY . .
+
+# Build fullstack release (produces server binary + web assets)
+RUN dx build --fullstack --release
+
+# Stage 2: Runtime environment
+# Dioxus server is dynamically linked, so use debian-slim
+FROM debian:bookworm-slim
+
+# Copy server binary
+COPY --from=builder /app/target/dx/tuesday/release/server /app/server
+
+# Copy web assets
+COPY --from=builder /app/target/dx/tuesday/release/web/public /app/public
+
+WORKDIR /app
+
+# Expose the server port (set IP/PORT env vars to override the bind)
+EXPOSE 8080
+
+# Run the server
+ENTRYPOINT ["./server"]
