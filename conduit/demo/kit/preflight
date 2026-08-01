@@ -82,16 +82,17 @@ fi
 # ── llm-wiki binary (OPTIONAL — beat 5's KB query close) ───────────────────
 # An env fact, like ollama: present arms the close, absent is a notice — the
 # pre-baked path promises nothing beyond docker. Resolution mirrors beat 5:
-# env LLM_WIKI_BIN -> sibling ../llm-wiki release build -> PATH.
+# env LLM_WIKI_BIN -> the workspace target dir (release, then debug) -> PATH.
 echo "[3/3] llm-wiki binary (optional — beat 5's KB query close)"
 LLM_WIKI="${LLM_WIKI_BIN:-}"
-[ -z "$LLM_WIKI" ] && [ -x "$ROOT/../llm-wiki/target/release/llm-wiki" ] && LLM_WIKI="$ROOT/../llm-wiki/target/release/llm-wiki"
+[ -z "$LLM_WIKI" ] && [ -x "$TARGET_DIR/release/llm-wiki" ] && LLM_WIKI="$TARGET_DIR/release/llm-wiki"
+[ -z "$LLM_WIKI" ] && [ -x "$TARGET_DIR/debug/llm-wiki" ] && LLM_WIKI="$TARGET_DIR/debug/llm-wiki"
 [ -z "$LLM_WIKI" ] && command -v llm-wiki >/dev/null 2>&1 && LLM_WIKI="$(command -v llm-wiki)"
 if [ -n "$LLM_WIKI" ]; then
     note "OK — llm-wiki at $LLM_WIKI; beat 5 runs the KB query close."
 else
     note "absent — beat 5 skips the KB query close with a notice (everything else runs)."
-    note "  To enable it: set LLM_WIKI_BIN, build the sibling (cd ../llm-wiki && cargo build --release), or install llm-wiki on PATH."
+    note "  To enable it: set LLM_WIKI_BIN, build it (cargo build -p llm-wiki), or install llm-wiki on PATH."
 fi
 
 echo

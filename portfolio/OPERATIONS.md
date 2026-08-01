@@ -1,30 +1,26 @@
 # Operating the suite
 
 The internal runbook: how to stand the whole TAPS suite up from a cold
-checkout and verify it, in widening rings — then the end-to-end engagement
+clone and verify it, in widening rings — then the end-to-end engagement
 demo. Everything here runs locally; nothing is pushed. (This is Como-facing
 operational detail; the reader-facing story is the book under `docs/`.)
 
 ## Prerequisites
 
-The suite is a set of sibling repositories that resolve each other by the
-uniform convention (each repo's ADR records it): an explicit `COMO_<REPO>_DIR`
-env override, else a sibling checkout `../<repo>`, else a pinned git clone into
-a gitignored cache. The simplest layout is all repos checked out under one
-parent (`assessments`, `adroit`, `conduit`, `tuesday`, `pulse`,
-`llm-wiki`, `portfolio`) — then everything resolves with no configuration
-(`llm-wiki`, the KB substrate, resolves like any other sibling and builds
-from source at HEAD per this repo's ADR-0009). Each app's ADR
-corpus ships **inside its own published mdbook source** at the suite's uniform
-`docs/src/adr/` path, so every repo's corpus gate finds it in any checkout —
-no separate corpus download.
+The suite is **one Cargo workspace** (portfolio ADR-0012): every product —
+`adroit`, `assessments`, `conduit`, `llm-wiki`, `portfolio`, `pulse`,
+`tuesday`, plus the shared `contract` crate — lives in this repo, builds
+into one `target/` dir, and shares one dependency table. A single
+`git clone` is the whole suite; nothing resolves siblings, pins revisions,
+or clones caches anymore. Each app's ADR corpus ships **inside its own
+published mdbook source** at the uniform `docs/src/adr/` path.
 
 **Toolchain.** A Rust toolchain with `cargo`, `just`, and `mdbook`; `git`;
-Docker with its daemon up and the `docker compose` plugin (the Adopt demo runs a
-throwaway Gitea forge in it); `gh` is optional (GitHub read-only legs). The AI
-lanes are **optional**: only the demo's `--live` variants call a local `ollama`
-serving `llama3.2` (no API key, nothing phones home) — the pre-baked fast path
-needs neither. conduit builds its pinned adroit itself with `just init-adroit`.
+Docker with its daemon up and the `docker compose` plugin (the Adopt demo
+runs a throwaway Gitea forge in it); `gh` is optional (GitHub read-only
+legs). The AI lanes are **optional**: only the demo's `--live` variants call
+a local `ollama` serving `llama3.2` (no API key, nothing phones home) — the
+pre-baked fast path needs neither.
 
 Verify the demo's runtime prerequisites (and pull the model, if `ollama` is
 installed and you want the live lanes) with one command:
@@ -33,76 +29,57 @@ installed and you want the live lanes) with one command:
 conduit/demo/kit/preflight        # checks docker; pulls llama3.2 if ollama is up
 ```
 
-**Commit signing.** Nothing here asks you to change your git config. The suites
-that spin up throwaway git repos in their tests disable commit signing *in those
-disposable repos*, so a global `commit.gpgsign = true` (with no key for the
-throwaway identity) can't fail them.
+**Commit signing.** Nothing here asks you to change your git config. The
+suites that spin up throwaway git repos in their tests disable commit
+signing *in those disposable repos*, so a global `commit.gpgsign = true`
+(with no key for the throwaway identity) can't fail them.
 
-**Every input is a suite repo.** The Adopt demo's fictional client corpus
-is built from llm-wiki's starter content (`kit/starter/decisions` — a
-legacy-format corpus, which is exactly what a real client brings), so it
-resolves like everything else: the uniform convention, no special-case
-inputs, no extra knobs. Where a repo is absent the gate and the demo
-**skip or stop with a notice that names the knob**, never silently.
+**Every input is a suite product.** The Adopt demo's fictional client corpus
+is built from llm-wiki's starter content (`llm-wiki/kit/starter/decisions` —
+a legacy-format corpus, which is exactly what a real client brings), read
+in-tree. Where an optional runtime piece is absent (Docker down, no ollama)
+the gate and the demo **skip or stop with a notice that names the knob**,
+never silently.
 
-## Ring 1 — each app on its own
-
-Run the house gate in each repo:
+## Rings 1–2 — the workspace gate
 
 ```sh
-just ci      # fmt + clippy + tests + book build + ADR-corpus check, per repo
+just ci      # at the workspace root
 ```
 
-Every repo's gate validates its ADR corpus: the five Rust apps each carry an
-`adr-check` leg in `just ci` — since adroit went KB-only (adroit ADR-0020,
-portfolio ADR-0009) that leg seeds the committed corpus into an ephemeral KB
-space and validates it there, so the gate also exercises the KB machinery on
-every run. llm-wiki (the KB product) gates with its cargo suite, which
-covers provisioning, the Como schema library, and the kit's counted starter
-content. Green in all of them means each app is internally
-sound — the Rust apps formatted, lint-clean, and tested; every mdbook builds;
-every corpus validates. This is the per-app truth check and the fastest
-signal.
+One command is now both of the old per-repo rings: fmt + clippy + the full
+workspace test suite + `adr-check`, which validates **every** product's ADR
+corpus with the freshly built in-tree adroit — since adroit went KB-only
+(adroit ADR-0020, portfolio ADR-0009) that leg seeds each committed corpus
+into an ephemeral KB space and validates it there, so the gate also
+exercises the KB machinery on every run. Green means every app is
+internally sound and every corpus validates.
 
-Ring 1 is also where suite *coherence* is gated: each cross-repo seam is
-pinned by contract tests in the repos that own it (assessments' golden
-export vendored into adroit's ingest tests, conduit's contract constants
-under unit test, tuesday's consumer-side checks), so a seam drifting fails
-the owning repo's gate — not a separate suite-wide script.
+Suite *coherence* is no longer a gate at all — it is the crate graph.
+The seams live once in the `como-contract` crate (effort labels, the
+adroit read slice) and in the single golden export fixture at
+`contract/fixtures/`, so a seam cannot drift between products; the
+compiler and the two fixture-pinned tests hold it.
 
-The Rust repos also gate dependency advisories with `cargo audit` — a
-`crate-audit` leg in `just ci` (conduit runs it as a dedicated CI job
-instead). A red audit on a cold checkout is not automatically a code
-failure: a freshly published advisory reddens an unchanged tree. Accepted
-advisories live in each repo's `.cargo/audit.toml` as dated, documented
-ignores (what was accepted, why, and the removal trigger), so a new red is
-a decision to make — update the dependency or record the acceptance there —
-never a reason to bypass the gate.
-
-## Ring 2 — this repo's own gate
-
-```sh
-cd portfolio && just ci
-```
-
-That builds the book and validates this repo's own ADR corpus
-(`adr-check` seeds it into an ephemeral KB space, resolving adroit by the
-suite convention and skipping with a notice when it can't). The book makes
-no mechanically-verified claims about the siblings anymore — details live
-in each tool's own repo, and the seams are gated where they are owned
-(Ring 1); the retired `verify-claims` gate is recorded as superseded in
-`docs/src/adr/`.
+Dependency advisories gate via `cargo audit` against the workspace's one
+`.cargo/audit.toml`, where accepted advisories live as dated, documented
+ignores (what was accepted, why, and the removal trigger). A red audit on
+a cold clone is not automatically a code failure: a freshly published
+advisory reddens an unchanged tree — update the dependency or record the
+acceptance, never bypass the gate. Per-product lanes (the wasm lane,
+adroit's no-default-features core, the web builds) remain available in each
+product's own justfile.
 
 ## Ring 3 — the whole loop, live, end to end
 
 The customer demo kit stands the entire engagement up against a throwaway
-forge, runs all four loop stages with machine evidence at each seam, and tears
-everything down:
+forge, runs all four loop stages with machine evidence at each seam, and
+tears everything down:
 
 ```sh
 cd conduit
 demo/kit/preflight               # verify docker (+ pull llama3.2 for --live)
-just init-adroit                 # build the pinned adroit into .conduit/bin
+just init-adroit                 # build the in-tree adroit into .conduit/bin
 demo/kit/demo-up                 # throwaway Gitea + client corpus + its derived KB space
 demo/kit/beat-1-measure-prior    # pulse's prior-iteration signal
 demo/kit/beat-2-assess           # brief + signal -> assessment   (--live for ollama)
@@ -112,16 +89,16 @@ demo/kit/beat-5-measure          # tuesday --strict + measure page into the spac
 demo/kit/demo-down               # destroys the forge; leaves nothing
 ```
 
-`init-adroit` resolves the pinned adroit by the suite convention — the adroit
-remote at the pinned rev (reachable there today), else a sibling `../adroit`
-when the remote is unreachable (its HEAD, with a loud local-dev notice, if
-that checkout lacks the exact pin). `demo-up` builds the client corpus from
+`init-adroit` builds the workspace's own adroit and places it at
+`.conduit/bin/adroit` (the path conduit's `AdrSource` resolves) — the old
+`adroit.rev` pin and its remote/sibling resolution chain are retired; the
+contract is the crate graph itself. `demo-up` builds the client corpus from
 llm-wiki's starter content, seeds a **per-run KB space derived from it** —
 the corpus repo on the forge stays the legacy repo of record; adroit and
 conduit operate on the space (conduit ADR-0017, portfolio ADR-0009 made
-visible) — resolves the sibling binaries the same way, and seeds the
-throwaway forge; it stops early with named knobs if Docker isn't
-up or llm-wiki doesn't resolve (run `preflight` first).
+visible) — builds the product binaries into the workspace target dir, and
+seeds the throwaway forge; it stops early with named knobs if Docker isn't
+up (run `preflight` first).
 
 **Verify as you go**: every artifact a run produces lives in one per-run
 workdir — `conduit/demo/kit/.current` points at the active one — with the
@@ -134,23 +111,24 @@ see, and each beat prints an ` -> inspect:` hint.
 Each beat prints its talking point and the machine evidence it just produced
 (verify 6/6, byte-identical forge transcripts, `CROSS-CHECK PASS`, the
 measure-report page landing in the run's space with its `adr_hours`
-attribution — and, when an llm-wiki binary resolves, a search over the
+attribution — and, when an llm-wiki binary is built, a search over the
 space answering "what did this decision cost?" from pages alone; absent,
 that close skips with a notice, and `preflight` prints the fact). The
 pre-baked path runs every beat in seconds and needs only Docker; `--live`
-recomputes the two ollama lanes for real (timings in the [customer demo](https://github.com/como-technologies/conduit)
+recomputes the two ollama lanes for real (timings in the customer demo
 kit's narrated page). Deeper conformance is env-gated: `CONDUIT_E2E_GITEA=1`
 (live forge), `CONDUIT_E2E_ADROIT=1`, `CONDUIT_E2E_GITHUB=1`.
 
 ## Ring 4 — the knowledge base, harness-first
 
-The harness-first loop (portfolio ADR-0010) from the same cold checkout,
+The harness-first loop (portfolio ADR-0010) from the same cold clone,
 in two legs. The **mechanical leg** is scripted and verifiable with no AI
 anywhere — it stands a fully provisioned space up from the kit's starter
 content and ends gate-clean:
 
 ```sh
-cd llm-wiki && cargo build --release          # the KB product, from source at HEAD
+cargo build -p llm-wiki -p adroit             # both in-tree, one target dir
+cd llm-wiki
 export LLM_WIKI_CONFIG="$DIR.registry.toml"   # scope the registry to the run:
                                               # disposable space, disposable registry —
                                               # nothing lands in ~/.llm-wiki
@@ -178,18 +156,14 @@ this decision cost?" from pages alone.
 
 ## The pre-review cold gate
 
-`scripts/cold-sim` was retired at workspace formation (ADR-0012,
-portfolio#8): its purpose was rehearsing a cold *multi-repo* checkout —
-cloning the suite side by side and running the runbook against sibling
-paths — and a cold clone of the workspace repo now IS the suite. The
-pre-review rehearsal is `git clone` into a fresh directory + `just ci`
-at the root. (This section is rewritten wholesale with the rings in the
-wave-4 pass of portfolio#8.)
+A cold clone of this repo IS the suite (the multi-repo `cold-sim`
+rehearsal script retired with ADR-0012): the pre-review rehearsal is
+`git clone` into a fresh directory, then rings 1–2 (`just ci` at the
+root) and, hardware permitting, ring 3's pre-baked demo path.
 
 ## Publishing
 
-Standing the suite up locally needs no remotes. Publishing each app to its
-canonical remote is a deliberate owner action, kept out of the loop's
-automation. The pinned adroit rev in `conduit/adroit.rev` resolves from the
-adroit remote, and a cold checkout that clones the suite side by side runs
-the demo with no overrides.
+Standing the suite up locally needs no remotes. The workspace repo
+(`como-technologies/taps`) is the only remote that matters; the seven
+pre-workspace repos are frozen as the archive. Publishing the books to
+Pages rides the repo's own CI.

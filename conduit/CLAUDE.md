@@ -31,10 +31,9 @@ Always use `just` recipes — never raw `cargo`/`mdbook`.
 
 ```sh
 just init        # toolchain components + mdbook
-just init-adroit # pinned adroit -> .conduit/bin (adroit.rev; remote URL
-                 # via COMO_ADROIT_GIT/COMO_GIT_BASE, sibling file:// fallback)
-just ci          # fmt-check + clippy + test + adr-check + book (the gate)
-just adr-check   # validate the in-repo docs/src/adr corpus with the pinned adroit
+just init-adroit # build the in-tree adroit -> .conduit/bin (the adroit.rev
+                 # pin and its resolution chain retired with the workspace)
+just ci          # fmt-check + clippy + init-adroit + test + book (the gate)
 just test        # all tests
 just forge-up    # throwaway Gitea on localhost:3000 (demo/; FORGE_PORT overrides the host port)
 just forge-down  # destroy it
@@ -44,20 +43,19 @@ The customer demo kit (`demo/kit/demo-up`, per-beat scripts, `demo-down`)
 packages the full TAPS engagement demo — narrated script:
 `docs/src/usage/customer-demo.md`; design: ADR-0015.
 
-`adr-check` is a `ci` leg (every suite repo's ci carries one). It depends on
-`just init-adroit` — idempotent-fast once the pin is installed; a fresh
-checkout (GitHub CI included) resolves the pin from the adroit remote.
+ADR-corpus validation is the workspace-root `just adr-check` (one recipe,
+every product's corpus — portfolio#8). `just init-adroit` is a `ci` leg
+here because tests/demo_init.rs needs the binary at .conduit/bin/adroit.
 `cargo audit` runs as a separate CI job (`just crate-audit`, plus a weekly
 schedule) so a fresh advisory can't mask the code gates.
 The `docs/src/adr` corpus is the legacy-format repo of record (ADR-0017):
-the pinned adroit is KB-only (adroit ADR-0020), so `adr-check` seeds the
-corpus into an ephemeral space and validates it there. Existing entries
-were authored with pre-KB pinned adroits; a new entry matches the existing
-legacy format exactly and must pass `just adr-check`. adroit's forge
-integration stays disabled.
+adroit is KB-only (adroit ADR-0020), so the root `adr-check` seeds the
+corpus into an ephemeral space and validates it there. A new entry matches
+the existing legacy format exactly and must pass the root `just adr-check`.
+adroit's forge integration stays disabled.
 
 Env-gated test legs: `CONDUIT_E2E_GITEA=1` (live Gitea conformance),
-`CONDUIT_E2E_GITHUB=1` (GitHub live reads), `CONDUIT_E2E_ADROIT=1` (pinned
+`CONDUIT_E2E_GITHUB=1` (GitHub live reads), `CONDUIT_E2E_ADROIT=1` (in-tree
 adroit binary contract tests), `CONDUIT_E2E_CLAUDE=1` (live claude CLI
 engine smoke).
 

@@ -29,7 +29,7 @@ TUESDAY="$(require_repo tuesday)"
 echo " RUN: tuesday-report --source gitea --owner como --repo client-corpus --monthly-hours 160 -o json --strict"
 echo "      (= tuesday's own \`just dogfood-report client-corpus\`; token rides the env, never argv or git)"
 TUESDAY_GITEA_TOKEN="$(reviewer_token)" \
-    "$TUESDAY/target/debug/tuesday-report" --source gitea --owner como \
+    "$TARGET_DIR/debug/tuesday-report" --source gitea --owner como \
     --base-url "http://localhost:${FORGE_PORT:-3000}" \
     --repo client-corpus --year "$(date -u +%Y)" --month "$(date -u +%-m)" \
     --monthly-hours 160 -o json --strict >"$WORK/tuesday-report.json"
@@ -51,7 +51,7 @@ echo
 echo " RUN: tuesday-report ... --kb corpus-space   (the same month, written as a measure-report page into the per-run KB space)"
 KB_LOG="$WORK/tuesday-kb.stderr"
 TUESDAY_GITEA_TOKEN="$(reviewer_token)" \
-    "$TUESDAY/target/debug/tuesday-report" --source gitea --owner como \
+    "$TARGET_DIR/debug/tuesday-report" --source gitea --owner como \
     --base-url "http://localhost:${FORGE_PORT:-3000}" \
     --repo client-corpus --year "$(date -u +%Y)" --month "$(date -u +%-m)" \
     --monthly-hours 160 -o json --strict --kb "$WORK/corpus-space" >/dev/null 2>"$KB_LOG"
@@ -66,11 +66,13 @@ grep -q '^adr_hours:' "$KB_PAGE" || die "measure-report page carries no adr_hour
 sed -n '/^adr_hours:/,/^---$/p' "$KB_PAGE" | sed '$d' | sed 's/^/   /'
 
 # ── Optional close: query the space with llm-wiki (skip-with-notice) ───────
-# Resolution: env LLM_WIKI_BIN -> sibling ../llm-wiki release build -> PATH.
+# Resolution: env LLM_WIKI_BIN -> the workspace target dir (release, then
+# debug) -> PATH.
 # Optional by design (the pre-baked path promises nothing beyond docker):
 # absent binary = a notice naming the knobs, never a failure.
 LLM_WIKI="${LLM_WIKI_BIN:-}"
-[ -z "$LLM_WIKI" ] && [ -x "$ROOT/../llm-wiki/target/release/llm-wiki" ] && LLM_WIKI="$ROOT/../llm-wiki/target/release/llm-wiki"
+[ -z "$LLM_WIKI" ] && [ -x "$TARGET_DIR/release/llm-wiki" ] && LLM_WIKI="$TARGET_DIR/release/llm-wiki"
+[ -z "$LLM_WIKI" ] && [ -x "$TARGET_DIR/debug/llm-wiki" ] && LLM_WIKI="$TARGET_DIR/debug/llm-wiki"
 [ -z "$LLM_WIKI" ] && command -v llm-wiki >/dev/null 2>&1 && LLM_WIKI="$(command -v llm-wiki)"
 if [ -n "$LLM_WIKI" ]; then
     echo
@@ -84,7 +86,7 @@ if [ -n "$LLM_WIKI" ]; then
     "$LLM_WIKI" search "what did this decision cost" --wiki client >"$WORK/kb-search.txt" 2>/dev/null
     head -7 "$WORK/kb-search.txt" | sed 's/^/   /'
 else
-    note "llm-wiki binary not found — skipping the KB query close (set LLM_WIKI_BIN, build ../llm-wiki (cargo build --release), or install llm-wiki on PATH)"
+    note "llm-wiki binary not found — skipping the KB query close (set LLM_WIKI_BIN, build it (cargo build -p llm-wiki), or install llm-wiki on PATH)"
 fi
 
 evidence "the closed loop"

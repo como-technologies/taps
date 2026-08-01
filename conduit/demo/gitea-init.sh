@@ -15,12 +15,8 @@
 #                  client-corpus demo. When it names the client corpus and
 #                  is absent, demo/client-corpus-build.sh constructs it from
 #                  llm-wiki's starter content (kit/starter/decisions),
-#                  resolving llm-wiki per the suite convention:
-#                  COMO_LLM_WIKI_DIR -> sibling ../llm-wiki -> the
-#                  gitignored .como/deps/llm-wiki clone cache
-#                  (COMO_LLM_WIKI_GIT / COMO_GIT_BASE) -> a hard, actionable
-#                  error. COMO_OFFLINE=1 uses a populated cache as-is and
-#                  never clones.
+#                  reading the in-tree ../llm-wiki (COMO_LLM_WIKI_DIR
+#                  overrides) -> a hard, actionable error.
 #   REPO_NAME      forge repo name under org como
 #                  (default: conduit-dogfood).
 set -euo pipefail
@@ -30,9 +26,8 @@ SEED_REPO_DIR="${SEED_REPO_DIR:-.}"
 REPO_NAME="${REPO_NAME:-conduit-dogfood}"
 if [ ! -d "$SEED_REPO_DIR/.git" ]; then
   # The requested seed checkout is missing. For the client-corpus demo,
-  # construct the corpus repo from llm-wiki's starter content before
-  # failing hard (demos need the corpus) — the builder resolves llm-wiki
-  # per the suite convention.
+  # construct the corpus repo from the in-tree llm-wiki's starter content
+  # before failing hard (demos need the corpus).
   resolved=""
   if [ "$(basename "$SEED_REPO_DIR")" = "client-corpus" ]; then
     resolved="$(bash demo/client-corpus-build.sh)" || resolved=""
@@ -44,8 +39,7 @@ if [ ! -d "$SEED_REPO_DIR/.git" ]; then
     echo "ERROR: SEED_REPO_DIR=$SEED_REPO_DIR is not a git repo." >&2
     echo "  Knobs: SEED_REPO_DIR (any local repo); for the client-corpus demo," >&2
     echo "  demo/client-corpus-build.sh constructs the seed from an llm-wiki checkout" >&2
-    echo "  (COMO_LLM_WIKI_DIR, sibling ../llm-wiki, or COMO_LLM_WIKI_GIT / COMO_GIT_BASE" >&2
-    echo "  for the .como/deps/llm-wiki clone cache)." >&2
+    echo "  (the in-tree ../llm-wiki by default; COMO_LLM_WIKI_DIR overrides)." >&2
     exit 1
   fi
 fi

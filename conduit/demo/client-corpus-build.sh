@@ -13,43 +13,27 @@
 # checkout is only ever read.
 #
 # Env:
-#   LLM_WIKI_DIR  llm-wiki checkout (must contain kit/starter/decisions).
-#                 When unset, the suite resolution convention (ADR-0014)
-#                 applies: COMO_LLM_WIKI_DIR -> sibling ../llm-wiki -> the
-#                 gitignored .como/deps/llm-wiki clone cache
-#                 (COMO_LLM_WIKI_GIT / COMO_GIT_BASE) -> a hard, actionable
-#                 error. COMO_OFFLINE=1 uses a populated cache as-is and
-#                 never clones.
+#   LLM_WIKI_DIR  an llm-wiki checkout (must contain kit/starter/decisions).
+#                 When unset: COMO_LLM_WIKI_DIR -> the in-tree ../llm-wiki
+#                 (the workspace product) -> a hard, actionable error.
 #   CLIENT_CORPUS_BUILD_DIR  where to construct the repo
 #                            (default .como/build/client-corpus; gitignored)
 set -euo pipefail
 
 cd "$(dirname "$0")/.." # conduit repo root
 
-# Resolve llm-wiki (suite resolution convention, self-contained — never
-# sources sibling code): explicit LLM_WIKI_DIR -> COMO_LLM_WIKI_DIR ->
-# sibling -> clone cache -> hard error (the demo needs the starter content).
+# Resolve llm-wiki: explicit LLM_WIKI_DIR -> COMO_LLM_WIKI_DIR -> the
+# in-tree ../llm-wiki (the workspace product) -> hard error (the demo needs
+# the starter content).
 LLM_WIKI_DIR="${LLM_WIKI_DIR:-${COMO_LLM_WIKI_DIR:-}}"
-if [ -z "$LLM_WIKI_DIR" ]; then
-  if [ -d ../llm-wiki/kit/starter/decisions ]; then
-    LLM_WIKI_DIR=../llm-wiki
-    echo "client-corpus-build: llm-wiki -> ../llm-wiki (sibling checkout)" >&2
-  elif [ -d .como/deps/llm-wiki/kit/starter/decisions ]; then
-    LLM_WIKI_DIR=.como/deps/llm-wiki # populated cache, used as-is (never auto-fetched)
-    echo "client-corpus-build: NOTICE — using the clone cache $LLM_WIKI_DIR" >&2
-  elif [ "${COMO_OFFLINE:-0}" != "1" ]; then
-    url="${COMO_LLM_WIKI_GIT:-${COMO_GIT_BASE:-https://github.com/como-technologies}/llm-wiki.git}"
-    mkdir -p .como/deps
-    if git clone --filter=blob:none "$url" .como/deps/llm-wiki 2>/dev/null; then
-      LLM_WIKI_DIR=.como/deps/llm-wiki
-      echo "client-corpus-build: NOTICE — no sibling ../llm-wiki; cloned $url into $LLM_WIKI_DIR" >&2
-    fi
-  fi
+if [ -z "$LLM_WIKI_DIR" ] && [ -d ../llm-wiki/kit/starter/decisions ]; then
+  LLM_WIKI_DIR=../llm-wiki
+  echo "client-corpus-build: llm-wiki -> ../llm-wiki (in-tree)" >&2
 fi
 if [ ! -d "${LLM_WIKI_DIR:-}/kit/starter/decisions" ]; then
   echo "ERROR: no llm-wiki starter content found (need a checkout containing kit/starter/decisions)." >&2
-  echo "  Knobs: LLM_WIKI_DIR or COMO_LLM_WIKI_DIR (an llm-wiki checkout; sibling ../llm-wiki is" >&2
-  echo "  the default), or COMO_LLM_WIKI_GIT / COMO_GIT_BASE for the .como/deps/llm-wiki clone cache." >&2
+  echo "  Knobs: LLM_WIKI_DIR or COMO_LLM_WIKI_DIR (an llm-wiki checkout; the in-tree ../llm-wiki" >&2
+  echo "  is the default)." >&2
   exit 1
 fi
 SRC="$(cd "$LLM_WIKI_DIR/kit/starter/decisions" && pwd)"

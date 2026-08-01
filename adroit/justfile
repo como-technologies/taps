@@ -10,9 +10,11 @@ init:
 # Run all CI checks (used by .github/workflows/ci.yml). `ai`+`forge` are default
 # features now, so the plain `lint`/`test` cover them; `lint-core`/`test-core`
 # guard the `--no-default-features` core (no tui/ai/forge — stays tokio-free), and
-# `lint-web`/`test-web` cover the opt-in web feature. `adr-check` is the
-# self-hosted dogfood gate: the freshly built adroit validates its own corpus.
-ci: fmt-check lint-core lint lint-web test-core test test-web adr-check book crate-outdated crate-audit
+# `lint-web`/`test-web` cover the opt-in web feature. ADR-corpus validation
+# (the self-hosted dogfood gate) is the workspace-root `just adr-check`,
+# which validates every product's corpus with the freshly built adroit
+# (portfolio#8).
+ci: fmt-check lint-core lint lint-web test-core test test-web book crate-outdated crate-audit
 
 # Format code
 fmt:
@@ -62,21 +64,6 @@ unit:
 # (Both also run in `just ci` via `just test` at proptest's default 256 cases.)
 model *ARGS:
     PROPTEST_CASES="${PROPTEST_CASES:-2000}" cargo test --test model --test parsers {{ARGS}}
-
-# Self-hosted corpus gate (dogfood): build adroit, bootstrap an ephemeral KB
-# space (ADR-0020), seed it from the committed legacy corpus at docs/src/adr/,
-# and validate the seeded space. The committed corpus stays canonical; the space
-# is throwaway. Always pass an explicit `--dir` — ADROIT_DIR points at the
-# external dogfood repo.
-adr-check: build
-    #!/usr/bin/env bash
-    set -euo pipefail
-    tmp="$(mktemp -d)"
-    trap 'rm -rf "$tmp"' EXIT
-    printf 'name = "adroit-adrs"\n' > "$tmp/wiki.toml"
-    mkdir -p "$tmp/wiki/decisions"
-    ./target/debug/adroit seed --from docs/src/adr --dir "$tmp"
-    ./target/debug/adroit check --dir "$tmp"
 
 # M5 dogfood rehearsal: the exact read slice the Adopt engine (conduit) issues,
 # end to end against a LIVE local ollama — import --ai → lint → accept →

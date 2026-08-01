@@ -4,15 +4,14 @@ One crate, `conduit` (`bin` + `lib`), fully synchronous — no tokio, no
 database, no framework. The binary is clap marshalling over a library whose
 core is pure functions and whose effects are funneled through one module.
 The founding decisions live in the in-repo `docs/src/adr` corpus (authored
-with the pinned adroit; see [Spike design](./spike-design.md)).
+with the in-tree adroit; see [Spike design](./spike-design.md)).
 
 ## Module map
 
 ```
 conduit/
 ├── Cargo.toml             single crate `conduit`, bin+lib
-├── adroit.rev             the single adroit pin location (read by `just init-adroit`)
-├── justfile               init / init-adroit / ci / adr-check / forge-up / forge-down / demo-trigger / conformance
+├── justfile               init / init-adroit / ci / forge-up / forge-down / demo-trigger / conformance
 ├── CLAUDE.md              working agreements (no publishing, docs in mdbook, no client names)
 ├── docs/                  this mdbook
 ├── docs/src/adr/          conduit's OWN adroit corpus (ADR-0001..0016, all accepted; the suite's uniform corpus path)
@@ -46,7 +45,6 @@ conduit/
     ├── conformance.rs     ONE suite vs FakeForge + GitHub fixtures (always); live legs behind env flags
     ├── e2e_fake.rs        full lifecycle, kill/restart at every state, crash-replay per action kind
     ├── cli.rs             binary-level: help, status, env validation, typed errors, stub-adroit plan
-    └── adroit_contract.rs handshake gate, Accepted-only, superseded skip, allowlist, pinned-binary leg
 ```
 
 ## Pure core, effectful shell
@@ -89,7 +87,7 @@ Every external dependency sits behind a trait with an injectable fake:
 | Forge API | `forge::Forge` | `GiteaForge`, `DryRun(GitHubForge)` | `FakeForge`, `DryRunForge` |
 | HTTP wire | `forge::HttpTransport` | `UreqTransport` (blocking, rustls, bounded timeouts) | fixture/fake transports per adapter test |
 | Coding engine | `engine::Engine` | `ClaudeCodeEngine` (`claude -p`, sandboxed) | `FakeEngine` (`complete`/`fail`/`hang` modes) |
-| Planner | `adroit::AdrSource` (subprocess) | pinned `.conduit/bin/adroit` | stub binaries + `CONDUIT_ADROIT_BIN` env seam |
+| Planner | `adroit::AdrSource` (subprocess) | in-tree `.conduit/bin/adroit` (types shared via `como-contract`) | stub binaries + `CONDUIT_ADROIT_BIN` env seam |
 
 Seam rules that hold everywhere:
 

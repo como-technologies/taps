@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # demo-up — one command stands the whole customer demo up.
 #
-# Resolves every cross-repo dependency per the suite convention (ADR-0014),
-# builds whatever is missing (conduit, the pinned adroit, the assessments /
-# tuesday-cli / pulse-simulate binaries), stands up the throwaway forge
+# Resolves every product in-tree (the taps workspace), builds whatever is
+# missing (conduit, the in-tree adroit, the assessments / tuesday-cli /
+# pulse-simulate binaries), stands up the throwaway forge
 # seeded with the client corpus, creates the per-run workdir, pre-creates
 # the label set, pre-warms the local model for the live lanes, and prints
 # the beat menu. Idempotent: re-running against a live demo keeps the forge
@@ -19,21 +19,21 @@ banner "DEMO-UP" "stand up the whole engagement demo"
 # ── 0. Fail fast on the one hard runtime prereq (docker), before any build ──
 require_docker
 
-# ── 1. Resolve the suite (ADR-0014 chain; provenance printed) ──────────────
-echo "[1/6] resolving cross-repo dependencies"
+# ── 1. Resolve the suite (in-tree; provenance printed) ─────────────────────
+echo "[1/6] resolving the suite products"
 CORPUS="$(client_corpus)" # the fictional client's decision corpus (built from llm-wiki's starter content)
 [ -d "$CORPUS/docs/src/adr" ] || die "built client corpus at $CORPUS has no docs/src/adr corpus"
 PULSE="$(resolve_repo pulse)"             # beat 1 (sentiment) — skippable
 ASSESSMENTS="$(resolve_repo assessments)" # beat 2 — skippable (pre-baked artifact ships in the kit)
 TUESDAY="$(resolve_repo tuesday)"         # beat 5 — skippable
 
-# ── 2. Build conduit + install the pinned adroit ───────────────────────────
-echo "[2/6] building conduit + installing the pinned adroit"
+# ── 2. Build conduit + place the in-tree adroit ────────────────────────────
+echo "[2/6] building conduit + the in-tree adroit"
 (cd "$ROOT" && cargo build -q)
 (cd "$ROOT" && just init-adroit)
 
-# ── 3. Build the sibling binaries the beats call ───────────────────────────
-echo "[3/6] building sibling binaries (only what resolved; incremental)"
+# ── 3. Build the product binaries the beats call ───────────────────────────
+echo "[3/6] building product binaries (only what resolved; incremental)"
 if [ -n "$PULSE" ]; then
     (cd "$PULSE" && cargo build -q -p pulse-test-harness --features reqwest-transport --bin pulse-simulate)
 else

@@ -66,11 +66,11 @@ gone and the workdir behind for inspection; delete it whenever.
 
 One command from a checkout. It resolves every cross-repo dependency
 through the suite resolution chain (ADR-0014) and prints where each came
-from, builds whatever is missing (conduit, the pinned adroit, the
+from, builds whatever is missing (conduit, the in-tree adroit, the
 `assessments` / `tuesday-report` / `pulse-simulate` binaries), stands up
 the throwaway Gitea seeded with the client corpus (the legacy-format repo
 of record), creates the per-run workdir — including `corpus-space`, the
-per-run KB space the pinned adroit's `seed` derives from that repo's
+per-run KB space adroit's `seed` derives from that repo's
 `docs/src/adr` (ADR-0017: repo of record canonical, space derived) — with
 the standing label set, pre-warms the local model for the live lanes, and
 prints the beat menu:
@@ -354,8 +354,7 @@ from `${COMO_<REPO>_GIT:-${COMO_GIT_BASE:-https://github.com/como-technologies}/
 → skip-with-notice (only the client corpus is a hard requirement — it is
 built by `demo/client-corpus-build.sh` from llm-wiki's starter content at
 `kit/starter/decisions/`; a beat whose repo did not resolve says so and
-names the knobs). The pinned adroit installs via `just init-adroit` from
-`adroit.rev`.
+names the knobs). The in-tree adroit builds via `just init-adroit`.
 
 **The honest note.** The suite repos are published — adroit, tuesday, pulse,
 conduit, portfolio, assessments, and llm-wiki all have a remote `main` — so
@@ -365,7 +364,7 @@ change. What needs what:
 | Leg | Status today |
 |---|---|
 | client corpus (hard) | built from llm-wiki `kit/starter/decisions/` — published, resolves remotely |
-| adroit pin (`just init-adroit`) | published — `adroit.rev` pins adroit `main`, reachable on the remote (cold clone needs no sibling) |
+| adroit (`just init-adroit`) | in-tree — built from this workspace (the adroit.rev pin retired with portfolio#8) |
 | pulse, assessments, tuesday (beats 1/2/5) | published — resolve remotely |
 | llm-wiki **binary** (only beat 5's KB query close) | optional: `LLM_WIKI_BIN` → sibling release build → PATH; absent = skip-with-notice |
 | ollama `llama3.2` (only for `--live`) | local install, any machine — never remote |

@@ -10,13 +10,15 @@
 #   - evidence-per-beat: each beat ends with machine output it just
 #     produced (exit codes, shas, jq extracts) — never narration alone.
 #
-# Cross-repo references resolve per the suite convention (ADR-0014):
-# env override -> sibling ../<repo> -> gitignored .como/deps clone cache
-# (COMO_<REPO>_GIT / COMO_GIT_BASE) -> skip-with-notice / actionable error.
+# Cross-product references are in-tree: every product lives beside conduit
+# in the taps workspace (portfolio ADR-0012), and every binary lands in the
+# workspace's single target dir. COMO_<REPO>_DIR env overrides remain for
+# pointing a beat at an out-of-tree checkout.
 
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$KIT_DIR/../.." && pwd)" # the conduit repo root
-CONDUIT="$ROOT/target/debug/conduit"
+ROOT="$(cd "$KIT_DIR/../.." && pwd)"       # the conduit product root
+TARGET_DIR="$(cd "$ROOT/.." && pwd)/target" # the workspace's one target dir
+CONDUIT="$TARGET_DIR/debug/conduit"
 ADROIT="$ROOT/.conduit/bin/adroit"
 CURRENT_FILE="$KIT_DIR/.current" # gitignored pointer to the active workdir
 # The forge port is demo-up INPUT (env FORGE_PORT) but run STATE after:
@@ -90,13 +92,13 @@ beat_end() { # beat_end "beat-2-assess (pre-baked)"
     echo " WALL-CLOCK: $1 took ${secs}s"
 }
 
-# ── Suite resolution (ADR-0014) ────────────────────────────────────────────
+# ── Product resolution (in-tree) ───────────────────────────────────────────
 
-# resolve_repo <name> — echo the checkout dir (empty if unresolved) on
-# stdout; provenance notes on stderr. Chain: COMO_<NAME>_DIR -> sibling
-# ../<name> -> populated .como/deps/<name> cache (used as-is, never
-# auto-fetched) -> clone from COMO_<NAME>_GIT / COMO_GIT_BASE ->
-# empty (the caller decides skip-with-notice vs hard error).
+# resolve_repo <name> — echo the product dir (empty if unresolved) on
+# stdout; provenance notes on stderr. Chain: COMO_<NAME>_DIR env override ->
+# the in-tree workspace dir ../<name> -> empty (the caller decides
+# skip-with-notice vs hard error). The pre-workspace sibling/clone-cache
+# chain (old ADR-0014) is retired: a checkout of this repo IS the suite.
 resolve_repo() {
     local name="$1"
     local var
@@ -108,46 +110,27 @@ resolve_repo() {
         echo "$envdir"
         return
     fi
-    if [ -d "$ROOT/../$name/.git" ]; then
-        note "$name -> ../$name (sibling checkout)"
+    if [ -d "$ROOT/../$name" ]; then
+        note "$name -> ../$name (in-tree)"
         (cd "$ROOT/../$name" && pwd)
         return
     fi
-    local cache="$ROOT/.como/deps/$name"
-    if [ -d "$cache/.git" ]; then
-        note "$name -> $cache (clone cache, used as-is)"
-        echo "$cache"
-        return
-    fi
-    if [ "${COMO_OFFLINE:-0}" != "1" ]; then
-        local gitvar
-        gitvar="COMO_$(echo "$name" | tr '[:lower:]-' '[:upper:]_')_GIT"
-        local url="${!gitvar:-${COMO_GIT_BASE:-https://github.com/como-technologies}/$name.git}"
-        mkdir -p "$ROOT/.como/deps"
-        if git clone --quiet --filter=blob:none "$url" "$cache" 2>/dev/null; then
-            note "$name -> $cache (cloned from $url)"
-            echo "$cache"
-            return
-        fi
-        note "NOTICE — $name unresolved: no $var, no sibling ../$name, and the clone of $url failed (the owner may not have published it yet)"
-    else
-        note "NOTICE — $name unresolved: COMO_OFFLINE=1 and no $var / sibling / cache"
-    fi
+    note "NOTICE — $name unresolved: no $var and no in-tree ../$name"
     echo ""
 }
 
 require_repo() { # require_repo <name> — resolve or die with the knobs named
     local dir
     dir="$(resolve_repo "$1")"
-    [ -n "$dir" ] || die "$1 is required for this beat. Provide COMO_$(echo "$1" | tr '[:lower:]-' '[:upper:]_')_DIR, a sibling ../$1 checkout, or COMO_GIT_BASE for the clone cache."
+    [ -n "$dir" ] || die "$1 is required for this beat. It should exist in-tree at ../$1; COMO_$(echo "$1" | tr '[:lower:]-' '[:upper:]_')_DIR overrides."
     echo "$dir"
 }
 
 # The fictional client's decision corpus — a generated single-commit repo
 # built from llm-wiki's starter content (kit/starter/decisions). Rebuilt on
-# every call (cheap, idempotent-by-reconstruction); the builder resolves
-# llm-wiki per the suite convention and dies with the knobs named when it
-# cannot (the corpus is the demo's one hard cross-repo requirement).
+# every call (cheap, idempotent-by-reconstruction); the builder reads the
+# in-tree llm-wiki's starter content and dies with the knobs named when it
+# cannot (the corpus is the demo's one hard cross-product requirement).
 client_corpus() {
     (cd "$ROOT" && bash demo/client-corpus-build.sh) ||
         die "could not build the client corpus — see the knobs above"

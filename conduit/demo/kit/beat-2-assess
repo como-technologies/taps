@@ -28,7 +28,7 @@ it is ever asked.
 EOF
 
 ASSESSMENTS="$(require_repo assessments)"
-BIN="$ASSESSMENTS/target/debug/amaker"
+BIN="$TARGET_DIR/debug/amaker"
 [ -x "$BIN" ] || die "amaker binary missing — run demo/kit/demo-up"
 
 if [ $LIVE = 1 ]; then
