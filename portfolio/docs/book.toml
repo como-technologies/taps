@@ -1,0 +1,19 @@
+[book]
+title = "Como Technologies Portfolio"
+authors = ["Mike Sandman"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "../target/book"
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html]
+default-theme = "gruvbox"
+preferred-dark-theme = "gruvbox"
+git-repository-url = "https://github.com/como-technologies/portfolio"
+edit-url-template = "https://github.com/como-technologies/portfolio/edit/main/{path}"
+additional-css = ["gruvbox/css/variables.css", "gruvbox/highlight.css"]
+additional-js = ["mermaid.min.js", "mermaid-init.js", "gruvbox/gruvbox.js"]
