@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+# Least privilege: CI only reads the repo (fmt/lint/test, no publishing).
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Check, Lint, Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # rust-toolchain.toml pins the suite toolchain; rustup respects it.
+      - run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: CI gate
+        run: just ci
