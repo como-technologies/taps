@@ -16,6 +16,7 @@ path = "src/main.rs"
 [dependencies]
 tuesday-core = { path = "../tuesday-core" }
 clap.workspace = true
+como-contract.workspace = true
 serde_json.workspace = true
 # The CLI is a native head: a tokio reactor here is fine (ADR-0002 only
 # forbids tokio inside tuesday-core, which must stay wasm32-compatible).

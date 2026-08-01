@@ -148,18 +148,14 @@ fn arb_practice() -> impl Strategy<Value = import::Practice> {
         arb_text(),
         arb_text(),
         prop::collection::vec(arb_question(), 0..3),
-        prop::option::of(arb_token()),
     )
-        .prop_map(
-            |(name, context, value, risk, questions, effort)| import::Practice {
-                name,
-                context,
-                value,
-                risk,
-                questions,
-                effort,
-            },
-        )
+        .prop_map(|(name, context, value, risk, questions)| import::Practice {
+            name,
+            context,
+            value,
+            risk,
+            questions,
+        })
 }
 
 fn arb_domain() -> impl Strategy<Value = import::Domain> {

@@ -4,6 +4,7 @@ members = [
     "adroit",
     "assessments/crates/*",
     "conduit",
+    "contract",
     "llm-wiki",
     "pulse/crates/*",
     "tuesday/crates/*",
@@ -28,6 +29,9 @@ repository = "https://github.com/como-technologies/taps"
 # (tuesday ADR-0002) and the dx 0.7 toolchain are version- and
 # feature-sensitive, and must not inherit `tokio = full`.
 [workspace.dependencies]
+# ── The suite's own shared seams (portfolio ADR-0012, wave 2) ──
+como-contract = { path = "contract" }
+
 # ── Web / async ──
 axum = { version = "0.8.8", features = ["multipart", "macros"] }
 axum-extra = { version = "0.12", features = ["form"] }

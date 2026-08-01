@@ -43,7 +43,7 @@ fn write_plan_stub(dir: &Path) -> PathBuf {
 case "$1" in
   manifest) echo '{"tool":"adroit","manifest_schema":1}' ;;
   show) cat <<'EOF'
-{"reference":"ADR-0042","address":"42","title":"Use Rust","status":"Accepted","body":"## Context\n\nwords\n"}
+{"reference":"ADR-0042","address":"42","title":"Use Rust","status":"accepted","body":"## Context\n\nwords\n"}
 EOF
   ;;
   plan)

@@ -86,10 +86,10 @@ along), exports it via `ExportService::to_data`, and asserts:
    `validate_and_parse` path the CLI `validate` command uses — in all
    three formats, and
 2. the YAML export is **byte-identical** to the vendored golden at
-   `crates/amaker-core/tests/fixtures/golden-export.yaml`.
+   `contract/fixtures/golden-assessment.yaml` (workspace root — the same file adroit's import contract test reads).
 
 If a contract change is intentional, run the test: it writes the current
-bytes next to the golden (`golden-export.actual.yaml`); review, replace
+bytes next to the golden (`golden-assessment.actual.yaml`); review, replace
 the fixture, and commit the diff — downstream consumers see a reviewed
 change, not silent drift.
 

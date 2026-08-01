@@ -1,0 +1,22 @@
+[package]
+name = "como-contract"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+authors.workspace = true
+license = "Apache-2.0"
+description = "The suite's shared seams: the conduit→tuesday PR contract and adroit's machine-readable read slice, as one set of types"
+
+[features]
+# Derive JSON Schema for the read-slice types so adroit's `manifest` feature
+# can publish the exact `-o json` shapes.
+schemars = ["dep:schemars"]
+
+[dependencies]
+serde.workspace = true
+strum.workspace = true
+schemars = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true

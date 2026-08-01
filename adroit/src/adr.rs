@@ -2,7 +2,6 @@ use std::fmt;
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
-use strum::{Display, EnumString};
 use time::format_description::well_known::Iso8601;
 use time::{Date, OffsetDateTime};
 use ulid::Ulid;
@@ -166,47 +165,11 @@ mod review_by_format {
 // Status
 // ---------------------------------------------------------------------------
 
-/// The lifecycle status of an Architecture Decision Record.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Default,
-    Display,
-    EnumString,
-    Serialize,
-    Deserialize,
-)]
-#[cfg_attr(feature = "manifest", derive(schemars::JsonSchema))]
-#[strum(ascii_case_insensitive)]
-#[serde(rename_all = "lowercase")]
-pub enum Status {
-    // Serialized lowercase to match the KB `decision` schema's status enum
-    // (ADR-0020).
-    #[default]
-    Proposed,
-    Accepted,
-    Rejected,
-    Deprecated,
-    Superseded,
-}
-
-impl Status {
-    /// All statuses in lifecycle order. Useful for iterating layout dirs
-    /// and rendering grouped indexes.
-    pub const ALL: [Status; 5] = [
-        Status::Proposed,
-        Status::Accepted,
-        Status::Rejected,
-        Status::Superseded,
-        Status::Deprecated,
-    ];
-}
+// The lifecycle status enum lives in `como-contract` (the suite's shared-seam
+// crate): conduit deserializes exactly what adroit serializes, by
+// construction. Re-exported here so `crate::adr::Status` stays the in-crate
+// path.
+pub use como_contract::adroit::Status;
 
 // ---------------------------------------------------------------------------
 // AdrError

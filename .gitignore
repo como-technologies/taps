@@ -1,1 +1,5 @@
 /target
+
+# The golden-export byte-pin's on-mismatch dump (review, promote to the
+# golden, delete) — written next to the canonical fixture.
+contract/fixtures/*.actual.yaml

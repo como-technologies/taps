@@ -34,7 +34,7 @@ deliberately *not* part of `just ci`: it makes live model calls).
 Run 2026-06-12 — debug build, `ADROIT_AI_PROVIDER=ollama`,
 `ADROIT_AI_MODEL=llama3.2`, fresh temp corpus, the vendored
 [golden assessment fixture](./testing.md#the-test-layers)
-(`tests/fixtures/golden-assessment.yaml`, one practice) as input:
+(`contract/fixtures/golden-assessment.yaml` at the workspace root, one practice) as input:
 
 | Step | Result | Time |
 |---|---|---|

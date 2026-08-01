@@ -29,6 +29,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "colored",
+ "como-contract",
  "crossterm",
  "dialoguer",
  "directories",
@@ -1807,6 +1808,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "como-contract"
+version = "0.1.0"
+dependencies = [
+ "schemars 1.2.2",
+ "serde",
+ "serde_json",
+ "strum 0.28.0",
+]
+
+[[package]]
 name = "compact_str"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1836,6 +1847,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "clap",
+ "como-contract",
  "predicates",
  "serde",
  "serde_json",
@@ -10697,6 +10709,7 @@ dependencies = [
  "assert_cmd",
  "chrono",
  "clap",
+ "como-contract",
  "serde_json",
  "tempfile",
  "tokio",

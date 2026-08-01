@@ -2,10 +2,10 @@
 //! Hardcoded subcommand allowlist {manifest, list, show, plan}; a test asserts
 //! no other adroit invocation exists in the crate.
 //!
-//! The pinned binary (`adroit.rev` -> `just init-adroit` -> `.conduit/bin/adroit`)
-//! speaks `-o json`; deserialization is tolerant — required fields only, deny
-//! nothing — so additive drift on adroit main cannot break the pinned client
-//! (spec §Enumerate). Field names verified against adroit f8547518 view types.
+//! The binary (`just init-adroit` -> `.conduit/bin/adroit`) speaks `-o json`;
+//! deserialization uses the SAME types adroit serializes — `como-contract`'s
+//! read slice (portfolio ADR-0012), so the seam cannot drift. The pre-workspace
+//! hand-written tolerant mirrors and the stub-based contract test are gone.
 
 use std::path::PathBuf;
 
@@ -37,39 +37,10 @@ pub enum AdroitError {
     NotAccepted { address: String, status: String },
 }
 
-/// Tolerant serde: require the contracted fields, deny nothing — additive
-/// drift on adroit main must not break the pinned client (spec §Enumerate).
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct AdrSummary {
-    pub reference: String, // "ADR-0003" — display
-    pub address: String,   // "3" — addressing token
-    pub title: String,
-    pub status: String, // "accepted" etc. (lowercase since the KB-only pin) — tolerant string, not enum
-    #[serde(default)]
-    pub superseded_by: Option<String>,
-}
-
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct AdrDetail {
-    pub reference: String,
-    pub address: String,
-    pub title: String,
-    pub status: String,
-    pub body: String, // raw markdown (show -o json flattens summary + body)
-}
-
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct PlanEnvelope {
-    pub reference: String,
-    pub title: String,
-    pub plan: String, // markdown — persisted VERBATIM
-    /// `true` when adroit returned the plan persisted in the ADR document — a
-    /// deterministic, provider-free read. `false` for a fresh nondeterministic
-    /// generation. Additive in adroit's manifest_schema 1; default keeps the
-    /// client compatible with envelopes that predate the field.
-    #[serde(default)]
-    pub stored: bool,
-}
+// The read-slice types are adroit's own, via `como-contract`: what adroit
+// serializes, conduit deserializes — the same structs. `Plan` keeps its
+// conduit-side name `PlanEnvelope` at the use sites.
+pub use como_contract::adroit::{AdrDetail, AdrSummary, Plan as PlanEnvelope, Status};
 
 pub struct AdrSource {
     bin: PathBuf,                  // .conduit/bin/adroit (or injected stub in tests)
@@ -154,14 +125,16 @@ impl AdrSource {
         #[derive(serde::Deserialize)]
         struct Manifest {
             tool: String,
-            manifest_schema: u64,
+            manifest_schema: u32,
         }
         let out = self.run_adroit("manifest", &[])?;
         let m: Manifest = serde_json::from_slice(&out).map_err(|source| AdroitError::BadJson {
             subcommand: "manifest".to_string(),
             source,
         })?;
-        if m.tool != "adroit" || m.manifest_schema != 1 {
+        if m.tool != como_contract::adroit::ADROIT_TOOL
+            || m.manifest_schema != como_contract::adroit::ADROIT_MANIFEST_SCHEMA
+        {
             return Err(AdroitError::Handshake(format!(
                 "expected tool=\"adroit\" manifest_schema=1, got tool={:?} manifest_schema={}",
                 m.tool, m.manifest_schema
@@ -195,17 +168,13 @@ impl AdrSource {
     }
 
     /// Conduit's OWN guard — adroit does not enforce this (spec §Guard).
-    ///
-    /// Case-insensitive, mirroring adroit's own status parsing: the KB-only
-    /// pin (adroit ADR-0020) serializes status lowercase in `-o json`
-    /// (`"accepted"`), where the pre-KB pins emitted `"Accepted"`.
     pub fn require_accepted(detail: &AdrDetail) -> Result<(), AdroitError> {
-        if detail.status.eq_ignore_ascii_case("accepted") {
+        if detail.summary.status == Status::Accepted {
             Ok(())
         } else {
             Err(AdroitError::NotAccepted {
-                address: detail.address.clone(),
-                status: detail.status.clone(),
+                address: detail.summary.address.clone(),
+                status: detail.summary.status.to_string(),
             })
         }
     }
@@ -374,9 +343,9 @@ mod tests {
         std::fs::write(
             &list,
             r#"[
-          {"reference": "ADR-0001", "address": "1", "title": "a", "status": "Accepted",
+          {"reference": "ADR-0001", "address": "1", "title": "a", "status": "accepted",
            "superseded_by": "ADR-0004", "number": 1, "created": null},
-          {"reference": "ADR-0003", "address": "3", "title": "b", "status": "Accepted",
+          {"reference": "ADR-0003", "address": "3", "title": "b", "status": "accepted",
            "superseded_by": null, "unknown_future_field": {"x": 1}}
         ]"#,
         )
@@ -397,38 +366,40 @@ mod tests {
         std::fs::write(
             &show,
             r###"{"reference": "ADR-0003", "address": "3", "title": "t",
-                "status": "Accepted", "body": "## Context\n\nwords\n",
+                "status": "accepted", "body": "## Context\n\nwords\n",
                 "body_html": null, "plan": null, "related": [], "history": []}"###,
         )
         .unwrap();
         let src = stub_source(d.path()).with_env("FAKE_ADROIT_SHOW", show.to_str().unwrap());
         let detail = src.show("3").unwrap();
-        assert_eq!(detail.reference, "ADR-0003");
+        assert_eq!(detail.summary.reference, "ADR-0003");
         assert_eq!(detail.body, "## Context\n\nwords\n");
     }
 
     #[test]
     fn require_accepted_rejects_other_statuses() {
-        let mk = |status: &str| AdrDetail {
-            reference: "ADR-0003".into(),
-            address: "3".into(),
-            title: "t".into(),
-            status: status.into(),
+        let mk = |status: Status| AdrDetail {
+            summary: como_contract::adroit::AdrSummary {
+                number: Some(3),
+                number_display: "0003".into(),
+                reference: "ADR-0003".into(),
+                address: "3".into(),
+                title: "t".into(),
+                status,
+                created: None,
+                supersedes: Vec::new(),
+                superseded_by: None,
+                review_due: false,
+                forge_data: None,
+            },
             body: "b".into(),
+            body_html: None,
+            plan: None,
+            related: Vec::new(),
+            last_modified: None,
         };
-        assert!(AdrSource::require_accepted(&mk("Accepted")).is_ok());
-        // The KB-only pin serializes status lowercase (adroit ADR-0020).
-        assert!(AdrSource::require_accepted(&mk("accepted")).is_ok());
-        for s in [
-            "Proposed",
-            "proposed",
-            "Rejected",
-            "rejected",
-            "Superseded",
-            "superseded",
-            "Deprecated",
-            "deprecated",
-        ] {
+        assert!(AdrSource::require_accepted(&mk(Status::Accepted)).is_ok());
+        for s in Status::ALL.into_iter().filter(|s| *s != Status::Accepted) {
             assert!(
                 matches!(
                     AdrSource::require_accepted(&mk(s)),

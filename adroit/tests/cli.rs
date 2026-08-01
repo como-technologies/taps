@@ -3120,7 +3120,6 @@ const ASSESSMENT_JSON: &str = r#"{
           "context": "Secrets are committed to git today.",
           "value": "Leaked credentials are a top breach vector.",
           "risk": "A leak forces a painful rotation.",
-          "effort": "M",
           "questions": [ {"text": "Are secrets stored outside source control?", "polarity": "positive"} ] },
         { "name": "Network segmentation",
           "context": "Flat network; one breach reaches everything.",
@@ -3165,7 +3164,6 @@ fn import_seeds_proposed_adrs_from_an_assessment() {
     assert!(body.contains("adroit:seeded-from-assessment"));
     assert!(body.contains("Secrets are committed to git today."));
     assert!(body.contains("**Why it matters:** Leaked credentials are a top breach vector."));
-    assert!(body.contains("**Estimated effort:** M"));
     assert!(body.contains("- Are secrets stored outside source control?"));
     assert!(body.contains("Seeded from assessment \"Cloud Maturity\""));
 
@@ -3439,10 +3437,11 @@ fn import_ai_omits_sanitized_when_nothing_dropped() {
 
 // ---- import -o json (machine seed summary) + the golden contract fixture ----
 
-/// The vendored cross-repo contract fixture (see its comment header): the
-/// `assessments` app's real-exporter golden, regenerated THERE via `just golden`.
+/// The canonical cross-product contract fixture: the `assessments` app's
+/// real-exporter golden at `contract/fixtures/` — ONE file, read by path from
+/// both the producer's byte-pin test and this consumer test (portfolio#8).
 fn golden_assessment() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/golden-assessment.yaml")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../contract/fixtures/golden-assessment.yaml")
 }
 
 #[test]
@@ -3510,7 +3509,6 @@ fn import_golden_assessment_contract() {
     assert!(body.contains("Every change is built and tested automatically"));
     assert!(body.contains("**Why it matters:** Defects surface minutes after they are introduced"));
     assert!(body.contains("**Risk if unaddressed:** Broken builds discovered at release time"));
-    assert!(body.contains("**Estimated effort:** medium"));
     assert!(body.contains("- Does every change build and run the test suite in CI before merge?"));
     assert!(body.contains("- Are releases routinely delayed by manual verification?"));
     assert!(body.contains(

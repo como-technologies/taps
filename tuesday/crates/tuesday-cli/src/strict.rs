@@ -21,14 +21,10 @@ pub struct StrictViolation {
     pub problems: Vec<String>,
 }
 
-/// The closed five-value effort enum from the conduit contract table.
-const VALID_EFFORT_LABELS: [&str; 5] = [
-    "effort:1-super-quick",
-    "effort:2-not-long",
-    "effort:3-average",
-    "effort:4-a-while",
-    "effort:5-felt-like-forever",
-];
+/// The closed five-value effort set — the conduit contract itself, imported
+/// from `como-contract` so emitter and validator cannot drift (tuesday#65:
+/// this was a private byte-identical twin of conduit's array).
+use como_contract::EFFORT_LABELS as VALID_EFFORT_LABELS;
 
 /// Check every merged PR against the strict rule, in input order.
 pub fn check_strict(repo_prs: &[(String, Vec<MergedPr>)]) -> Vec<StrictViolation> {

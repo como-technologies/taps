@@ -442,9 +442,9 @@ pub fn build() -> Manifest {
         });
     }
     Manifest {
-        tool: "adroit",
+        tool: como_contract::adroit::ADROIT_TOOL,
         version: env!("CARGO_PKG_VERSION"),
-        manifest_schema: 1,
+        manifest_schema: como_contract::adroit::ADROIT_MANIFEST_SCHEMA,
         description: root.get_about().map(|s| s.to_string()),
         global_options,
         commands,

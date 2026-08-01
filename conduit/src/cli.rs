@@ -219,7 +219,7 @@ fn cmd_plan(
     let detail = adroit.show(address)?;
     AdrSource::require_accepted(&detail)?;
 
-    let task_id = contract::task_slug(&detail.reference);
+    let task_id = contract::task_slug(&detail.summary.reference);
     let mut record = match store.load_task(&task_id)? {
         Some(existing) if existing.state.is_terminal() => anyhow::bail!(
             "task {task_id} is already {:?} — replanning = cancel + new task (out of scope in the spike)",
@@ -238,14 +238,19 @@ fn cmd_plan(
             // is now the only copy that matters).
             eprintln!(
                 "plan for {}: {}",
-                detail.reference,
+                detail.summary.reference,
                 if envelope.stored {
                     "stored plan (deterministic read from the ADR document)"
                 } else {
                     "freshly generated (nondeterministic; snapshot is now canonical)"
                 }
             );
-            let mut record = TaskRecord::new(&detail.reference, &detail.address, &detail.title, "");
+            let mut record = TaskRecord::new(
+                &detail.summary.reference,
+                &detail.summary.address,
+                &detail.summary.title,
+                "",
+            );
             record.plan_sha256 = store.save_plan(&record.id, &envelope.plan)?;
             // Decision context for the engine seam (TaskSpec.adr_body).
             store.save_adr_body(&record.id, &detail.body)?;
@@ -271,7 +276,7 @@ fn cmd_plan(
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&record)?),
         OutputFormat::Human => println!(
             "planned {} as task {} — issue {} on {}: label it {} to start",
-            detail.reference,
+            detail.summary.reference,
             record.id,
             issue.0,
             forge.describe(),

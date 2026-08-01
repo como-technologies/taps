@@ -35,9 +35,6 @@ Thumbs.db
 /.bin/
 
 
-# golden_export's on-mismatch dump (review, promote to the golden, delete)
-crates/amaker-core/tests/fixtures/*.actual.yaml
-
 # Tailwind build output (generated from assets/app.src.css)
 /assets/app.css
 

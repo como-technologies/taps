@@ -18,7 +18,7 @@ default = ["tui", "ai", "forge", "manifest", "mcp"]
 # `adroit manifest` — a machine-readable catalog of the CLI surface (commands,
 # args, the `view`-type JSON schemas, and per-command semantics) for agents.
 # Behind a default-on feature so a `--no-default-features` core drops `schemars`.
-manifest = ["dep:schemars"]
+manifest = ["dep:schemars", "como-contract/schemars"]
 # `adroit mcp` — a Model Context Protocol server (JSON-RPC 2.0 over stdio) that
 # projects the manifest's read verbs as MCP tools so an agent drives adroit
 # without scraping `--help`. Depends on `manifest`; adds NO new deps (serde_json +
@@ -69,6 +69,7 @@ ai = ["dep:rig", "dep:tokio", "keychain"]
 [dependencies]
 # ── Core — always compiled (lib + CLI). `--no-default-features` builds these alone.
 anyhow.workspace = true
+como-contract.workspace = true
 clap.workspace = true
 clap_complete.workspace = true
 colored.workspace = true

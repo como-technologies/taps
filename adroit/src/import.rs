@@ -67,8 +67,6 @@ pub struct Practice {
     pub risk: String,
     #[serde(default)]
     pub questions: Vec<Question>,
-    #[serde(default)]
-    pub effort: Option<String>,
 }
 
 /// A diagnostic question under a practice; its text becomes a recorded signal.
@@ -93,7 +91,9 @@ pub struct SeedDraft {
     pub assessment: String,
     /// Problem statement — the practice context, falling back to the domain's.
     pub context: String,
-    /// Decision-driver lines built from the practice's value / risk / effort.
+    /// Decision-driver lines built from the practice's value / risk. (The
+    /// export contract carries effort per-question as remediation metadata
+    /// now, not per-practice; the seed body no longer estimates effort.)
     pub drivers: Vec<String>,
     /// The practice's question texts, recorded as assessment signals.
     pub signals: Vec<String>,
@@ -142,10 +142,6 @@ pub fn seed_drafts(a: &Assessment) -> Vec<SeedDraft> {
             if !p.risk.trim().is_empty() {
                 drivers.push(format!("**Risk if unaddressed:** {}", p.risk.trim()));
             }
-            if let Some(e) = p.effort.as_deref().map(str::trim).filter(|e| !e.is_empty()) {
-                drivers.push(format!("**Estimated effort:** {e}"));
-            }
-
             let signals = p
                 .questions
                 .iter()
@@ -249,7 +245,6 @@ mod tests {
               "context": "Secrets are committed to git today.",
               "value": "Leaked credentials are a top breach vector.",
               "risk": "A leak forces a painful rotation across every service.",
-              "effort": "M",
               "questions": [
                 {"text": "Are secrets stored outside source control?", "polarity": "positive"},
                 {"text": "Is there an audited rotation process?", "polarity": "positive"}
@@ -280,14 +275,10 @@ mod tests {
         assert_eq!(d.assessment, "Cloud Maturity");
         assert!(d.context.starts_with("Secrets are committed"));
         assert_eq!(d.signals.len(), 2);
-        // value, risk, effort → three driver lines.
-        assert_eq!(d.drivers.len(), 3);
+        // value, risk → two driver lines.
+        assert_eq!(d.drivers.len(), 2);
         assert!(d.drivers[0].contains("Why it matters"));
-        assert!(
-            d.drivers
-                .iter()
-                .any(|l| l.contains("Estimated effort:** M"))
-        );
+        assert!(d.drivers[1].contains("Risk if unaddressed"));
     }
 
     #[test]

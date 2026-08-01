@@ -9,7 +9,7 @@
 //!    `ExportService::validate_and_parse`, i.e. what we export always
 //!    satisfies the published JSON Schema (`amaker schema`).
 //! 2. **Bytes:** the exported YAML is identical to the vendored golden at
-//!    `tests/fixtures/golden-export.yaml`, so any change to the export
+//!    `../../../contract/fixtures/golden-assessment.yaml`, so any change to the export
 //!    shape surfaces as a reviewed diff to that file — never silent drift
 //!    for downstream consumers (adroit's `import --from-assessment` seam).
 //!
@@ -83,7 +83,8 @@ fn pinned_assessment() -> Assessment {
 }
 
 fn golden_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/golden-export.yaml")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../contract/fixtures/golden-assessment.yaml")
 }
 
 /// The export validates against the published JSON Schema (round-trips

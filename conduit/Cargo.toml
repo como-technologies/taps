@@ -12,6 +12,7 @@ description = "Forge-neutral agentic development harness — the Adopt-stage eng
 # ── Core — fully synchronous, no tokio (spec §Stack: poll-tick loop, one task at a time).
 # Binary-layer errors; typed thiserror enums live in the lib modules.
 anyhow.workspace = true
+como-contract.workspace = true
 clap.workspace = true
 serde.workspace = true
 # `-o json` output, transcript JSONL, adroit/engine JSON envelopes, snapshot persistence.
