@@ -1,0 +1,229 @@
+# adroit
+
+A snappy tool for managing Architecture Decision Records — the name hides
+**ADR** in plain sight.
+
+> **Status: dogfooded daily.** We use adroit on our own consulting gigs to
+> manage ADRs in-repo. Distributed as source by decision (ADR-0013): build it
+> with `just build`, pin releases by tag (see the book's Changelog chapter).
+
+adroit operates **exclusively against a KB space** (ADR-0020): `--dir`
+names a space — a directory holding a `wiki.toml` — and decision pages
+live flat in the space's `wiki/decisions/`, one profile only: YAML
+frontmatter as the source of truth (ULID `id`, head-owned `reference:
+ADR-NNNN`, lowercase `status`), body as prose. Status changes rewrite
+frontmatter in place; files never move. A legacy `# ADR-NNNN:` corpus
+bootstraps into a fresh space with one command:
+`adroit seed --from <legacy-dir>`.
+
+## Three ways to use it
+
+One binary, three surfaces over the same ADR repo:
+
+- **CLI** — fast capture and scripting. Always available.
+- **TUI** — interactive browse / triage / in-terminal editing. Run bare
+  `adroit`. On by default (`tui` feature).
+- **Web** — read-only dashboard (Dashboard / Browse+Search / Insights), with
+  live-reload. `adroit serve`, behind the `web` feature.
+
+## Build
+
+```sh
+just init          # one-time: install toolchain (clippy, rustfmt, mdbook, …)
+just build         # debug build  → target/debug/adroit  (TUI + AI + forge)
+just release       # release build → target/release/adroit
+```
+
+### Features
+
+`just build` gives you the full binary: the TUI plus the **AI** and **forge**
+integrations. Each is a Cargo feature, and the bare core still builds without any
+of them (`cargo build --no-default-features` / `just build-core`) — small and
+synchronous (no tui, no rig/tokio, no http client).
+
+| Feature | Default? | Adds |
+|---|---|---|
+| `tui` | ✅ | the interactive TUI (bare `adroit`) |
+| `ai` | ✅ | AI authoring: `new --interview`, `draft`, `compose`, `plan`, `lint --ai`, `summarize`, `ask` (Anthropic or local Ollama). Calls are still gated at runtime by `ai.enabled` |
+| `forge` | ✅ | GitHub/GitLab issue + PR/MR sync: `init`, `auth`, `sync`, `reconcile`, `notify` |
+| `web` | — | the read-only web dashboard. Opt-in (it needs the Vue SPA bundle); build + run with `just serve` |
+
+## Test
+
+```sh
+just ci            # the full gate: fmt, clippy, all suites, book, audit
+just test          # default-feature tests (TUI + AI + forge: unit + CLI + oracle + parsers)
+just test-core     # the bare core (--no-default-features); just test-web for the dashboard
+just model         # wide property soak (PROPTEST_CASES, default 2000)
+```
+
+adroit has a model-based ("oracle") tester that drives the real binary through
+random command sequences across the format × layout × scheme matrix, plus parser
+fuzzing (incl. coverage-guided via bolero), forge fault-injection, and dashboard
+XSS tests. See
+[Testing & Fuzzing](docs/src/dev/testing.md) for how to run, soak, extend, and
+triage them — and how to drive an AI assistant to do it — and
+[Hardening & Quality](docs/src/dev/hardening.md) for the bug-finding campaign.
+
+## Point it at your KB space
+
+Pass `--dir`, or set it once and forget it:
+
+```sh
+cp .env.example .env      # then edit ADROIT_DIR (git-ignored)
+# .env:  ADROIT_DIR=/path/to/your-space     # the dir holding wiki.toml
+```
+
+`--dir` / `ADROIT_DIR` work for every command and surface. Precedence:
+flag > env/`.env` > `~/.config/adroit/config.yaml` > default. A dir
+without a `wiki.toml` is a hard error naming the bootstrap path: create
+a space with `llm-wiki spaces create` (or scaffold `wiki.toml` +
+`wiki/decisions`), then `adroit seed --from <legacy-dir>` if you have an
+existing corpus. Working harness-first? The Como authoring kit in the
+llm-wiki repo (`kit/`) wires adroit and the engine into Claude Code.
+
+`adroit config` shows every setting, its resolved value, and which of those
+layers it came from; `adroit config set <key> <value>` persists a default (add
+`--local` to write the project `.env` instead).
+
+## CLI cheatsheet
+
+```sh
+adroit new "Use PostgreSQL for the datastore"   # next number, scaffolds the page, opens $EDITOR
+adroit seed --from docs/src/adr         # one-way bootstrap of a legacy corpus into the space
+adroit list                             # or: --status accepted
+adroit search postgres
+adroit status 9                         # getter: prints the status (lowercase, scriptable)
+adroit set-status 9 accepted            # setter: rewrites frontmatter in place (no file moves)
+adroit supersede 9 4                    # 9 supersedes 4 (moves 4, links both)
+adroit link 9 --depends-on 4            # typed relational link (frontmatter profile)
+adroit set-review 9 2026-07-15          # review deadline (review-due once past)
+adroit review 9 --output kickoff.md     # generate the MR review-kickoff doc
+adroit index                            # refresh SUMMARY.md, grouped by status
+adroit check                            # CI gate: validate the ADR repo (non-zero on problems)
+adroit index --check                    # CI gate: fail if SUMMARY.md is stale
+adroit config                           # list every setting and where it came from
+```
+
+`adroit --help` lists every command (and `adroit <cmd> --help` the per-command
+flags), grouped by workflow stage — author → review & decide → explore →
+maintain. The full set, beyond the cheatsheet: `link`, `relink`, `renumber`,
+and `config` round out collisions, link hygiene, and configuration.
+
+## AI-assisted authoring (opt-in)
+
+The AI verbs are in the default build — just enable them via config or
+`ADROIT_AI_ENABLED=true` and pick a provider (hosted Anthropic, or local Ollama
+for an air-gapped, no-key setup):
+
+```sh
+adroit new "Adopt event sourcing" --interview   # Socratic Q&A → AI drafts the body
+adroit draft 9                                  # run that interview on an existing ADR
+adroit compose 9 "expand the consequences"      # targeted AI revision of the current body
+adroit lint 9                                   # flag unfilled sections / missing trade-offs
+adroit summarize 9                              # one-paragraph TL;DR
+adroit plan 9                                   # AI implementation checklist
+adroit ask "why did we pick Postgres?"          # corpus Q&A with citations
+```
+
+The AI only ever writes *prose* (marked `<!-- adroit:ai-suggested -->`) — identity,
+status, dates, and links stay mechanical, and you review before committing. The
+mechanical cousins `dedupe`/`related` need no provider at all. The same assists are
+also available **inside the TUI** via the `:` command palette (draft/revise, ask,
+summarize, lint, plan). See
+[Automation & AI](docs/src/usage/automation.md) and
+[The ADR Workflow](docs/src/usage/workflow.md).
+
+## Shell completions
+
+`adroit completions <bash|zsh|fish|powershell|elvish>` prints a completion
+script generated from the command tree. Source it from your shell rc
+(kubectl-style):
+
+```sh
+. <(adroit completions bash)     # ~/.bashrc
+. <(adroit completions zsh)      # ~/.zshrc
+adroit completions fish | source # fish
+```
+
+— or save it onto your shell's completion path (see the
+[CLI reference](docs/src/reference/cli.md)). It completes subcommands, flags, and
+enum values (e.g. `set-status <TAB>`).
+
+## TUI
+
+```sh
+adroit                                  # bare command launches the TUI
+```
+
+A keyboard-driven (mouse-aware) two-pane interface — list + syntax-highlighted
+markdown preview — with a Claude-Code-style feel:
+
+- **Navigate / triage:** `j`/`k` move, `/` search, `f` filter, `o` sort, `Enter`
+  focuses the preview (scrollbar, `g`/`G`, PageUp/Down, wheel), `m` toggles
+  rendered ↔ raw.
+- **Command palette:** `:` opens a fuzzy palette over every action; `Ctrl-P` is a
+  fuzzy "go to ADR" finder.
+- **Author:** `n` new, `s` set status, `S` supersede (fuzzy-pick the older ADR),
+  `i` edits the body in a **modal (vi) editor** in-terminal, `e` opens `$EDITOR`.
+- **AI assists** (via `:`, needs a provider): draft / revise the body, ask the
+  corpus, summarize, lint, plan — each on a background thread.
+- **Themes:** `gruvbox` (default), `--theme warm` (Claude-Code-style), or
+  `default` (ANSI). `?` shows the full keybinding cheat-sheet.
+
+See [Interactive TUI](docs/src/usage/tui.md) for the full keymap.
+
+## Web dashboard
+
+```sh
+just serve                              # build the SPA + serve with live-reload (:8080)
+# or manually:
+cargo run --features web -- serve --dir /path/to/your-space
+```
+
+Open the printed `http://127.0.0.1:8080`. Read-only (authoring stays in CLI/TUI);
+it auto-refreshes when ADR files change on disk. `Ctrl-C` to stop.
+
+## ADR styles we follow
+
+ADRs originate with Michael Nygard's
+[Documenting Architecture Decisions](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
+— a short, version-controlled record of a decision, its context, and its
+consequences. We lean on two well-established conventions and recommend either:
+
+- **[MADR](https://adr.github.io/madr/)** (Markdown Any Decision Records) — our
+  default (`--template madr`). A fuller structure (context, decision drivers,
+  considered options, outcome, consequences) that holds up when a decision needs
+  real justification.
+- **[Nygard](https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions)**
+  (`--template nygard`) — the original minimal form (Status / Context / Decision
+  / Consequences). Reach for it when MADR is more ceremony than the decision
+  warrants.
+
+We also treat "ADR" broadly — any team decision worth recording, not just
+architecture (see Olaf Zimmermann's
+[Any Decision Records](https://ozimmer.ch/practices/2021/04/23/AnyDecisionRecords.html)).
+For more templates and examples, the
+[architecture-decision-record](https://github.com/joelparkerhenderson/architecture-decision-record)
+collection is the best reference. Bring your own template with
+`--template <path>` or an `adr-template.md` in your repo.
+
+## Bake it into CI
+
+The ADR process fits a GitHub/GitLab pipeline: propose on `main`, then the
+PR/MR *is* the decision (move proposed → accepted/rejected). `adroit check` and
+`adroit index --check` gate it, and `adroit review` posts the kickoff brief on
+the decision PR/MR. Copy-and-customize templates for both platforms live in
+[`templates/ci/`](templates/ci/); see
+[docs/src/usage/ci-integration.md](docs/src/usage/ci-integration.md).
+
+## More
+
+- User manual: `just book` (source in `docs/`).
+- The KB decision page format: [docs/src/reference/adr-format.md](docs/src/reference/adr-format.md).
+- Naming schemes (`sequential` / `date` / `uuid`): [docs/src/reference/adr-format.md#naming-schemes](docs/src/reference/adr-format.md#naming-schemes).
+- Every command: `adroit --help`; every `just` recipe: run `just`.
+
+## License
+
+Apache-2.0
