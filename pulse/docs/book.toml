@@ -1,0 +1,19 @@
+[book]
+title = "Pulse Documentation"
+authors = ["Como Technologies"]
+language = "en"
+src = "src"
+
+[output.html]
+git-repository-url = "https://github.com/como-technologies/pulse"
+edit-url-template = "https://github.com/como-technologies/pulse/edit/main/docs/src/{path}"
+
+sidebar-header-nav = false
+default-theme = "gruvbox"
+preferred-dark-theme = "gruvbox"
+additional-css = ["gruvbox/css/variables.css", "gruvbox/highlight.css"]
+additional-js = ["gruvbox/gruvbox.js", "gruvbox/mermaid-gruvbox.js"]
+
+[output.html.fold]
+enable = true
+level = 0
