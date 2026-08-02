@@ -1,9 +1,7 @@
 //! ALL tuesday-contract emission (conduit spec §The tuesday contract). Pure —
 //! no I/O. Conduit emits these labels/titles/trailers; tuesday (the Measure
 //! stage) reads them back at merge time. This module is the single place the
-//! contract lives: both products import it, so it cannot drift (the
-//! pre-workspace twins were conduit's `contract.rs` and tuesday's private
-//! `VALID_EFFORT_LABELS` — tuesday#65).
+//! contract lives: both products import it, so it cannot drift.
 
 use serde::{Deserialize, Serialize};
 

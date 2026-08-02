@@ -12,7 +12,7 @@ init:
 # Run all CI checks: the CLAUDE.md pre-push checklist + book + ADR validation
 # + dependency audit. This local gate is the source of truth (nothing is
 # pushed in park mode).
-# ADR-corpus validation is the workspace-root `just adr-check` (portfolio#8).
+# ADR-corpus validation is the workspace-root `just adr-check`.
 ci: fmt-check lint test book crate-audit
 
 # House vocabulary for the full local gate

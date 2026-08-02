@@ -27,8 +27,7 @@ test:
     cargo test --workspace
 
 # Validate every product's ADR corpus with the in-tree adroit — the suite's
-# self-hosted dogfood gate, one recipe (portfolio#8; this replaced six
-# per-repo recipes and their binary-resolution chains). KB-only adroit
+# self-hosted dogfood gate, one recipe for every corpus. KB-only adroit
 # (adroit ADR-0020): each committed corpus is seeded into an ephemeral KB
 # space and validated there; docs/src/adr stays the repo of record.
 adr-check:
@@ -46,8 +45,8 @@ adr-check:
         rm -rf "$tmp"
     done
 
-# The per-product invariant lanes a blanket --workspace build can't see
-# (portfolio#8). Each guards an accepted decision:
+# The per-product invariant lanes a blanket --workspace build can't see.
+# Each guards an accepted decision:
 lanes:
     # conduit is fully synchronous (conduit ADR-0001, poll-tick loop): its
     # dependency graph must stay tokio-free.

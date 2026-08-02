@@ -7,8 +7,8 @@ init:
     rustup component add clippy rustfmt
     cargo install cargo-watch mdbook cargo-outdated cargo-edit cargo-audit
 
-# Run all CI checks (used by .github/workflows/ci.yml). ADR-corpus
-# validation is the workspace-root `just adr-check` (portfolio#8).
+# Run all CI checks. ADR-corpus validation is the workspace-root
+# `just adr-check`.
 ci: fmt-check lint test book crate-outdated crate-audit vendor-outdated tailwind-build
 
 # Format code

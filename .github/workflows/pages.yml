@@ -1,8 +1,7 @@
 name: Deploy Books to GitHub Pages
 
 # One workflow publishes every product's book under one site with
-# per-product paths (portfolio#8; this replaced four separate Pages
-# deployments). The portfolio book is the reader-facing front door.
+# per-product paths. The portfolio book is the reader-facing front door.
 
 on:
   push:

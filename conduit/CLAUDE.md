@@ -44,7 +44,7 @@ packages the full TAPS engagement demo — narrated script:
 `docs/src/usage/customer-demo.md`; design: ADR-0015.
 
 ADR-corpus validation is the workspace-root `just adr-check` (one recipe,
-every product's corpus — portfolio#8). `just init-adroit` is a `ci` leg
+every product's corpus). `just init-adroit` is a `ci` leg
 here because tests/demo_init.rs needs the binary at .conduit/bin/adroit.
 `cargo audit` runs as a separate CI job (`just crate-audit`, plus a weekly
 schedule) so a fresh advisory can't mask the code gates.

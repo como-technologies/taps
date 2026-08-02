@@ -22,8 +22,7 @@ pub struct StrictViolation {
 }
 
 /// The closed five-value effort set — the conduit contract itself, imported
-/// from `como-contract` so emitter and validator cannot drift (tuesday#65:
-/// this was a private byte-identical twin of conduit's array).
+/// from `como-contract` so emitter and validator cannot drift.
 use como_contract::EFFORT_LABELS as VALID_EFFORT_LABELS;
 
 /// Check every merged PR against the strict rule, in input order.

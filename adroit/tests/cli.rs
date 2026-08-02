@@ -3439,7 +3439,7 @@ fn import_ai_omits_sanitized_when_nothing_dropped() {
 
 /// The canonical cross-product contract fixture: the `assessments` app's
 /// real-exporter golden at `contract/fixtures/` — ONE file, read by path from
-/// both the producer's byte-pin test and this consumer test (portfolio#8).
+/// both the producer's byte-pin test and this consumer test.
 fn golden_assessment() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../contract/fixtures/golden-assessment.yaml")
 }

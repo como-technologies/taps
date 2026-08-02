@@ -12,8 +12,7 @@ init:
 # guard the `--no-default-features` core (no tui/ai/forge — stays tokio-free), and
 # `lint-web`/`test-web` cover the opt-in web feature. ADR-corpus validation
 # (the self-hosted dogfood gate) is the workspace-root `just adr-check`,
-# which validates every product's corpus with the freshly built adroit
-# (portfolio#8).
+# which validates every product's corpus with the freshly built adroit.
 ci: fmt-check lint-core lint lint-web test-core test test-web book crate-outdated crate-audit
 
 # Format code

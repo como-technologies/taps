@@ -364,7 +364,7 @@ change. What needs what:
 | Leg | Status today |
 |---|---|
 | client corpus (hard) | built from llm-wiki `kit/starter/decisions/` — published, resolves remotely |
-| adroit (`just init-adroit`) | in-tree — built from this workspace (the adroit.rev pin retired with portfolio#8) |
+| adroit (`just init-adroit`) | in-tree — built from this workspace |
 | pulse, assessments, tuesday (beats 1/2/5) | published — resolve remotely |
 | llm-wiki **binary** (only beat 5's KB query close) | optional: `LLM_WIKI_BIN` → sibling release build → PATH; absent = skip-with-notice |
 | ollama `llama3.2` (only for `--live`) | local install, any machine — never remote |

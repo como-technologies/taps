@@ -13,7 +13,7 @@ init:
 # init-adroit runs BEFORE test: it places the in-tree adroit at
 # .conduit/bin/adroit, which tests/demo_init.rs needs to exercise the
 # corpus-space seeding. ADR-corpus validation is the workspace-root
-# `just adr-check` (one recipe, every product's corpus — portfolio#8).
+# `just adr-check` (one recipe, every product's corpus).
 ci: fmt-check lint init-adroit test book
 
 # Format code
@@ -40,11 +40,10 @@ check:
 run *ARGS:
     cargo run -- {{ARGS}}
 
-# Place the in-tree adroit at .conduit/bin/adroit — the path conduit's
-# AdrSource resolves (src/adroit.rs). The workspace retired the adroit.rev
-# pin and its remote/sibling resolution chain (portfolio#8 wave 4): the
-# contract is the crate graph itself now (conduit and adroit share types via
-# como-contract), and the binary is built from this tree.
+# Build the workspace's adroit and place it at .conduit/bin/adroit — the
+# path conduit's AdrSource resolves (src/adroit.rs). The contract is the
+# crate graph itself (conduit and adroit share types via como-contract),
+# and the binary is built from this tree.
 init-adroit:
     #!/usr/bin/env bash
     set -euo pipefail

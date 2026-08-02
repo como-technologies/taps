@@ -199,16 +199,15 @@ guarantee for free, mechanically, from both sides:
   no model in sight. See [Export Contract](./export-contract.md).
 - **Consumer side (adroit):** adroit's contract test pins
   `import --from-assessment` against the SAME file, by path — one golden,
-  two tests (portfolio#8 wave 2 replaced the vendored copies, which had
+  two tests (this replaced per-product vendored copies, which had
   drifted apart in shape, with this single fixture).
 
 The loop line's `just seam-check` recipe (a jq join of `validate -o json`
 against a dry-run import's seed summary) has not been ported to main's
 justfile; the golden-export test is the seam gate `just ci` actually
 runs. ADR-corpus validation — this book's corpus included — is the
-workspace-root `just adr-check`, which runs the in-tree adroit
-(portfolio#8); the per-repo resolution chain (ADR-0008) retired with the
-move to the single workspace.
+workspace-root `just adr-check`, which runs the in-tree adroit; the
+former resolution chain (ADR-0008) is superseded.
 
 ## Where the loop goes next
 

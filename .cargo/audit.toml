@@ -1,6 +1,6 @@
 # cargo-audit configuration (honored by `just crate-audit` locally and in CI).
-# Merged from the products' per-repo accepted-advisory files at workspace
-# formation (portfolio#8); each acceptance keeps its dated owner rationale.
+# One file for the whole workspace; each acceptance keeps its dated owner
+# rationale (what was accepted, why, and the removal trigger).
 
 [advisories]
 ignore = [

@@ -1,33 +1,46 @@
 # taps
 
-The Como Technologies suite as a single multi-crate Cargo workspace: adroit,
-assessments, conduit, llm-wiki, portfolio (the book), pulse, and tuesday, plus
-the shared `como-contract` crate.
+The Como Technologies **TAPS suite** — the Tools, Apps, Products, and
+Services behind the four-stage modernization loop (Assess → Prescribe →
+Adopt → Measure) — as one multi-crate Cargo workspace.
 
-Decided in portfolio ADR-0012 and executed per portfolio#8. This repo starts
-with fresh history; the seven original repos are the archive. Each product was
-copied in from its `main` at these SHAs (recorded 2026-08-01):
+| product | what it is |
+|---|---|
+| [`adroit`](adroit/) | Architecture Decision Record manager: CLI, TUI, MCP server, and web dashboard (Prescribe) |
+| [`assessments`](assessments/) | amaker — chat-driven assessment authoring, respondent forms, and analysis (Assess) |
+| [`conduit`](conduit/) | forge-neutral agentic development harness — the Adopt-stage engine |
+| [`llm-wiki`](llm-wiki/) | git-backed wiki engine with MCP/ACP servers — the suite's knowledge-base substrate |
+| [`portfolio`](portfolio/) | the reader-facing book: the suite's story and how the loop closes |
+| [`pulse`](pulse/) | anonymous, cryptographically private team polling (Measure) |
+| [`tuesday`](tuesday/) | decision-attributed effort reporting from merged PRs (Measure) |
+| [`contract`](contract/) | `como-contract` — the cross-product seams (labels, the adroit read slice, the golden export fixture), shared as one set of types |
 
-| product | source repo | SHA |
-|---|---|---|
-| adroit | como-technologies/adroit | `2de71ef` |
-| assessments | como-technologies/assessments | `ca11cee` |
-| conduit | como-technologies/conduit | `03414d0` |
-| llm-wiki | como-technologies/llm-wiki | `8467a3c` |
-| portfolio | como-technologies/portfolio | `2131b11` |
-| pulse | como-technologies/pulse | `15e7d5f` |
-| tuesday | como-technologies/tuesday | `42076ec` |
+## Building
 
-## Working in the workspace
+A Rust toolchain (pinned suite-wide in [`rust-toolchain.toml`](rust-toolchain.toml)),
+[`just`](https://github.com/casey/just), and [`mdbook`](https://rust-lang.github.io/mdBook/)
+(+ `mdbook-mermaid`) for the books.
 
-- `just ci` at the root is the whole gate — fmt, clippy, the workspace test
-  suite, the per-product invariant lanes (`just lanes`), `adr-check` over
-  every product's ADR corpus with the in-tree adroit, and all six books.
-  `just crate-audit` runs separately (its own CI job plus a weekly sweep)
-  so a fresh advisory can't mask the code gates.
-- Toolchain is pinned suite-wide in `rust-toolchain.toml`.
-- Products keep their directory identity, their own mdBook, and their own
-  `docs/src/adr` corpus; one Pages workflow publishes all the books under
-  one site with per-product paths.
-- Heavier per-product lanes (adroit's Vue build, tuesday's `dx` builds,
-  assessments' Tailwind) live in each product's own justfile.
+```sh
+cargo build                # everything
+cargo build -p <crate>     # one product
+just ci                    # the whole suite gate
+```
+
+`just ci` at the root is the gate — fmt, clippy, the workspace test suite,
+the per-product invariant lanes (`just lanes`), `adr-check` over every
+product's ADR corpus with the workspace's own adroit, and all six books.
+`just crate-audit` runs separately (its own CI job plus a weekly sweep) so
+a fresh advisory can't mask the code gates. Heavier per-product lanes
+(adroit's Vue build, tuesday's `dx` builds, assessments' Tailwind) live in
+each product's own justfile.
+
+## Documentation
+
+- **Published books:** <https://como-technologies.github.io/taps/> — one
+  site, per-product paths. Start with the portfolio book.
+- **Operating the suite** (stand-up, verification rings, the end-to-end
+  demo): [`portfolio/OPERATIONS.md`](portfolio/OPERATIONS.md).
+- Each product carries its own docs under `<product>/docs/` — including its
+  decision records at the uniform `docs/src/adr/` path — and its own
+  README for product-level detail.

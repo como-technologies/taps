@@ -47,8 +47,8 @@ never silently.
 just ci      # at the workspace root
 ```
 
-One command is now both of the old per-repo rings: fmt + clippy + the full
-workspace test suite + `adr-check`, which validates **every** product's ADR
+One command is the whole gate: fmt + clippy + the full workspace test
+suite + `adr-check`, which validates **every** product's ADR
 corpus with the freshly built in-tree adroit — since adroit went KB-only
 (adroit ADR-0020, portfolio ADR-0009) that leg seeds each committed corpus
 into an ephemeral KB space and validates it there, so the gate also
@@ -156,14 +156,11 @@ this decision cost?" from pages alone.
 
 ## The pre-review cold gate
 
-A cold clone of this repo IS the suite (the multi-repo `cold-sim`
-rehearsal script retired with ADR-0012): the pre-review rehearsal is
-`git clone` into a fresh directory, then rings 1–2 (`just ci` at the
+A cold clone of this repo is the whole suite: the pre-review rehearsal
+is `git clone` into a fresh directory, then rings 1–2 (`just ci` at the
 root) and, hardware permitting, ring 3's pre-baked demo path.
 
 ## Publishing
 
-Standing the suite up locally needs no remotes. The workspace repo
-(`como-technologies/taps`) is the only remote that matters; the seven
-pre-workspace repos are frozen as the archive. Publishing the books to
-Pages rides the repo's own CI.
+Standing the suite up locally needs no remotes. Publishing the books to
+Pages rides the repo's own CI (one workflow, all six books, one site).
