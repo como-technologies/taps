@@ -128,7 +128,7 @@ ADR-0001 | Author demo content only in disposable spaces | proposed
   `stale` findings on pages authored *minutes earlier* — the age half
   of the stale rule (age AND low confidence) appears absent, which
   would train authors to ignore the born-generated contract. Filed as
-  llm-wiki#15.
+  [taps#20](https://github.com/como-technologies/taps/issues/20).
 - **What this proves**: provision → scaffold → author → gate → link →
   read, all from one harness conversation, with the decision boundary
   held (adroit wrote the decision; the agent never touched `decisions/`

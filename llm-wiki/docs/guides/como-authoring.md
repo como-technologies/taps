@@ -74,7 +74,7 @@ truth arrives through this flow, not through the schema.
 - **Evidence citations are pinned**: cite evidence files as
   `path@commit` git refs, so the claim stays checkable against the exact
   version it was extracted from, however the files are reorganized
-  later. Until the citation link kind lands (llm-wiki#8), pinned refs go
+  later. Until the citation link kind lands ([taps#17](https://github.com/como-technologies/taps/issues/17)), pinned refs go
   in a `citations:` frontmatter key, not in typed edge fields.
 - **Page links are live**: link pages by slug (`[[decisions/adr-0004]]`,
   typed edge fields) — never pin a page link, and never link to raw

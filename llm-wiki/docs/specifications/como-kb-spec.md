@@ -214,7 +214,7 @@ Each contract cites its evidence in the spike's
   live references are for pages (ids), never evidence. Processed = cited;
   `inbox/` is not part of the contract. Interim rule until the citation
   link kind lands
-  (llm-wiki#8):
+  ([taps#17](https://github.com/como-technologies/taps/issues/17)):
   pinned refs live in a non-edge frontmatter key (`citations:`).
 - Evidence: findings/issue-09 (including the hand-walked capture → cite →
   page round trip, with pinned resolution surviving reorganization).
@@ -248,6 +248,6 @@ Each contract cites its evidence in the spike's
 Open product work:
 llm-wiki issues.
 Future work (tracked in
-portfolio#6 and
+[taps#21](https://github.com/como-technologies/taps/issues/21) and
 the llm-wiki backlog): append-only enforcement + replay; snapshot-based
 index sync.

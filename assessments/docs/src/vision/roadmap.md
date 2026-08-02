@@ -39,16 +39,16 @@ checks, graceful shutdown, native GCS storage — see the
 Quality and robustness on what's already shipped:
 
 - **Graceful LLM rate-limit / overload handling**
-  (#36) —
+  ([taps#14](https://github.com/como-technologies/taps/issues/14)) —
   a 429/529 currently leaks a 502 to the user and can strand partial
   work. Categorize the failure, back off, show a chat-shaped message,
   keep the user's input.
 - **Shrink per-turn input tokens**
-  (#37) —
+  ([taps#15](https://github.com/como-technologies/taps/issues/15)) —
   the agent loop resends a growing history each round-trip; trimming it
   keeps turns under provider rate limits.
 - **Suggested-reply pills**
-  (#38) —
+  ([taps#16](https://github.com/como-technologies/taps/issues/16)) —
   occasionally missing when the assistant ends a turn with a yes/no
   question.
 
@@ -61,14 +61,14 @@ Quality and robustness on what's already shipped:
   the assessment later and show the delta — the "assessment as repeatable
   ritual" use case.
 - **PDF report generation**
-  (#2) —
+  ([taps#12](https://github.com/como-technologies/taps/issues/12)) —
   Typst-based, taking the deterministic analysis data and the LLM
   narrative as inputs.
 - **Assisted answering.** The respondent uploads internal documentation;
   the AI proposes answers with citations; the respondent approves or
   overrides. The respondent-side analog of authoring's AI partnership.
 - **Multi-choice / scale question kinds**
-  (#18) —
+  ([taps#13](https://github.com/como-technologies/taps/issues/13)) —
   if real users genuinely need non-binary answer shapes, extend the
   metamodel rather than contort question text.
 
@@ -95,7 +95,7 @@ Quality and robustness on what's already shipped:
 - **How opinionated should vocabulary tailoring be?** The AI can propose
   domain-specific evidence/blocker types during Scoping — proactively, or
   only when the SME notices the defaults don't fit?
-- **PDF vs. HTML vs. both for export?** Typst (#2)
+- **PDF vs. HTML vs. both for export?** Typst ([taps#12](https://github.com/como-technologies/taps/issues/12))
   produces PDF; an interactive HTML report might serve some audiences
   better.
 - **Respondent identity and multi-tenancy.** The deployment is gated by
