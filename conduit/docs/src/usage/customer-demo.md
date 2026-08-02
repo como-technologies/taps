@@ -11,12 +11,13 @@ localhost.
 The kit lives in `demo/kit/`: one `demo-up`, five beat scripts, one
 `demo-down`. Each beat prints its talking point, the exact commands it
 runs, and the machine evidence it just produced. The pre-baked rehearsal
-(rehearsal 4, 2026-07-28 — the first on the KB-native flow: the pinned
-adroit is KB-only per its ADR-0020, and every corpus the beats touch is a
-per-run KB space; conduit ADR-0017) is committed verbatim under
-`demo/kit/rehearsals/`; a live-lane re-rehearsal is pending (owner-run;
-the prior transcripts are in git history). Every output quoted on this
-page is from a committed transcript unless marked otherwise.
+(rehearsal 6, 2026-08-01 — the first on the single-workspace layout:
+every product resolves in-tree, and every corpus the beats touch is a
+per-run KB space per adroit ADR-0020 / conduit ADR-0017) is committed
+verbatim under `demo/kit/rehearsals/`; a live-lane re-rehearsal is
+pending (owner-run; the prior transcripts are in git history). Every
+output quoted on this page is from a committed transcript unless marked
+otherwise.
 
 **Design rules** (ADR-0015): a *pre-baked/live split* — every AI lane ships
 a pre-authored artifact for the fast path and a `--live` flag that
@@ -123,7 +124,7 @@ seed, byte-identical bytes. We prove that, live, by running it twice.
 **Run.** `demo/kit/beat-1-measure-prior` — pulse's own `just dogfood`,
 twice, then sha-compare.
 
-**The audience sees** (rehearsal 4):
+**The audience sees** (rehearsal 6):
 
 ```text
    run 1 sha256: 299d5e3e6e3b4c9acda14d3c3b94c4485bd1061642ab1076b0cf5fa912dfb737
@@ -153,7 +154,7 @@ gate pass, not a slide. `--live` recomputes the whole thing on ollama
 tuesday effort report as a second `--context` once a prior period has
 closed in the same workdir (the loop's return edge).
 
-**The audience sees** (rehearsal 4 fast path):
+**The audience sees** (rehearsal 6 fast path):
 
 ```text
    valid: 'Software Engineering Maturity Assessment' — 4 domains, 8 practices, 96 questions
@@ -184,7 +185,7 @@ workdir's seeded `corpus-space` with the AI environment scrubbed.
 (~5 min). Since the KB-only pin, `-o json` statuses read lowercase
 (`accepted`) — the KB decision schema's enum.
 
-**The audience sees** (rehearsal 4):
+**The audience sees** (rehearsal 6):
 
 ```text
    seeded 8 proposed ADR(s), 0 skipped (dedupe guard)
@@ -198,8 +199,8 @@ workdir's seeded `corpus-space` with the AI environment scrubbed.
    SHA-IDENTICAL: yes — no AI was configured for either read
 ```
 
-That sha is the same value the full dogfood run and rehearsal 3 recorded
-for this plan — the stored plan has been byte-stable across machines,
+That sha is the same value the full dogfood run and earlier rehearsals
+(git history) recorded for this plan — the stored plan has been byte-stable across machines,
 days, runs, **and the path-mode → KB-mode pin bump** (the seed carries the
 stored plan into the space verbatim).
 
@@ -225,7 +226,7 @@ executes live, github and gitlab are dry-run by construction. `--restart`
 inserts the crash sub-beat: `kill -9` mid-Coding, recover, audit the live
 forge for duplicates.
 
-**The audience sees** (rehearsal 4; restart evidence from the 2026-06-12
+**The audience sees** (rehearsal 6; restart evidence from the 2026-06-12
 live rehearsal, whose log is in git history):
 
 ```text
@@ -284,7 +285,7 @@ and skip-with-notice (resolution: env `LLM_WIKI_BIN` → the sibling
 availability as an env fact). Everything else in the beat runs regardless
 — the pre-baked path's only hard prerequisite stays docker.
 
-**The audience sees** (rehearsal 4):
+**The audience sees** (rehearsal 6):
 
 ```text
    exit code: 0 (strict mode satisfied)
@@ -297,7 +298,7 @@ availability as an env fact). Everything else in the beat runs regardless
    CROSS-CHECK PASS: PR 2, effort:1-super-quick, ADR-0005 — Adopt and Measure agree
 ```
 
-Then the KB lane (rehearsal 4 — the llm-wiki close was armed via the
+Then the KB lane (rehearsal 6 — the llm-wiki close was armed via the
 sibling release build):
 
 ```text
