@@ -1,7 +1,7 @@
 # conduit
 
 Forge-neutral agentic development harness — the Adopt-stage engine of the Como
-TAPS loop. Spike spec (normative): `docs/src/dev/spike-design.md`.
+TAPS loop. Design spec (normative): `docs/src/dev/spike-design.md`.
 
 ## Working agreements (IMPORTANT — read first)
 

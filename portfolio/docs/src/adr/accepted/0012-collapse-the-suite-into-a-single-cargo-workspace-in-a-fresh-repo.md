@@ -14,7 +14,7 @@ boundaries dissolve); llm-wiki (changes ownership posture).
 ## Context and Problem Statement
 
 Seven sibling repos are held coherent by hand-built machinery — the
-uniform resolution convention (ADR-0004 and its per-repo twins), pinned
+uniform resolution convention and its per-repo ADR twins, pinned
 revisions, duplicated resolver shell, and an operating-ring dance that
 exists largely to verify the repos still agree. Since ADR-0011 retired
 the scripted truthfulness gate, cross-repo seams have no mechanical
@@ -42,8 +42,8 @@ and never modified — rollback is deleting the new repo.
 - Multi-repo features of the loop tools are exercised via dedicated
   test projects, since the suite's own topology no longer does.
 
-ADR-0004 and its per-repo twins remain operative for the existing repos
-and retire at cutover, when development moves to the workspace.
+The resolution convention and its per-repo twins retired at cutover,
+when development moved to the workspace.
 
 ### Positive Consequences
 

@@ -44,7 +44,7 @@ simpler: we control all the code, side by side, and change it at will.
 
 ## Decision Outcome
 
-Chosen: **the fork is the product.** `como-technologies/llm-wiki` is the
+Chosen: **the fork is the product.** the Como `llm-wiki` fork — now the in-tree product — is the
 Como KB codebase: features land on `main`, the only branch. Consequences,
 concretely executed with this decision:
 

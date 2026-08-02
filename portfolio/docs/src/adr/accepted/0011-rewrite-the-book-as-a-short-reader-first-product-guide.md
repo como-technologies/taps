@@ -17,9 +17,9 @@ actual audience, finally).
 The book began as a product guide: tell the story of the tools and how
 they work together, in a way people would want to read. Over successive
 AI-assisted iterations it accreted governance apparatus — a five-rung
-maturity ladder with per-badge gating evidence (ADR-0002), a 1,300-line
+maturity ladder with per-badge gating evidence, a 1,300-line
 scripted truthfulness gate pinning dozens of claims against six sibling
-repos (ADR-0003), an operations runbook, a full KB specification, spike
+repos, an operations runbook, a full KB specification, spike
 evidence pages, and CLI transcripts on every chapter. The result: a book
 too long to read, too technical to follow, and too expensive to maintain —
 every sibling change rippled into book edits and gate updates. The
@@ -55,12 +55,14 @@ pages: an introduction (the problem, the loop, the portfolio at a
 glance), one page per loop stage, one page each for the knowledge base
 and starter content, and one services page. Concretely:
 
-- **No maturity grading in the book at all** (supersedes ADR-0002). The
+- **No maturity grading in the book at all** (the earlier maturity-ladder
+  decision is retired). The
   book describes the portfolio aspirationally — what each offering is
   and how the loop fits together — with no badges or status words.
   Current per-tool reality, and the evidence for it, lives in each
   tool's own repo.
-- **No scripted truthfulness gate** (supersedes ADR-0003).
+- **No scripted truthfulness gate** (the earlier verify-claims decision is
+  retired).
   `scripts/verify-claims` is deleted; `just ci` is the book build plus
   `adr-check`. The book avoids restating mechanical facts (CLI shapes,
   label sets, counts, contract tables); where a seam needs enforcement,
@@ -74,8 +76,7 @@ and starter content, and one services page. Concretely:
 - Chapters link to each tool's repo for details instead of quoting its
   CLI, evidence pages, or ADRs.
 
-ADR-0001 (navigate by loop stage) and ADR-0004 (the uniform resolution
-convention, still used by `adr-check` and `cold-sim`) stand.
+ADR-0001 (navigate by loop stage) stands.
 
 ### Positive Consequences
 

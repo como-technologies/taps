@@ -17,7 +17,7 @@ it, and no move/rename/alias command existed. For a git-backed wiki
 meant to live for years and be reorganized, every reorg was a link-rot
 event: the anti-rot contract fought the filesystem.
 
-A downstream evaluation (como-technologies/kb-spike#1) confirmed this
+A downstream evaluation (the kb-spike spike) confirmed this
 live against v0.4.1 and needed a path-independent identity contract:
 a page has a stable opaque id, links resolve by id, and pages can be
 reorganized with zero link rewrites.

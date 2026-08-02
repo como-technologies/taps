@@ -190,8 +190,8 @@ manifest's read verbs as MCP tools**. Hand-rolled sync stdio loop; `handle_line`
 provider-call}` — fully mechanical, no special cases) **and strips args the manifest marks
 `escalates`**, so no projected tool can mutate the repo, the forge, or the filesystem
 (conformance pinned by `projected_tools_carry_no_escalating_flags` +
-`mcp_projected_tools_expose_no_escalating_flags`). **`--allow-write` (ADR-0021,
-superseding ADR-0015 on its reopen criterion — portfolio ADR-0010's MCP-only harnesses)**:
+`mcp_projected_tools_expose_no_escalating_flags`). **`--allow-write` (ADR-0021 —
+portfolio ADR-0010's MCP-only harnesses)**:
 `Server::allow_write` additionally projects the owned `manifest::mcp_write_slice` table —
 `new` / `compose` / `set-status` plus `plan`'s re-admitted `--save` / `--dry-run` — each
 `destructiveHint`-annotated, `--no-edit` forced via the spec's `forced` argv, `--force` /

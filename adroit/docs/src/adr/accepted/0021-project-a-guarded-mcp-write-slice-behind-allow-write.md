@@ -17,7 +17,7 @@ Created: 2026-07-28
 
 ## Context and Problem Statement
 
-ADR-0015 retired MCP write-verb exposure and named its own reopen
+An earlier decision retired MCP write-verb exposure and named its own reopen
 criterion: *"an MCP **consumer** (not a hypothetical) that needs write
 verbs over the protocol and brings its own confirmation UX — at which
 point the exposure is the documented additive change: an explicit opt-in
@@ -28,11 +28,11 @@ Portfolio ADR-0010 (harness-first: the user's AI harness is the primary
 human UI, over MCP) delivers that consumer. Claude Desktop and other
 MCP-only harnesses cannot shell the CLI; without a write path over the
 protocol they cannot author decisions at all — exactly the negative
-consequence ADR-0015 accepted, now no longer acceptable.
+consequence that decision accepted, now no longer acceptable.
 
 ## Decision Drivers
 
-- ADR-0015's reopen criterion is met literally, including the
+- The retirement's reopen criterion is met literally, including the
   confirmation UX (MCP clients gate destructive tool calls on the human).
 - The exposure was designed to be additive: the server projects the
   manifest's classifications mechanically, so the change is a filter +
@@ -46,12 +46,12 @@ consequence ADR-0015 accepted, now no longer acceptable.
 
 1. **A guarded, owned write slice behind `adroit mcp --allow-write`.**
 2. Project every `writes` verb mechanically behind the flag — no slice.
-3. Keep ADR-0015 as is; MCP-only harnesses hand decisions to a human or
+3. Keep the write-verb retirement as is; MCP-only harnesses hand decisions to a human or
    a shell-capable session indefinitely.
 
 ## Decision Outcome
 
-Chosen: **option 1 — the guarded slice**, per ADR-0015's own blueprint.
+Chosen: **option 1 — the guarded slice**, per the retirement's own blueprint.
 Option 2 fails on its face: `edit` and `draft` are interactive, `import`
 / `seed` are bulk bootstraps, and the maintenance writers (`relink`,
 `renumber`, `index`, `publish`, `config`) have process-level semantics an
@@ -87,7 +87,7 @@ Concretely:
   `default_mode_is_byte_identical_to_pre_slice_projection` and the
   pre-existing conformance tests, unchanged.
 
-This supersedes ADR-0015 by executing its reopen clause; its analysis of
+This executes the write-verb retirement's reopen clause; its analysis of
 why read-only-by-default matters is carried forward, not overturned.
 
 ### Positive Consequences

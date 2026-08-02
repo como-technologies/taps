@@ -168,8 +168,8 @@ the projected `plan` tool is a deterministic, provider-free read), `list` /
 `--allow-write`, no projected tool can mutate the repo, the forge, or the
 filesystem.** The CLI remains the escape hatch for the stripped flags.
 
-**`--allow-write` — the guarded write slice (ADR-0021, superseding ADR-0015 on
-its own reopen criterion).** For MCP-only harnesses (Claude Desktop and kin,
+**`--allow-write` — the guarded write slice (ADR-0021).** For MCP-only
+harnesses (Claude Desktop and kin,
 per portfolio ADR-0010) that cannot shell the CLI, `adroit mcp --allow-write`
 additionally projects an owned slice of the write surface, mirroring CLI
 semantics:

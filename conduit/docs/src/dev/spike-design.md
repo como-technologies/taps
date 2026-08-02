@@ -1,13 +1,10 @@
-# Spike design — the forge-adapter keystone
+# Design spec — the forge-adapter keystone
 
-> Status: spec for the 1–2 week spike. Written 2026-06-11, synthesized from a
-> three-architecture judge panel. This page is the normative design; the
-> decisions it locks are also recorded as ADRs in the in-repo `adr/` corpus.
-
-> **Landed 2026-06-12 on the spike branch; this page is the historical design.**
-> The as-built module map (incl. `src/transcript.rs`, `tests/cli.rs`) lives in
-> [Architecture](./architecture.md); `PrSnapshot` additionally grew `title`/`body`
-> to power verify.
+> The normative design conduit's source cites as "spec §…"; the decisions it
+> locks are also recorded as ADRs in the in-repo `adr/` corpus. The as-built
+> module map (incl. `src/transcript.rs`, `tests/cli.rs`) lives in
+> [Architecture](./architecture.md); `PrSnapshot` additionally grew
+> `title`/`body` to power verify.
 
 ## One line
 
@@ -57,7 +54,6 @@ deliberately not used.
 ```
 conduit/
 ├── Cargo.toml             single crate `conduit`, bin+lib
-├── adroit.rev             the single adroit pin location (git rev, read by `just init-adroit`)
 ├── justfile               init / init-adroit / ci / forge-up / forge-down / demo / conformance
 ├── CLAUDE.md              working agreements (no publishing, docs in mdbook, no client names)
 ├── adr/                   conduit's OWN adroit corpus — the dogfood input
@@ -272,15 +268,10 @@ named.
 
 ## adroit integration (read-only, allowlisted)
 
-- **Pin:** `adroit.rev` at repo root holds the git rev. `just init-adroit`
-  installs it from
-  `${COMO_ADROIT_GIT:-${COMO_GIT_BASE:-https://github.com/como-technologies}/adroit.git}`
-  at that rev (`cargo install --git ... --rev ... --locked --root .conduit`),
-  verifying after a probe clone (cached under gitignored `.como/deps/adroit`)
-  that the remote actually carries the pin; when it cannot (rev not pushed
-  yet, no network, `COMO_OFFLINE=1`), it falls back with a printed notice to
-  the sibling checkout `file://$(realpath ../adroit)` — the local-dev
-  override only (ADR-0014, the suite resolution convention).
+- **Binary:** `just init-adroit` builds the workspace's own adroit
+  (`cargo build -p adroit`) and places it at `.conduit/bin/adroit` — the
+  path `AdrSource` resolves. The contract is the crate graph itself:
+  conduit and adroit share their seam types via `como-contract`.
 - **Handshake:** at startup run `adroit manifest -o json`; require
   `tool == "adroit" && manifest_schema == 1`, else bail loudly.
 - **Allowlist:** `src/adroit.rs` is the only adroit call site, hardcoded to

@@ -24,7 +24,10 @@ through the engine's seams, never by dodging them.
 - **Answer from the space**: for "what do we know / what was decided"
   questions, search and read the KB (the research skill) and cite pages.
   "The space doesn't record this" is a valid answer; silent invention is
-  not.
+  not. Pages whose frontmatter carries `status: superseded`, `deprecated`,
+  or `rejected` are history, not guidance — never cite their content as
+  current practice; answer from accepted pages and name the supersession
+  when it matters.
 
 ## Skills
 

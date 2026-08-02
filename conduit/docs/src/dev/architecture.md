@@ -4,7 +4,7 @@ One crate, `conduit` (`bin` + `lib`), fully synchronous — no tokio, no
 database, no framework. The binary is clap marshalling over a library whose
 core is pure functions and whose effects are funneled through one module.
 The founding decisions live in the in-repo `docs/src/adr` corpus (authored
-with the in-tree adroit; see [Spike design](./spike-design.md)).
+with the in-tree adroit; see the [design spec](./spike-design.md)).
 
 ## Module map
 

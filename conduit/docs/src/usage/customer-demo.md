@@ -65,8 +65,8 @@ gone and the workdir behind for inspection; delete it whenever.
 
 ## Stand up: `demo/kit/demo-up`
 
-One command from a checkout. It resolves every cross-repo dependency
-through the suite resolution chain (ADR-0014) and prints where each came
+One command from a checkout. It resolves every product in-tree (the
+workspace directory beside conduit) and prints where each came
 from, builds whatever is missing (conduit, the in-tree adroit, the
 `assessments` / `tuesday-report` / `pulse-simulate` binaries), stands up
 the throwaway Gitea seeded with the client corpus (the legacy-format repo

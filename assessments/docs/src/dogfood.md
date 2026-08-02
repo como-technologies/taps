@@ -207,7 +207,7 @@ against a dry-run import's seed summary) has not been ported to main's
 justfile; the golden-export test is the seam gate `just ci` actually
 runs. ADR-corpus validation — this book's corpus included — is the
 workspace-root `just adr-check`, which runs the in-tree adroit; the
-former resolution chain (ADR-0008) is superseded.
+former resolution chain is retired.
 
 ## Where the loop goes next
 

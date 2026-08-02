@@ -28,7 +28,7 @@ GitHub and GitLab mutations are dry-run by construction
 ([forge contract](./dev/forge-contract.md), ADR-0012/ADR-0016).
 
 Status: spike complete. See the [demo walkthrough](./usage/demo.md) for
-evidence, and the [spike design](./dev/spike-design.md) for the historical
+evidence, and the [design spec](./dev/spike-design.md) for the
 normative architecture. The suite's end-to-end engagement demo — the full
 TAPS loop as a presenter-paced kit (`demo/kit/`) — is the
 [customer demo](./usage/customer-demo.md).

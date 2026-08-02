@@ -136,7 +136,7 @@ stated security property, and no SME session has stalled on either gap:
   (`list` / `show` / `search` /
   `stats` / `graph` / `check` / `plan` / `related` / `dedupe` / …) as tools, so an
   agent reads decisions + plans but can't mutate the repo over the wire.
-  Exposing the **mutating** verbs was retired by ADR-0015 pending a real
+  Exposing the **mutating** verbs was once retired pending a real
   MCP-only consumer — and **reopened exactly on that criterion by ADR-0021**
   (portfolio ADR-0010 made the harness the primary human UI, so MCP-only
   harnesses like Claude Desktop are that consumer, bringing their own

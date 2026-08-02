@@ -39,8 +39,8 @@ without becoming a second copy of the machinery it demonstrates.
   remote ever touched
 - The kit must not duplicate or fork the proven machinery (gitea-init,
   client-corpus-init, conduit, the sibling tools) — it may only orchestrate
-- Cross-repo references must resolve per the uniform suite convention
-  (ADR-0014), with the unpublished-remote reality stated honestly
+- Cross-product references must resolve in-tree (the workspace), with
+  anything unresolvable stated honestly
 
 ## Considered Options
 
@@ -82,7 +82,7 @@ repeatable. Three principles govern it:
    cross-check PASS). The talking points frame the evidence; they never
    substitute for it.
 
-The kit resolves siblings per ADR-0014 and only orchestrates: every command
+The kit resolves products in-tree and only orchestrates: every command
 a beat runs is the same command the repos' own recipes and walkthroughs
 document.
 
