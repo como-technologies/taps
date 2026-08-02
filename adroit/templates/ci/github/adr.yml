@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install adroit
-        run: cargo install --git https://github.com/como-technologies/adroit --locked
+        run: cargo install --git https://github.com/como-technologies/taps --locked adroit
 
       - name: Check ADR integrity
         # dup numbers, parse, supersession refs, links. Exits non-zero on
@@ -60,7 +60,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install adroit
-        run: cargo install --git https://github.com/como-technologies/adroit --locked
+        run: cargo install --git https://github.com/como-technologies/taps --locked adroit
 
       - name: Find the ADR being decided
         id: adr

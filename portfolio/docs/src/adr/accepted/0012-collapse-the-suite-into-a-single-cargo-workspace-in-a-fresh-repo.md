@@ -20,7 +20,7 @@ exists largely to verify the repos still agree. Since ADR-0011 retired
 the scripted truthfulness gate, cross-repo seams have no mechanical
 protection at all, and two have already drifted. The full evidence and
 the migration plan of record live in
-[portfolio#8](https://github.com/como-technologies/portfolio/issues/8).
+portfolio#8.
 
 ## Decision Outcome
 
@@ -60,5 +60,5 @@ and retire at cutover, when development moves to the workspace.
 ## Implementation
 
 Executed as the wave plan in
-[portfolio#8](https://github.com/como-technologies/portfolio/issues/8);
+portfolio#8;
 that issue closes when a cold clone of the workspace passes full parity.

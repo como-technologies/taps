@@ -13,16 +13,16 @@ last_updated: "2026-08-01"
 The knowledge base that makes the portfolio's prescriptions evidenced:
 typed pages, stable identity, mechanical anti-rot, and a git-native
 admission model. Produced by
-the [kb-spike](https://github.com/como-technologies/kb-spike) evaluation
+the kb-spike evaluation
 (ten findings, each closed with live-verified evidence) and adopted by
 portfolio
-[ADR-0006](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0006-adopt-llm-wiki-engine-como-fork-as-the-knowledge-base-substrate.md).
+[ADR-0006](https://github.com/como-technologies/taps/blob/main/portfolio/docs/src/adr/accepted/0006-adopt-llm-wiki-engine-como-fork-as-the-knowledge-base-substrate.md).
 Substrate: `llm-wiki` — this repo, the Como KB product (portfolio
-[ADR-0008](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0008-build-the-kb-product-in-the-fork-itself-developing-on-main.md)).
+[ADR-0008](https://github.com/como-technologies/taps/blob/main/portfolio/docs/src/adr/accepted/0008-build-the-kb-product-in-the-fork-itself-developing-on-main.md)).
 Como owns and maintains the engine in the taps workspace (portfolio
 ADR-0012); the break from upstream is complete. At this stage instances are
 **ephemeral and built from source at HEAD of `main`** (portfolio
-[ADR-0009](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0009-iterate-ephemeral-first-disposable-kb-instances-built-from-source-at-head.md));
+[ADR-0009](https://github.com/como-technologies/taps/blob/main/portfolio/docs/src/adr/accepted/0009-iterate-ephemeral-first-disposable-kb-instances-built-from-source-at-head.md));
 release-tag pinning returns when a persistent KB is declared. This document
 is the spec's interim home — once a persistent production KB exists, the
 spec migrates into it as typed pages and this document becomes a
@@ -89,7 +89,7 @@ deterministic (strict schema + lint), not another model.
 
 - **Append-only history is law** — no rebase, no force-push, ever. It is
   what makes pinned citations and replay sound
-  ([kb-spike#11](https://github.com/como-technologies/kb-spike/issues/11)
+  (kb-spike#11
   tracks enforcement and the replay harness).
 - **Idempotency** — pages upsert by declared id; consumers reprocess safely
   by cursor.
@@ -105,7 +105,7 @@ deterministic (strict schema + lint), not another model.
 ## Part II — The contracts
 
 Each contract cites its evidence in the spike's
-[findings](https://github.com/como-technologies/kb-spike/tree/main/findings).
+`findings`.
 
 ### 1. Identity & links
 
@@ -194,11 +194,11 @@ Each contract cites its evidence in the spike's
   own derived views — numbering/addressing, review-due, plan extraction
   from the marked `## Implementation` region, forge enrichment. The former
   export gap is closed:
-  [llm-wiki#11](https://github.com/como-technologies/llm-wiki/issues/11)
+  llm-wiki#11
   landed, so `export --format json` carries custom frontmatter and summary
   rows need no per-page reads. Evidence: findings/issue-10 (seam
   map); the numbering finding lives on
-  [kb-spike#6](https://github.com/como-technologies/kb-spike/issues/6) itself.
+  kb-spike#6 itself.
 
 ### 7. Admission & evidence
 
@@ -209,25 +209,25 @@ Each contract cites its evidence in the spike's
   hooks fire only for real `git` commits, never the engine's own libgit2
   commits, so the chain terminates by construction.
 - **`evidence/` is the capture layer** (renaming the engine's `raw/`,
-  [llm-wiki#10](https://github.com/como-technologies/llm-wiki/issues/10)):
+  llm-wiki#10):
   unstructured material only. Citations are **always pinned `path@commit`**;
   live references are for pages (ids), never evidence. Processed = cited;
   `inbox/` is not part of the contract. Interim rule until the citation
   link kind lands
-  ([llm-wiki#8](https://github.com/como-technologies/llm-wiki/issues/8)):
+  (llm-wiki#8):
   pinned refs live in a non-edge frontmatter key (`citations:`).
 - Evidence: findings/issue-09 (including the hand-walked capture → cite →
   page round trip, with pinned resolution surviving reorganization).
 
 ### 8. Architecture: three layers
-(portfolio [ADR-0008](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0008-build-the-kb-product-in-the-fork-itself-developing-on-main.md))
+(portfolio [ADR-0008](https://github.com/como-technologies/taps/blob/main/portfolio/docs/src/adr/accepted/0008-build-the-kb-product-in-the-fork-itself-developing-on-main.md))
 
 - **`llm-wiki`** (this repo): the Como KB product — engine,
   Como schema library (the kb-spec §2 classes, shipped), provisioning
   (hooks, strict defaults, search weights — shipped), and ops, all developed
   on `main`, the only branch. **Pinning = HEAD of `main`, built from source**
   at this stage (portfolio
-  [ADR-0009](https://github.com/como-technologies/portfolio/blob/main/docs/src/adr/accepted/0009-iterate-ephemeral-first-disposable-kb-instances-built-from-source-at-head.md));
+  [ADR-0009](https://github.com/como-technologies/taps/blob/main/portfolio/docs/src/adr/accepted/0009-iterate-ephemeral-first-disposable-kb-instances-built-from-source-at-head.md));
   release tags return with the first persistent instance. The `upstream`
   remote exists for opportunistic cherry-picks; no discipline is owed to it.
   The spec's substrate-neutral contracts (above) are what keep the KB
@@ -246,8 +246,8 @@ Each contract cites its evidence in the spike's
   ADR-0010 sets that bar); the librarian is future state.
 
 Open product work:
-[llm-wiki issues](https://github.com/como-technologies/llm-wiki/issues).
+llm-wiki issues.
 Future work (tracked in
-[portfolio#6](https://github.com/como-technologies/portfolio/issues/6) and
+portfolio#6 and
 the llm-wiki backlog): append-only enforcement + replay; snapshot-based
 index sync.

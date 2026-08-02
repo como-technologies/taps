@@ -1389,12 +1389,12 @@ mod tests {
         assert_eq!(c.get_str("forge.branch_prefix").as_deref(), Some("adr/"));
         assert_eq!(c.get_str("forge.repo"), None); // optional, unset
         c.set_str("forge.provider", "github").unwrap();
-        c.set_str("forge.repo", "como-technologies/adroit").unwrap();
+        c.set_str("forge.repo", "como-technologies/taps").unwrap();
         c.set_str("forge.tracker", "jira").unwrap();
         assert_eq!(c.get_str("forge.provider").as_deref(), Some("github"));
         assert_eq!(
             c.get_str("forge.repo").as_deref(),
-            Some("como-technologies/adroit")
+            Some("como-technologies/taps")
         );
         assert_eq!(c.get_str("forge.tracker").as_deref(), Some("jira"));
         // The split trackers + explicit native aliases round-trip; unknown errors.

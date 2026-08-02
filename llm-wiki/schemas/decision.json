@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/decision.json",
+  "$id": "https://github.com/como-technologies/taps/llm-wiki/schemas/v0.1.0/decision.json",
   "title": "Decision type",
   "description": "Architecture/operating decision record (ADR). Status vocabulary and link fields aligned to adroit's Adr/Status (adroit/src/adr.rs); numbering deliberately absent — it belongs to the head (kb-spike#6). Confidence is deliberately absent: decisions never declare it and are un-stale by design (kb-spike findings/issue-03, issue-04).",
   "type": "object",

@@ -4,7 +4,7 @@ Everything needed to point an AI harness at a Como KB space and author
 content that lands in the right shape. The contract the kit implements is
 [docs/guides/como-authoring.md](../docs/guides/como-authoring.md); the
 decision behind the model is portfolio ADR-0010 (harness-first), plan of
-record [portfolio#7](https://github.com/como-technologies/portfolio/issues/7).
+record portfolio#7.
 
 The engine stays a dumb pipe — no LLM inside. The harness brings the
 model; this kit brings the instructions and wiring.

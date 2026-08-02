@@ -17,7 +17,7 @@ engine cannot check. The packaged skills and harness configs live in
 The decision of record behind this model is portfolio ADR-0010
 (harness-first: the harness is the primary human UI, the KB is the
 content product), plan of record
-[portfolio#7](https://github.com/como-technologies/portfolio/issues/7).
+portfolio#7.
 
 ## The five page classes
 

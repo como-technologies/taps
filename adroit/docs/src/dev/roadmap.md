@@ -73,13 +73,13 @@ match arm* — no call-site changes:
 - **`Publisher`** — render the accepted set into a target's shape behind the
   `publish --to` flag: `static` (default), `mdbook`, `mkdocs`, `hugo`,
   `docusaurus`, `jekyll`. Pure + offline; adroit produces the tree, the consuming
-  repo's CI hosts it ([#8](https://github.com/como-technologies/adroit/issues/8)).
+  repo's CI hosts it (#8).
 
 Every adapter takes an injectable `HttpTransport`, so each is unit-tested against a
 fault-injected mock and the lifecycle cores run on mock adapters; the remaining
 live-glue gap is issue + PR creation against a mock HTTP server with a real git
 remote, proven per provider pairing
-([#13](https://github.com/como-technologies/adroit/issues/13)–[#15](https://github.com/como-technologies/adroit/issues/15)).
+(#13–#15).
 
 Providers grouped by seam — shipped, plus candidates (each a contained add,
 **retired by ADR-0018**: the shipped set exceeds what any suite consumer
@@ -90,14 +90,14 @@ runs that system):
 | Seam | Shipped | Candidates (retired, ADR-0018) |
 |---|---|---|
 | **Repo / PR host** (`Forge`) | GitHub, GitLab | Gitea / Forgejo, Bitbucket |
-| **Issue tracker** (`Tracker`) | GitHub Issues, GitLab Issues, Jira, Linear + monday.com ([#12](https://github.com/como-technologies/adroit/issues/12); monday dogfood in progress, [#26](https://github.com/como-technologies/adroit/issues/26)), native | Azure DevOps Boards, Asana |
-| **Publish target** (`Publisher`) | static, mdBook, MkDocs, Hugo, Docusaurus, Jekyll ([#8](https://github.com/como-technologies/adroit/issues/8)) | — (Confluence / Notion *hosting* is out of scope) |
+| **Issue tracker** (`Tracker`) | GitHub Issues, GitLab Issues, Jira, Linear + monday.com (#12; monday dogfood in progress, #26), native | Azure DevOps Boards, Asana |
+| **Publish target** (`Publisher`) | static, mdBook, MkDocs, Hugo, Docusaurus, Jekyll (#8) | — (Confluence / Notion *hosting* is out of scope) |
 
 Per-provider capability deepens behind the same traits — reviewer @-mentions + an MR
 review-deadline label on `review --forge`, and the tracker's native due/target date
 (Jira / GitLab / Linear / monday) on `set-review --forge`, shipped via the default-no-op
 `Forge::add_label` / `Tracker::set_due_date` methods
-([#11](https://github.com/como-technologies/adroit/issues/11)). The boundary that
+(#11). The boundary that
 keeps this in adroit's lane: its forge integration governs the **ADR lifecycle**
 (propose-on-main, accept-via-MR, status sync, reviewer assignment), and `publish`
 **produces** the accepted-set artifact (a static / `hugo-dir` / `docusaurus-dir`
@@ -112,21 +112,21 @@ Both candidates **retired (ADR-0018)** — the dashboard's read-only-ness is a
 stated security property, and no SME session has stalled on either gap:
 
 - **Per-repo branding** — a configurable company name / logo / accent color
-  ([#16](https://github.com/como-technologies/adroit/issues/16)).
+  (#16).
 - **One-click "create MR"** from the dashboard — it stays read-only;
   authoring lives in the CLI / TUI
-  ([#10](https://github.com/como-technologies/adroit/issues/10)).
+  (#10).
 
 ## Agent surface
 
 - **Structured command manifest — shipped**
-  ([#17](https://github.com/como-technologies/adroit/issues/17)). `adroit manifest`
+  (#17). `adroit manifest`
   emits a machine-readable JSON catalog of the CLI surface (commands + args +
   semantics, derived from the clap tree, plus `schemars` schemas of the `view`
   types) so agents discover and drive adroit without scraping `--help`. See
   [Automation & AI](../usage/automation.md#discovering-commands--adroit-manifest).
 - **MCP server — shipped**
-  ([#19](https://github.com/como-technologies/adroit/issues/19), follow-up to #17).
+  (#19, follow-up to #17).
   `adroit mcp` is a built-in [Model Context Protocol](https://modelcontextprotocol.io)
   server (JSON-RPC 2.0 over stdio) that projects the manifest's read verbs as MCP
   tools — each verb a tool with its args as a JSON Schema — so the portfolio's
@@ -149,7 +149,7 @@ stated security property, and no SME session has stalled on either gap:
 
 ## Portfolio integration — the Como loop
 
-> Tracked as an epic: [#18](https://github.com/como-technologies/adroit/issues/18).
+> Tracked as an epic: #18.
 
 adroit is the **Prescribe** node of the
 [TAPS portfolio](https://github.com/como-technologies/taps/tree/main/portfolio)'s closed loop —
@@ -161,7 +161,7 @@ orchestrates forges, or the system that hosts the published corpus — those are
 (below). Holding that line is what keeps the seams clean.
 
 The seam is the **manifest** — with the `-o json` `view` contract and the MCP
-catalog ([#19](https://github.com/como-technologies/adroit/issues/19)). Structured
+catalog (#19). Structured
 JSON is how adroit's decisions cross into the rest of the loop, so a downstream agent
 *reads* a decision instead of scraping prose. The ADRs and guides stay **markdown**
 for humans; the *integration* contract is JSON.
@@ -178,7 +178,7 @@ for humans; the *integration* contract is JSON.
   checklist) is the decision context the **Adopt**-stage agentic engine (Conduit)
   turns into issues an agent works inside the team's own forge — read through the
   manifest / `-o json` / MCP, not by parsing files
-  ([#22](https://github.com/como-technologies/adroit/issues/22) dogfoods that
+  (#22 dogfoods that
   `plan -o json` ingest end-to-end through Conduit / tuesday). The exact read
   slice is **verified end to end on a live local model** — assessment →
   `import --ai` → accept → `plan --save` → the conduit-shaped `-o json` reads,

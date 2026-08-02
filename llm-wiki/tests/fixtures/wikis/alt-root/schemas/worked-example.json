@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/worked-example.json",
+  "$id": "https://github.com/como-technologies/taps/llm-wiki/schemas/v0.1.0/worked-example.json",
   "title": "Worked example type",
   "description": "A concrete end-to-end example demonstrating a guide, decision, or concept (kb-spec §2 target class).",
   "type": "object",

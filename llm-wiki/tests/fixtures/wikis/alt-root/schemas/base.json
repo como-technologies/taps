@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/base.json",
+  "$id": "https://github.com/como-technologies/taps/llm-wiki/schemas/v0.1.0/base.json",
   "title": "Base page type",
   "description": "Shared fields for all page types. Default fallback for unrecognized types.",
   "type": "object",

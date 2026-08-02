@@ -41,4 +41,4 @@ Broke ConfigPanel into focused components:
 - Clean separation: Hooks fetch data, components present it
 
 ### Pull Requests
-- [PR #18](https://github.com/como-technologies/tuesday/pull/18): "Refactor: Clean architecture separation and bug fixes"
+- PR #18: "Refactor: Clean architecture separation and bug fixes"

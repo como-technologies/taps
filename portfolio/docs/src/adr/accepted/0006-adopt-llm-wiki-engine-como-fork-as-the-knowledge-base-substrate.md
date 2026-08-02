@@ -20,7 +20,7 @@ and their sources live in disconnected repos, and nothing mechanical stops
 knowledge from rotting (portfolio issue #3). Issue #3 specified the need — a
 typed, linked, lint-gated KB with a sources layer — and issue #4 posed the
 adopt-vs-adapt-vs-build decision (c) plus the identity one-way-door (f). A
-dedicated spike ([kb-spike](https://github.com/como-technologies/kb-spike))
+dedicated spike (kb-spike)
 evaluated `llm-wiki-engine` as the implementation base: ten findings issues,
 each closed with a live-verified, tracked finding.
 
@@ -46,32 +46,32 @@ each closed with a live-verified, tracked finding.
 
 ## Decision Outcome
 
-Chosen: **the Como fork** ([`como-technologies/llm-wiki`](https://github.com/como-technologies/llm-wiki),
+Chosen: **the Como fork** (`llm-wiki/`,
 branch `como-main`), together with **adoption of the
-[Como KB specification](https://github.com/como-technologies/llm-wiki/blob/main/docs/specifications/como-kb-spec.md)**
+[Como KB specification](https://github.com/como-technologies/taps/blob/main/llm-wiki/docs/specifications/como-kb-spec.md)**
 (now homed with the KB product) produced by the spike. The spike's
 verdict is GO, on evidence:
 
 - **Stock was disqualified on the one-way-door**: identity is the file path;
   a `git mv` breaks every inbound link (verified live). The fork's stable
   ULID identity closes it — the same repro passes with zero link rewrites
-  ([findings/issue-01](https://github.com/como-technologies/kb-spike/blob/main/findings/issue-01-identity-and-links.md)).
+  (`findings/issue-01-identity-and-links.md`).
 - **The CI gate is real**: under strict validation every violation class
   fails `ingest` with exit 1 and a named rule; `lint` fails on errors and
   passes warnings
-  ([findings/issue-02](https://github.com/como-technologies/kb-spike/blob/main/findings/issue-02-schema-strictness.md)).
+  (`findings/issue-02-schema-strictness.md`).
 - **Our semantics ride cleanly on it**: custom `decision` schema with the
   adroit-aligned status lifecycle, schema-enforced `superseded ⇒
   superseded_by`, configurable search weighting
-  ([findings/issue-03](https://github.com/como-technologies/kb-spike/blob/main/findings/issue-03-status-semantics.md),
-  [-04](https://github.com/como-technologies/kb-spike/blob/main/findings/issue-04-staleness-lint.md)).
+  (`findings/issue-03-status-semantics.md`,
+  `findings/issue-04-staleness-lint.md`).
 - **The admission model runs today**: commit-as-admission with pre-commit
   strict validation and post-commit indexing works with two git hooks and one
   config flag — no engine changes
-  ([findings/issue-09](https://github.com/como-technologies/kb-spike/blob/main/findings/issue-09-admission-verification.md)).
+  (`findings/issue-09-admission-verification.md`).
 - **The read seam serves adroit**: full-fidelity reads by ULID over CLI and
   MCP; one gap (export drops custom frontmatter) filed and non-blocking
-  ([findings/issue-10](https://github.com/como-technologies/kb-spike/blob/main/findings/issue-10-read-seam.md)).
+  (`findings/issue-10-read-seam.md`).
 - **The fork is fixable on our timeline, demonstrated**: six engine defects
   found by the spike were fixed on `como-main` the same day (583 tests
   passing), each re-verified live in the spike.
@@ -93,7 +93,7 @@ before the spec existed, and its own text scheduled this revisit. Its
 disqualifiers are each retired above; two of its findings carry forward:
 
 - **adroit's write path silently destroys unknown frontmatter keys**
-  ([adroit#28](https://github.com/como-technologies/adroit/issues/28)) —
+  (adroit#28) —
   until fixed, `docs/src/adr` remains the sole adroit-writable home of
   decisions and any KB-resident copy is read-only projection. This gates
   the corpus port, not this decision.
@@ -118,7 +118,7 @@ disqualifiers are each retired above; two of its findings carry forward:
 - **The ADR corpus eventually lives in the KB space** (one-substrate rule),
   with this book's copy becoming a projection.
 - Open engine work
-  ([llm-wiki#8–#13](https://github.com/como-technologies/llm-wiki/issues))
+  (llm-wiki#8–#13)
   proceeds in parallel; none of it blocks adopting the spec.
 - kb-spike is archived as the evidence trail; its findings are the citations
   behind every claim above.

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/glossary-entry.json",
+  "$id": "https://github.com/como-technologies/taps/llm-wiki/schemas/v0.1.0/glossary-entry.json",
   "title": "Glossary entry type",
   "description": "One term, one page (kb-spec §2 target class). The title is the term; the body is the definition.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/plan.json",
+  "$id": "https://github.com/como-technologies/taps/llm-wiki/schemas/v0.1.0/plan.json",
   "title": "Plan type",
   "description": "An actionable plan, typically derived from an accepted decision's Implementation region (kb-spec §2 target class, §6 read contract).",
   "type": "object",

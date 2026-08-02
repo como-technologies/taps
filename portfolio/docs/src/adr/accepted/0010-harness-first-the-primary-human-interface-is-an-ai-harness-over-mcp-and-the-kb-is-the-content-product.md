@@ -32,7 +32,7 @@ happens, teams will not hand-write, hand-organize, and hand-update a
 cloned doc repo — they will work with an LLM and expect the output to
 land where it belongs, in the right shape. The hand-maintained doc repo
 is the rotting artifact this portfolio exists to replace.
-[portfolio#7](https://github.com/como-technologies/portfolio/issues/7)
+portfolio#7
 records the ratified plan.
 
 ## Decision Drivers
@@ -92,7 +92,7 @@ Chosen: **harness-first (option 3).** Concretely:
   decision covers human-prompted authoring; background curation stays
   specified-not-built (kb-spec Part I). Both run behind the same gates.
 - **Plan of record**:
-  [portfolio#7](https://github.com/como-technologies/portfolio/issues/7)
+  portfolio#7
   (waves 0–5). This record is wave 0.
 
 ### Positive Consequences

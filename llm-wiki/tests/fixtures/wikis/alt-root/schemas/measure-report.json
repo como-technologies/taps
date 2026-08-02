@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/measure-report.json",
+  "$id": "https://github.com/como-technologies/taps/llm-wiki/schemas/v0.1.0/measure-report.json",
   "title": "Measure report type",
   "description": "One Measure-stage report as a typed page (kb-spec §2; portfolio#7 wave 4). Emitted mechanically by the Measure heads — tuesday's quantitative capacity report today; pulse's qualitative aggregate when it un-parks — so adoption evidence is harness-queryable beside the decisions it attributes to.",
   "type": "object",

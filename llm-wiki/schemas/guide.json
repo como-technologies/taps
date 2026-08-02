@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/como-technologies/llm-wiki/schemas/v0.1.0/guide.json",
+  "$id": "https://github.com/como-technologies/taps/llm-wiki/schemas/v0.1.0/guide.json",
   "title": "Guide type",
   "description": "How-to / runbook content (kb-spec §2 target class). Uses the engine content-status vocabulary; temporal staleness arrives through the confidence flow, not a bespoke lifecycle.",
   "type": "object",

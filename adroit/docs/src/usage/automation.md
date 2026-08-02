@@ -358,7 +358,7 @@ JSON by `tests/ai_rig.rs`, so it can't silently regress with a rig upgrade.
 
 The AI layer is built on the **rig** framework (provider-agnostic LLM adapters),
 chosen so the provider stays swappable — see the
-[AI-authoring RFC](https://github.com/como-technologies/adroit/issues/5).
+AI-authoring RFC.
 
 ### Testing without a provider
 
@@ -369,6 +369,6 @@ flow without spending tokens.
 ## Why this exists
 
 This structured surface is the foundation for AI-assisted authoring — see the
-[AI-authoring RFC](https://github.com/como-technologies/adroit/issues/5). The goal
+AI-authoring RFC. The goal
 is that an agent can list, read, search, and validate ADRs through the same verbs
 a person uses, then propose changes a human reviews before commit.

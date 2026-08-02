@@ -8,5 +8,5 @@ src = "src"
 build-dir = "../target/book"
 
 [output.html]
-git-repository-url = "https://github.com/como-technologies/assessments"
-edit-url-template = "https://github.com/como-technologies/assessments/edit/main/docs/{path}"
+git-repository-url = "https://github.com/como-technologies/taps"
+edit-url-template = "https://github.com/como-technologies/taps/edit/main/assessments/docs/{path}"

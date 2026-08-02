@@ -5,8 +5,8 @@ language = "en"
 src = "src"
 
 [output.html]
-git-repository-url = "https://github.com/como-technologies/pulse"
-edit-url-template = "https://github.com/como-technologies/pulse/edit/main/docs/src/{path}"
+git-repository-url = "https://github.com/como-technologies/taps"
+edit-url-template = "https://github.com/como-technologies/taps/edit/main/pulse/docs/src/{path}"
 
 sidebar-header-nav = false
 default-theme = "gruvbox"

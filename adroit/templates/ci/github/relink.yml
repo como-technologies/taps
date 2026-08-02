@@ -40,7 +40,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install adroit
-        run: cargo install --git https://github.com/como-technologies/adroit --locked
+        run: cargo install --git https://github.com/como-technologies/taps --locked adroit
 
       - name: Relink ADRs to their current locations
         # Always full-scope and idempotent — a no-op on an already-canonical repo

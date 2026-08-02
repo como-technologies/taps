@@ -1,41 +1,20 @@
-REHEARSAL 3 — the pre-baked fast path, end to end (2026-07-28)
-Host: linux, sibling-checkout layout; conduit, the pinned adroit, and all sibling binaries pre-built by prior runs. FORGE_PORT=3210 (host port 3000 was occupied by an unrelated local server).
-First rehearsal since the client corpus moved to llm-wiki's starter content (kit/starter/decisions) — the corpus repo is built per run by demo/client-corpus-build.sh and seeded onto the forge as como/client-corpus.
-Sequence: preflight, demo-up, beat-1, beat-2, beat-3, beat-4, beat-4 re-run (idempotency), beat-5, demo-down.
-Every beat under 60s — see the WALL-CLOCK line each section ends with.
+REHEARSAL 6 — the pre-baked fast path on the single-workspace layout (2026-08-01)
+Host: linux, taps workspace checkout; every product is in-tree and every binary builds into the workspace's one target dir (no siblings, no pins, no resolution chain). Sequence: demo-up, beat-1 through beat-5, demo-down, one shell.
+Occasion: the cold-parity run of the workspace migration — the first rehearsal on the single-workspace layout. It also caught environmental drift: the gitea/gitea:1.24 image now resolves to 1.24.7, whose issue API returns an empty list for the plural 'type=issues' the scripted reviewer gate (demo-trigger.sh) used; fixed to the documented 'type=issue'. Evidence classes match rehearsal 5: verify 6/6, byte-identical forge transcripts, CROSS-CHECK PASS, the measure-report page in the run's KB space, and the KB query close.
 
-================================================================
-==== preflight
-================================================================
-────────────────────────────────────────────────────────────────────
- PREFLIGHT  (verify the demo's runtime prerequisites)
-────────────────────────────────────────────────────────────────────
-[1/2] docker (required — the throwaway Gitea forge)
-kit: OK — docker 29.6.2, daemon up, compose plugin present.
-[2/2] ollama 'llama3.2' (optional — only the --live AI lanes)
-kit: absent — ollama is not installed; --live is unavailable (pre-baked needs nothing).
-kit:   To enable --live: install ollama (https://ollama.com/download), then re-run preflight.
-
-────────────────────────────────────────────────────────────────────
- PREFLIGHT OK  (docker ready — run demo/kit/demo-up)
-────────────────────────────────────────────────────────────────────
-
-================================================================
-==== demo-up
 ================================================================
 ────────────────────────────────────────────────────────────────────
  DEMO-UP  (stand up the whole engagement demo)
 ────────────────────────────────────────────────────────────────────
-[1/6] resolving cross-repo dependencies
-client-corpus-build: llm-wiki -> ../llm-wiki (sibling checkout)
-client-corpus-build: built /home/sandman/src/como-technologies/conduit/.como/build/client-corpus (corpus: docs/src/adr, from /home/sandman/src/como-technologies/llm-wiki/kit/starter/decisions)
-kit: pulse -> ../pulse (sibling checkout)
-kit: assessments -> ../assessments (sibling checkout)
-kit: tuesday -> ../tuesday (sibling checkout)
-[2/6] building conduit + installing the pinned adroit
-init-adroit: pinned rev cc4375499059ee42b8e8fdba43c88c7ee9ab712d already installed — skipping install
+[1/6] resolving the suite products
+client-corpus-build: llm-wiki -> ../llm-wiki (in-tree)
+client-corpus-build: built /home/sandman/src/como-technologies/taps/conduit/.como/build/client-corpus (corpus: docs/src/adr, from /home/sandman/src/como-technologies/taps/llm-wiki/kit/starter/decisions)
+kit: pulse -> ../pulse (in-tree)
+kit: assessments -> ../assessments (in-tree)
+kit: tuesday -> ../tuesday (in-tree)
+[2/6] building conduit + the in-tree adroit
 adroit handshake OK
-[3/6] building sibling binaries (only what resolved; incremental)
+[3/6] building product binaries (only what resolved; incremental)
 [4/6] forge
 docker compose -f demo/docker-compose.yml up -d
  Network demo_default Creating 
@@ -47,7 +26,7 @@ docker compose -f demo/docker-compose.yml up -d
  Container conduit-gitea Starting 
  Container conduit-gitea Started 
 bash demo/gitea-init.sh
-waiting for gitea at http://localhost:3210 ...
+waiting for gitea at http://localhost:3000 ...
 gitea is up
 created user conduit-bot
 created user reviewer
@@ -55,16 +34,33 @@ minted token for conduit-bot -> .secrets/conduit-bot.token
 minted token for reviewer -> .secrets/reviewer.token
 remote: . Processing 1 references        
 remote: Processed 1 references in total        
-To http://localhost:3210/como/client-corpus.git
+To http://localhost:3000/como/client-corpus.git
  * [new branch]      main -> main
-forge ready: http://localhost:3210 (org como, repo client-corpus; tokens in .secrets/)
+forge ready: http://localhost:3000 (org como, repo client-corpus; tokens in .secrets/)
 [5/6] per-run workdir
-demo workdir ready: /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z (adroit corpus: /home/sandman/src/como-technologies/conduit/.como/build/client-corpus/docs/src/adr)
-initialized: store at /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/.conduit — label set ensured on gitea como/client-corpus at http://localhost:3210
+  ADR-0001  accepted    Adopt trunk-based development with short-lived branches
+  ADR-0002  accepted    Require ADRs for cross-team architectural decisions
+  ADR-0003  accepted    Pin and audit third-party dependencies in CI
+  ADR-0004  accepted    Maintain a glossary of shared engineering terms in the knowledge base
+  ADR-0005  accepted    Automated Testing
+  ADR-0006  proposed    Continuous Integration
+  ADR-0007  proposed    Code Reviews
+  ADR-0008  proposed    Refactoring
+  ADR-0009  proposed    Unit Testing
+  ADR-0010  proposed    Integration Testing
+  ADR-0011  proposed    Monitoring
+  ADR-0012  proposed    Incident Management
+  ADR-0015  proposed    Gate incomplete work behind feature flags with owners and expiry dates
+  ADR-0016  proposed    Require a runbook before a service enters production
+  ADR-0017  proposed    Keep secrets out of the repository with a managed secrets store
+  ADR-0018  proposed    Version shared internal libraries with semantic versioning and changelogs
+Seeded 16 ADR(s) from /home/sandman/src/como-technologies/taps/conduit/.como/build/client-corpus/docs/src/adr into demo/runs/kit-20260801T225650Z/corpus-space/wiki/decisions.
+demo workdir ready: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z (corpus space: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/corpus-space, seeded from /home/sandman/src/como-technologies/taps/conduit/.como/build/client-corpus/docs/src/adr)
+initialized: store at /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/.conduit — label set ensured on gitea como/client-corpus at http://localhost:3000
 [6/6] live-lane check (ollama)
-kit: ollama 'llama3.2' not available — pre-baked fast path only (that is fine)
+kit: ollama 'llama3.2' is up and pre-warmed — --live variants available
 
- WALL-CLOCK: demo-up took 10s
+ WALL-CLOCK: demo-up took 23s
 
 ────────────────────────────────────────────────────────────────────
  THE BEAT MENU  (run from anywhere; each beat prints its own evidence)
@@ -78,11 +74,13 @@ kit: ollama 'llama3.2' not available — pre-baked fast path only (that is fine)
 
  Pre-baked beats run in seconds. --live recomputes on local ollama
  (llama3.2): expect ~6 min for beat 2, ~5-6 min for beat 3.
- Workdir: /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z
+ Workdir: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z
 
-================================================================
-==== beat-1-measure-prior
-================================================================
+ -> inspect the run any time (every artifact lives in the per-up workdir):
+      WORK=$(cat demo/kit/.current)          # this run: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z
+      ls "$WORK"                            # beat artifacts land here, one file per hand-off
+      ls "$WORK/corpus-space/wiki/decisions" # the KB: the client corpus as typed pages
+      .conduit/bin/adroit list --dir "$WORK/corpus-space"   # read it the way the heads do
 ────────────────────────────────────────────────────────────────────
  BEAT 1 — MEASURE THE PRIOR PERIOD  (pulse, seeded + deterministic)
 ────────────────────────────────────────────────────────────────────
@@ -94,7 +92,7 @@ kit: ollama 'llama3.2' not available — pre-baked fast path only (that is fine)
    byte identical report. Determinism is designed in, not hoped for —
    watch us prove it by running it twice.
 
-kit: pulse -> ../pulse (sibling checkout)
+kit: pulse -> ../pulse (in-tree)
  RUN: just dogfood   (in the pulse repo — twice, to prove determinism)
 
  EVIDENCE — determinism (two runs, same seed):
@@ -110,13 +108,9 @@ kit: pulse -> ../pulse (sibling checkout)
    signal: "How much do you trust the artifacts the loop produced this iteration (assessments, seeded decisions, merged PRs)?" -> avg 3.7 (10 unique pseudonyms, suppressed: false)
    signal: "How much did this iteration's hardening (gates tested under attack, broader forge support) increase your confidence in the suite?" -> avg 4.0 (10 unique pseudonyms, suppressed: false)
 
- -> artifact for beat 2: /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/pulse-report.json
+ -> artifact for beat 2: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/pulse-report.json
 
- WALL-CLOCK: beat-1-measure-prior took 5s
-
-================================================================
-==== beat-2-assess
-================================================================
+ WALL-CLOCK: beat-1-measure-prior took 2s
 ────────────────────────────────────────────────────────────────────
  BEAT 2 — ASSESS  (pre-baked fast path)
 ────────────────────────────────────────────────────────────────────
@@ -131,7 +125,7 @@ kit: pulse -> ../pulse (sibling checkout)
    And the human gate: the client's architect reviews every question before
    it is ever asked.
 
-kit: assessments -> ../assessments (sibling checkout)
+kit: assessments -> ../assessments (in-tree)
  RUN: cp prebaked/assessment.yaml -> workdir   (then validate it LIVE)
       provenance: authored 2026-06-12 by this same pipeline on llama3.2
       in 355.9s with zero retries — rerun it yourself with --live
@@ -147,13 +141,9 @@ kit: assessments -> ../assessments (sibling checkout)
    - Operations: Monitoring, Incident Management
    - Testing: Unit Testing, Integration Testing
 
- -> artifact for beat 3: /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/assessment.yaml
+ -> artifact for beat 3: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/assessment.yaml
 
  WALL-CLOCK: beat-2-assess (pre-baked) took 0s
-
-================================================================
-==== beat-3-prescribe
-================================================================
 ────────────────────────────────────────────────────────────────────
  BEAT 3 — PRESCRIBE  (pre-baked fast path)
 ────────────────────────────────────────────────────────────────────
@@ -167,27 +157,25 @@ kit: assessments -> ../assessments (sibling checkout)
    that is deterministic and provider-free. Watch the same plan come back
    sha-identical with no AI configured at all.
 
-client-corpus-build: llm-wiki -> ../llm-wiki (sibling checkout)
-client-corpus-build: built /home/sandman/src/como-technologies/conduit/.como/build/client-corpus (corpus: docs/src/adr, from /home/sandman/src/como-technologies/llm-wiki/kit/starter/decisions)
  RUN: adroit import --from-assessment assessment.yaml   (mechanical seed — no AI, runs live now)
 Seeded 8 proposed ADR(s) from assessment "Software Engineering Maturity Assessment".
 
  EVIDENCE — seeded decisions (import -o json):
    seeded 8 proposed ADR(s), 0 skipped (dedupe guard)
-   ADR-0001  Automated Testing  [Proposed]
-   ADR-0002  Continuous Integration  [Proposed]
-   ADR-0003  Code Reviews  [Proposed]
-   ADR-0004  Refactoring  [Proposed]
-   ADR-0005  Unit Testing  [Proposed]
-   ADR-0006  Integration Testing  [Proposed]
-   ADR-0007  Monitoring  [Proposed]
-   ADR-0008  Incident Management  [Proposed]
+   ADR-0001  Automated Testing  [proposed]
+   ADR-0002  Continuous Integration  [proposed]
+   ADR-0003  Code Reviews  [proposed]
+   ADR-0004  Refactoring  [proposed]
+   ADR-0005  Unit Testing  [proposed]
+   ADR-0006  Integration Testing  [proposed]
+   ADR-0007  Monitoring  [proposed]
+   ADR-0008  Incident Management  [proposed]
 
  RUN: adroit set-status 1 accepted   (the human gate — the architect accepts the decision)
-   Updated ADR-0001 status to Accepted (/home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/prescribe/adrs/accepted/0001-automated-testing.md)
+   Updated ADR-0001 status to Accepted (/home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/prescribe/space/wiki/decisions/0001-automated-testing.md)
 
  RUN: adroit plan 5 -o json   — twice, with NO AI environment at all
-      (corpus: /home/sandman/src/como-technologies/conduit/.como/build/client-corpus/docs/src/adr; plan generated + persisted by this pipeline on 2026-06-12 (--live replays it))
+      (corpus: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/corpus-space; plan generated + persisted by this pipeline on 2026-06-12 (--live replays it))
 
  EVIDENCE — stored-plan determinism (provider-free double read):
    ADR-0005: stored = true
@@ -199,13 +187,12 @@ Seeded 8 proposed ADR(s) from assessment "Software Engineering Maturity Assessme
    scratch corpus: no problems
 
  -> artifact for beat 4: the client corpus's accepted decision + stored plan
-    (/home/sandman/src/como-technologies/conduit/.como/build/client-corpus/docs/src/adr/accepted/, already seeded onto the demo forge)
+ -> inspect: ls /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/prescribe/space/wiki/decisions   (this beat's imports, typed pages)
+            head -14 /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/corpus-space/wiki/decisions/0005-*.md   (frontmatter is the machine seam)
+    (/home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/corpus-space/wiki/decisions/ — the per-run space seeded from the
+     legacy corpus repo, which is already on the demo forge as the repo of record)
 
- WALL-CLOCK: beat-3-prescribe (pre-baked) took 1s
-
-================================================================
-==== beat-4-adopt
-================================================================
+ WALL-CLOCK: beat-3-prescribe (pre-baked) took 0s
 ────────────────────────────────────────────────────────────────────
  BEAT 4 — ADOPT  (the human-gated agent lifecycle)
 ────────────────────────────────────────────────────────────────────
@@ -222,7 +209,7 @@ Seeded 8 proposed ADR(s) from assessment "Software Engineering Maturity Assessme
    verify it: six contract checks against the live forge.
 
  RUN: conduit plan 5   (stored plan -> forge issue; NO AI environment)
-   planned ADR-0005 as task adr-0005 — issue 1 on gitea como/client-corpus at http://localhost:3210: label it conduit:run to start
+   planned ADR-0005 as task adr-0005 — issue 1 on gitea como/client-corpus at http://localhost:3000: label it conduit:run to start
    plan for ADR-0005: stored plan (deterministic read from the ADR document)
    conduit: auto-creating missing label "adr:ADR-0005" (neutral grey) — add it to ensure_labels if this is a standing label
 
@@ -231,7 +218,7 @@ bash demo/demo-trigger.sh
    labeled issue 1 with conduit:run (as reviewer)
 
  RUN: conduit run --once   (one tick: Scoped -> Coding -> InReview)
-   conduit run: single tick via gitea como/client-corpus at http://localhost:3210 (engine: fake (complete))
+   conduit run: single tick via gitea como/client-corpus at http://localhost:3000 (engine: fake (complete))
 
  EVIDENCE — the pull request on the client's forge (the REVIEW gate now holds):
    PR 2: [ADR-0005] Automated Testing
@@ -244,7 +231,7 @@ bash demo/demo-trigger.sh
    merge: HTTP 200
 
  RUN: conduit run --once   (observes PrMerged -> Merged, closes the issue with the merge sha)
-   conduit run: single tick via gitea como/client-corpus at http://localhost:3210 (engine: fake (complete))
+   conduit run: single tick via gitea como/client-corpus at http://localhost:3000 (engine: fake (complete))
    id                                    state             attempt   branch
    adr-0005                              Merged            1         conduit/adr-0005/automated-testing
 
@@ -263,60 +250,13 @@ bash demo/demo-trigger.sh
 
  EVIDENCE — normalized action transcripts, gitea (live) vs github (DryRun) vs gitlab (DryRun):
    FORGE-NEUTRAL (N=3): identical (7 lines)
-   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/t-gitea.jsonl
-   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/t-github.jsonl
-   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/t-gitlab.jsonl
+   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/t-gitea.jsonl
+   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/t-github.jsonl
+   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/t-gitlab.jsonl
 
- -> artifact for beat 5: /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/conduit-verify.json (+ the merged PR on the forge)
+ -> artifact for beat 5: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/conduit-verify.json (+ the merged PR on the forge)
 
  WALL-CLOCK: beat-4-adopt took 8s
-
-================================================================
-==== beat-4-adopt (re-run, idempotency)
-================================================================
-────────────────────────────────────────────────────────────────────
- BEAT 4 — ADOPT  (the human-gated agent lifecycle)
-────────────────────────────────────────────────────────────────────
- TALKING POINT:
-   This is the flagship. conduit takes the accepted decision's STORED plan —
-   no AI at runtime — and posts it as an issue on the client's own forge.
-   Then it stops. Three human gates, by name: nothing runs until a reviewer
-   labels the issue conduit:run (the scope gate); every change arrives as a
-   pull request under the client's own review tooling (the review gate); and
-   only a human can merge — conduit has no merge method, the gate is
-   unrepresentable in its type system (the merge gate). You never have to
-   trust an agent; you review a pull request, which your team already knows
-   how to do. And when it's merged, we don't claim success — we machine-
-   verify it: six contract checks against the live forge.
-
-kit: task adr-0005 is already Merged (idempotent re-run) — re-asserting the evidence live
-
- RUN: conduit verify 5 -o json   (six machine checks on the MERGED PR — no slideware)
-
- EVIDENCE — the tuesday contract, 6/6 (exit 0):
-   PASS  title_prefix
-   PASS  trailer_final_line
-   PASS  exactly_one_effort_label
-   PASS  adr_label_present
-   PASS  branch_shape
-   PASS  never_adr_namespace
-   overall: pass=true  pr=2  task=adr-0005
-
- RUN: conduit demo-transcript 5 --forge gitea|github|gitlab + diff   (the forge-neutrality money shot, N=3)
-
- EVIDENCE — normalized action transcripts, gitea (live) vs github (DryRun) vs gitlab (DryRun):
-   FORGE-NEUTRAL (N=3): identical (7 lines)
-   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/t-gitea.jsonl
-   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/t-github.jsonl
-   9cf0b8d8b50ecba838b288994b0af45d2270be82c457d185ac4f365b25fc7a6e  /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/t-gitlab.jsonl
-
- -> artifact for beat 5: /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/conduit-verify.json (+ the merged PR on the forge)
-
- WALL-CLOCK: beat-4-adopt took 2s
-
-================================================================
-==== beat-5-measure
-================================================================
 ────────────────────────────────────────────────────────────────────
  BEAT 5 — MEASURE  (tuesday --strict + the Adopt<->Measure cross-check)
 ────────────────────────────────────────────────────────────────────
@@ -330,13 +270,13 @@ kit: task adr-0005 is already Merged (idempotent re-run) — re-asserting the ev
    decision. Finally, the loop closes: this report plus the pulse signal
    feed the next assessment — which is where this demo began.
 
-kit: tuesday -> ../tuesday (sibling checkout)
+kit: tuesday -> ../tuesday (in-tree)
  RUN: tuesday-report --source gitea --owner como --repo client-corpus --monthly-hours 160 -o json --strict
       (= tuesday's own `just dogfood-report client-corpus`; token rides the env, never argv or git)
    exit code: 0 (strict mode satisfied)
 
  EVIDENCE — decision-attributed effort (the Measure artifact):
-   como 2026-July: 1 allocation(s), 0 unallocated PR(s) [strict requires 0]
+   como 2026-August: 1 allocation(s), 0 unallocated PR(s) [strict requires 0]
    PR 2 "[ADR-0005] Automated Testing" -> ADR-0005 (SuperQuick, 160.0h)
    adr_totals: ADR-0005 = 160.0h
 
@@ -346,15 +286,34 @@ kit: tuesday -> ../tuesday (sibling checkout)
    adr:    conduit=ADR-0005 tuesday=ADR-0005 (adr_totals: 160.0h)
    CROSS-CHECK PASS: PR 2, effort:1-super-quick, ADR-0005 — Adopt and Measure agree
 
+ RUN: tuesday-report ... --kb corpus-space   (the same month, written as a measure-report page into the per-run KB space)
+
+ EVIDENCE — the measure-report page in the corpus space (decisions and measurements, one KB):
+   page: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/corpus-space/wiki/measures/como-2026-08.md
+   adr_hours:
+     ADR-0005: 160.0
+
+ RUN: llm-wiki register + ingest + search   (the loop's artifacts, answerable as knowledge)
+   Registered wiki "client" at /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/corpus-space
+   Registered in /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/llm-wiki-registry.toml
+   Ingested: 17 pages, 0 unchanged, 1 assets, 0 warnings, 0 redactions
+   Commit: 3c86fba35ff2bb4898a213e7842b825615fe94ee
+
+ EVIDENCE — the harness question, answered from the client's own pages:
+   slug:  measures/como-2026-08
+   uri:   wiki://client/measures/como-2026-08
+   title: Capacity report — como 2026-08
+   score: 5.62
+   excerpt: ruling: a merged PR&#x27;s **full** allocated hours are credited to the
+   <b>decision</b> named by its `adr:*` label — attribution answers &quot;<b>what</b> <b>did</b>
+   <b>this</b> <b>decision</b>
+
  EVIDENCE — the closed loop:
-   next-period inputs ready: /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/tuesday-report.json + /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z/pulse-report.json
+   next-period inputs ready: /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/tuesday-report.json + /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/pulse-report.json
    (beat 2 --live consumes them as --context — measurement steers the next assessment)
 
- WALL-CLOCK: beat-5-measure took 0s
-
-================================================================
-==== demo-down
-================================================================
+ WALL-CLOCK: beat-5-measure took 1s
+ -> inspect: cat /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z/corpus-space/wiki/measures/*.md   (the month, priced, beside the decisions)
 ────────────────────────────────────────────────────────────────────
  DEMO-DOWN  (tear down; nothing left)
 ────────────────────────────────────────────────────────────────────
@@ -370,11 +329,11 @@ kit: tuesday -> ../tuesday (sibling checkout)
     Container conduit-gitea Stopped 
     Container conduit-gitea Removing 
     Container conduit-gitea Removed 
-    Network demo_default Removing 
     Volume demo_gitea-data Removing 
+    Network demo_default Removing 
     Volume demo_gitea-data Removed 
     Network demo_default Removed 
-   removed workdir /home/sandman/src/como-technologies/conduit/demo/runs/kit-20260728T202517Z
+   removed workdir /home/sandman/src/como-technologies/taps/conduit/demo/runs/kit-20260801T225650Z
 
  EVIDENCE — nothing left:
    forge container: gone
