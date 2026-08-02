@@ -20,9 +20,9 @@ deployment driver — a committed pilot or design-partner customer with a real
 respondent population, or an owner-recorded funded SME-pilot decision.
 
 Milestone tracking is **local**: this page plus the `adr/` corpus are the
-source of truth. Historical GitHub Milestones on the `como-technologies`
-remote are no longer maintained as a tracking source (nothing is pushed in
-park mode; `just ci` is the only trusted check).
+source of truth. Open work items live on the workspace issue tracker
+(labeled `pulse`); GitHub Milestones are not maintained as a tracking
+source (`just ci` is the only trusted check).
 
 ---
 

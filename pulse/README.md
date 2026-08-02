@@ -21,8 +21,8 @@ With [just](https://github.com/casey/just) installed, the justfile is the single
 
 ## Documentation
 
-- **[Book](https://como-technologies.github.io/pulse/)** -- concepts, design, development guides
-- **[API Reference](https://como-technologies.github.io/pulse/api/pulse_crypto/index.html)** -- generated Rust docs (`cargo doc --workspace --no-deps --open` for local)
+- **[Book](https://como-technologies.github.io/taps/pulse/)** -- concepts, design, development guides
+- **API Reference** -- generated Rust docs: `cargo doc -p pulse-crypto -p pulse-protocol -p pulse-identity -p pulse-signal -p pulse-server -p pulse-relay -p pulse-client --no-deps --open`
 
 ## Crate Structure
 

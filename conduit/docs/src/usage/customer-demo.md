@@ -348,12 +348,11 @@ demo/kit/beat-5-measure
 demo/kit/demo-down
 ```
 
-Dependencies resolve per the suite convention (ADR-0014), in order: env
-override (`COMO_<REPO>_DIR`) → sibling checkout (`../llm-wiki`, `../pulse`,
-`../assessments`, `../tuesday`) → the gitignored `.como/deps/` clone cache
-from `${COMO_<REPO>_GIT:-${COMO_GIT_BASE:-https://github.com/como-technologies}/<repo>.git}`
-→ skip-with-notice (only the client corpus is a hard requirement — it is
-built by `demo/client-corpus-build.sh` from llm-wiki's starter content at
+Every product resolves in-tree — the workspace directory beside conduit —
+with an env override (`COMO_<REPO>_DIR`) for pointing a beat at an
+out-of-tree checkout, then skip-with-notice (only the client corpus is a
+hard requirement — it is built by `demo/client-corpus-build.sh` from
+llm-wiki's starter content at
 `kit/starter/decisions/`; a beat whose repo did not resolve says so and
 names the knobs). The in-tree adroit builds via `just init-adroit`.
 
