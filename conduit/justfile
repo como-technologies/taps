@@ -5,7 +5,7 @@ default:
 # Install project toolchain components and tools
 init:
     rustup component add clippy rustfmt
-    cargo install mdbook cargo-edit cargo-audit
+    cargo install --locked mdbook cargo-edit cargo-audit
 
 # Run all CI checks: format, lint, tests, book build (the house gate).
 # crate-audit is deliberately NOT a leg — it runs as a separate CI job (plus

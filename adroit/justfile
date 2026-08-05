@@ -5,7 +5,7 @@ default:
 # Install project dependencies and tools
 init:
     rustup component add clippy rustfmt
-    cargo install cargo-watch mdbook cargo-outdated cargo-edit cargo-audit
+    cargo install --locked cargo-watch mdbook cargo-outdated cargo-edit cargo-audit
 
 # Run all CI checks (used by .github/workflows/ci.yml). `ai`+`forge` are default
 # features now, so the plain `lint`/`test` cover them; `lint-core`/`test-core`

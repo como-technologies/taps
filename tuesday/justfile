@@ -12,7 +12,7 @@ default:
 # Install toolchain components and doc tooling
 init:
     rustup component add clippy rustfmt
-    cargo install mdbook cargo-edit cargo-audit
+    cargo install --locked mdbook cargo-edit cargo-audit
 
 # Run all CI checks: the blocking format gate, both clippy lanes, the four
 # cargo lanes (`lanes` covers the workspace test run, so `ci` does not also

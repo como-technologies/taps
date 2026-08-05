@@ -6,7 +6,7 @@ default:
 # cargo-audit)
 init:
     rustup component add clippy rustfmt
-    cargo install mdbook mdbook-gruvbox cargo-edit cargo-audit
+    cargo install --locked mdbook mdbook-gruvbox cargo-edit cargo-audit
     mdbook-gruvbox install docs
 
 # Run all CI checks: the CLAUDE.md pre-push checklist + book + ADR validation

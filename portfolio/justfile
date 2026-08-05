@@ -4,7 +4,7 @@ default:
 
 # Install project dependencies and tools
 init:
-    cargo install mdbook mdbook-mermaid mdbook-gruvbox
+    cargo install --locked mdbook mdbook-mermaid mdbook-gruvbox
 
 # Run all CI checks (used by .github/workflows/ci.yml)
 # ADR-corpus validation is the workspace-root `just adr-check`.
