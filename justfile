@@ -21,14 +21,21 @@ init:
         fi
     fi
 
-# The Getting Started guide's Step 1. One shared release build, then the
-# binaries land in ~/.cargo/bin — already on PATH via rustup, so no
-# per-shell PATH exports. The other products (amaker, conduit, tuesday,
-# pulse) build via their own justfiles at the steps that use them.
-# Build the KB command-line pair (llm-wiki, adroit) and put them on PATH
+# The Getting Started guide's Step 1. One release build of the whole
+# workspace, then every product binary lands in ~/.cargo/bin — already
+# on PATH via rustup, so no per-shell exports. (pulse-simulate stays
+# out: a feature-gated test-harness tool, pulse's own `just simulate`.)
+# Build the whole suite and put every product binary on PATH
 install:
-    cargo build --release -p llm-wiki -p adroit
-    install -m 755 target/release/llm-wiki target/release/adroit ~/.cargo/bin/
+    cargo build --release
+    install -m 755 \
+        target/release/llm-wiki target/release/adroit \
+        target/release/amaker target/release/amaker-author \
+        target/release/amaker-assess target/release/amaker-analyze \
+        target/release/conduit \
+        target/release/tuesday-report target/release/tuesday \
+        target/release/pulse-server target/release/pulse-relay \
+        ~/.cargo/bin/
 
 # Run all CI checks — the whole suite gate, one command. crate-audit is
 # deliberately NOT a leg: it runs as a separate CI job (plus a weekly

@@ -52,10 +52,10 @@ The workspace pins its Rust toolchain in `rust-toolchain.toml` — the first
 just install
 ```
 
-One shared release build, and the suite's KB command-line pair —
-`llm-wiki` (the knowledge base) and `adroit` (decision records) — lands
-in `~/.cargo/bin`, which rustup already put on your `PATH`. No exports,
-nothing to configure in new shells.
+One release build of the whole suite — expect a few minutes the first
+time — and every product binary (`llm-wiki`, `adroit`, amaker, conduit,
+tuesday, pulse) lands in `~/.cargo/bin`, which rustup already put on
+your `PATH`. No exports, nothing to configure in new shells.
 
 ## Verify
 
@@ -66,6 +66,6 @@ adroit --version
 
 Both should print a version and exit cleanly.
 
-The remaining products — amaker (Step 4), conduit (Step 6), tuesday and
-pulse (Step 7) — build via their own justfiles at the steps that use
-them, so nothing blocks you here.
+Later steps still lean on each product's own justfile for runtime
+pieces (amaker's web assets, the demo forge) — but every binary is
+built and on `PATH` now, so nothing later waits on a cold build.
