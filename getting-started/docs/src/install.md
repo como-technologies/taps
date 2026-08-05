@@ -29,9 +29,6 @@ cargo install --locked just
 (Step 6's throwaway forge brings its own runtime requirement — that
 step names it when you get there.)
 
-> 🚧 **Unverified.** The walk runs this block on a fresh machine and
-> trues up the package list.
-
 ## Clone
 
 Already cloned from a local checkout in
