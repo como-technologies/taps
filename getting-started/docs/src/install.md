@@ -59,12 +59,25 @@ your `PATH`. No exports, nothing to configure in new shells.
 
 ## Verify
 
+Eleven binaries, all findable:
+
+```sh
+for b in llm-wiki adroit amaker amaker-author amaker-assess \
+         amaker-analyze conduit tuesday-report tuesday \
+         pulse-server pulse-relay; do
+  command -v "$b" || echo "MISSING: $b"
+done
+```
+
+Eleven `~/.cargo/bin/…` paths and no `MISSING` lines. Then prove the
+pair Step 2 uses actually runs:
+
 ```sh
 llm-wiki --version
 adroit --version
 ```
 
-Both should print a version and exit cleanly.
+Both print a version and exit cleanly.
 
 Later steps still lean on each product's own justfile for runtime
 pieces (amaker's web assets, the demo forge) — but every binary is
