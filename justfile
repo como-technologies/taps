@@ -23,19 +23,40 @@ init:
 
 # The Getting Started guide's Step 1. One release build of the whole
 # workspace, then every product binary lands in ~/.cargo/bin — already
-# on PATH via rustup, so no per-shell exports. (pulse-simulate stays
-# out: a feature-gated test-harness tool, pulse's own `just simulate`.)
+# on PATH via rustup, so no per-shell exports. The set is derived from
+# the build output itself (top-level executables in target/release), so
+# a new binary ships automatically; feature-gated tools that don't build
+# by default (pulse-simulate) stay with their product's justfile.
 # Build the whole suite and put every product binary on PATH
 install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
     cargo build --release
-    install -m 755 \
-        target/release/llm-wiki target/release/adroit \
-        target/release/amaker target/release/amaker-author \
-        target/release/amaker-assess target/release/amaker-analyze \
-        target/release/conduit \
-        target/release/tuesday-report target/release/tuesday \
-        target/release/pulse-server target/release/pulse-relay \
-        ~/.cargo/bin/
+    for f in target/release/*; do
+        [ -f "$f" ] && [ -x "$f" ] || continue
+        case "$f" in *.so|*.d|*.rlib) continue ;; esac
+        install -m 755 "$f" ~/.cargo/bin/
+        echo "installed: $(basename "$f")"
+    done
+
+# Every product binary answers --version (suite convention) and the set
+# derives from the release build output, so this doubles as the guide's
+# Step 1 verify. Errors if a binary is missing from PATH or misbehaves.
+# Show the version of every installed product binary
+versions:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    shopt -s nullglob
+    found=0
+    for f in target/release/*; do
+        [ -f "$f" ] && [ -x "$f" ] || continue
+        case "$f" in *.so|*.d|*.rlib) continue ;; esac
+        found=1
+        "$(basename "$f")" --version
+    done
+    [ "$found" = 1 ] || { echo "no release binaries found — run 'just install' first"; exit 1; }
 
 # Run all CI checks — the whole suite gate, one command. crate-audit is
 # deliberately NOT a leg: it runs as a separate CI job (plus a weekly

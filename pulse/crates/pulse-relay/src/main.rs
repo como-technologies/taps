@@ -12,6 +12,13 @@ use pulse_relay::{RelayState, routes};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Answer --version before any env/config side effects (suite
+    // convention; taps issue 52).
+    if std::env::args().any(|a| a == "--version" || a == "-V") {
+        println!("{} {}", env!("CARGO_BIN_NAME"), env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()

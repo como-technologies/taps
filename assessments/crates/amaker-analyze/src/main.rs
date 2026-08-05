@@ -19,6 +19,13 @@ use tower_http::{services::ServeDir, trace::TraceLayer};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Answer --version before any env/config side effects (suite
+    // convention; taps issue 50).
+    if std::env::args().any(|a| a == "--version" || a == "-V") {
+        println!("{} {}", env!("CARGO_BIN_NAME"), env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     let config = config::Config::from_env()?;
 
     init_tracing(&config.log_level, &[]);

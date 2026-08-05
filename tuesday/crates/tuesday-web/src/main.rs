@@ -12,6 +12,13 @@ const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
+    // Answer --version before dioxus takes over (suite convention; taps
+    // issue 51). On wasm32 args are empty, so this is server-side only.
+    if std::env::args().any(|a| a == "--version" || a == "-V") {
+        println!("{} {}", env!("CARGO_BIN_NAME"), env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
     // Load .env file if present (server-side only, silently ignored on WASM)
     let _ = dotenvy::dotenv();
 
