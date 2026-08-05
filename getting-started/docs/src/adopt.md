@@ -1,5 +1,8 @@
 # Step 6 — Adopt
 
+> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
+> yet — commands and claims may change as the dogfood walk reaches it.
+
 Accepted decisions become working code as reviewable pull requests on a
 forge, with a human holding every gate. The engine is
 [conduit](../portfolio/loop/adopt.html): it reads accepted ADRs through adroit's

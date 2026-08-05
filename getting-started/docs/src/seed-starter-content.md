@@ -1,5 +1,8 @@
 # Step 3 — Seed starter content
 
+> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
+> yet — commands and claims may change as the dogfood walk reaches it.
+
 A blank page is a bad day one. The kit ships
 [starter content](../portfolio/starter-content.html) — a real decision
 corpus plus a glossary and guides — so your fresh space starts with
@@ -28,9 +31,6 @@ same admission gate your own writes will face.
 adroit check --dir ~/myproject-kb    # the decision corpus is semantically sound
 llm-wiki lint --wiki myproject       # zero errors is the bar
 ```
-
-> 🚧 **Unverified.** The walk confirms these commands and the zero-error
-> bar on a fresh seed.
 
 Both clean means the space holds validated, typed, working content — and
 you've watched the gates pass on real pages. Step 4 adds the first

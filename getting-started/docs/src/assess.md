@@ -1,5 +1,8 @@
 # Step 4 — Assess
 
+> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
+> yet — commands and claims may change as the dogfood walk reaches it.
+
 The loop opens with evidence: a structured maturity assessment of your
 project, not a gut feeling. [amaker](../portfolio/loop/assess.html) is the authoring
 environment — you and an assistant build the assessment together, a

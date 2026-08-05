@@ -1,5 +1,8 @@
 # Step 5 — Prescribe
 
+> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
+> yet — commands and claims may change as the dogfood walk reaches it.
+
 An assessment that stays a scorecard changes nothing. This step turns it
 into a backlog of **proposed decisions** in your knowledge base —
 Architecture Decision Records your team refines, debates, and accepts.
