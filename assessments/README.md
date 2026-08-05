@@ -2,6 +2,9 @@
 
 **Status:** Active development
 
+> New to the TAPS suite? Start with the
+> [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
+
 Amaker helps domain Subject Matter Experts (SMEs) create structured assessments
 through AI-assisted conversation, then collect responses against published
 versions and analyze the results. A split-view authoring UI pairs chat with a

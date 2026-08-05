@@ -1,5 +1,8 @@
 # Team Effort Analysis from GitHub Activity
 
+> New to the TAPS suite? Start with the
+> [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
+
 ## Philosophy: Team-Level Effort Analysis
 
 This tool analyzes **team capacity investment** rather than individual time tracking.

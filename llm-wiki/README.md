@@ -4,6 +4,9 @@ A headless wiki engine for agents. 23 MCP tools. One Rust binary. No LLM inside.
 
 **Build knowledge that compounds — not answers that evaporate.**
 
+> New to the TAPS suite? Start with the
+> [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
+
 A git-backed Markdown wiki — searchable, typed, graph-linked. Accessible from
 the command line, from any MCP-compatible agent, or from any IDE via ACP.
 

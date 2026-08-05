@@ -4,6 +4,9 @@ Verified-anonymous employee sentiment polling with cryptographic privacy guarant
 
 Pulse uses blind signatures (RSA, RFC 9474) to mathematically prove that no one -- not even the system operator -- can link an employee's identity to their response. The identity zone knows WHO participated; the signal zone knows WHAT was said; neither can learn both.
 
+> New to the TAPS suite? Start with the
+> [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
+
 ## Quick Start
 
 ```sh

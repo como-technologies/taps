@@ -3,6 +3,9 @@
 A snappy tool for managing Architecture Decision Records — the name hides
 **ADR** in plain sight.
 
+> New to the TAPS suite? Start with the
+> [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
+
 > **Status: dogfooded daily.** We use adroit on our own consulting gigs to
 > manage ADRs in-repo. Distributed as source by decision (ADR-0013): build it
 > with `just build`, pin releases by tag (see the book's Changelog chapter).

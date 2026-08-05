@@ -32,41 +32,13 @@ jobs:
         with:
           tool: just,mdbook,mdbook-mermaid
 
-      - name: Build all books
-        run: just books
-
       - name: Assemble the site
-        run: |
-          mkdir site
-          cp -r adroit/docs/book site/adroit
-          cp -r assessments/target/book site/assessments
-          cp -r conduit/docs/book site/conduit
-          cp -r portfolio/target/book site/portfolio
-          cp -r pulse/docs/book site/pulse
-          cp -r tuesday/docs/book site/tuesday
-          cat > site/index.html <<'EOF'
-          <!DOCTYPE html>
-          <html lang="en"><head><meta charset="utf-8">
-          <title>Como Technologies — TAPS suite</title>
-          <style>body{font-family:sans-serif;max-width:40rem;margin:4rem auto;padding:0 1rem;background:#282828;color:#ebdbb2}a{color:#83a598}</style>
-          </head><body>
-          <h1>The TAPS suite</h1>
-          <p><a href="portfolio/">Start with the portfolio book</a> — the reader-facing story.</p>
-          <ul>
-            <li><a href="adroit/">adroit</a> — decision records (Prescribe)</li>
-            <li><a href="assessments/">assessments</a> — amaker (Assess)</li>
-            <li><a href="conduit/">conduit</a> — the Adopt engine</li>
-            <li><a href="pulse/">pulse</a> — anonymous signal (Measure)</li>
-            <li><a href="tuesday/">tuesday</a> — effort attribution (Measure)</li>
-            <li><a href="portfolio/">portfolio</a> — the book</li>
-          </ul>
-          </body></html>
-          EOF
+        run: just site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: target/site
 
   deploy:
     needs: build

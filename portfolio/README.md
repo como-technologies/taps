@@ -9,9 +9,11 @@ an [mdBook](https://rust-lang.github.io/mdBook/) site; the prose lives in
 
 The book is deliberately short: it tells the story of the tools and how
 they work together, and links to each tool's own docs for the details.
-Start with the rendered [Introduction](docs/src/introduction.md). This
-README is about how to **build and work on the book**. For standing the
-whole suite up locally, see [OPERATIONS.md](OPERATIONS.md).
+Start with the rendered [Introduction](docs/src/introduction.md). The
+hands-on tutorial is its own book — the
+[Getting Started guide](../getting-started/) — kept out of this one on
+purpose. This README is about how to **build and work on the book**. For
+standing the whole suite up locally, see [OPERATIONS.md](OPERATIONS.md).
 
 ## Prerequisites
 

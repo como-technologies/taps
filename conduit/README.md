@@ -6,6 +6,9 @@ drives a commodity coding engine to turn each decision into issues and reviewabl
 pull requests — on the team's own forge, cloud, and AI model, with nothing
 locked to a vendor. Spike complete as of 2026-06-12.
 
+> New to the TAPS suite? Start with the
+> [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
+
 - **Working agreements and build commands:** [CLAUDE.md](./CLAUDE.md)
 - **Full documentation (mdbook):** `just book` or `docs/src/`
 - **Demo walkthrough:** [docs/src/usage/demo.md](./docs/src/usage/demo.md)

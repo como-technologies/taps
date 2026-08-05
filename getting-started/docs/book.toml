@@ -1,0 +1,16 @@
+[book]
+title = "TAPS Getting Started"
+authors = ["Como Technologies"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "../target/book"
+
+[output.html]
+git-repository-url = "https://github.com/como-technologies/taps"
+edit-url-template = "https://github.com/como-technologies/taps/edit/main/getting-started/docs/src/{path}"
+default-theme = "gruvbox"
+preferred-dark-theme = "gruvbox"
+additional-css = ["gruvbox/css/variables.css", "gruvbox/highlight.css"]
+additional-js = ["gruvbox/gruvbox.js"]

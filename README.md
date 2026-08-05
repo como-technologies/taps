@@ -15,13 +15,18 @@ Adopt → Measure) — as one multi-crate Cargo workspace.
 | [`tuesday`](tuesday/) | decision-attributed effort reporting from merged PRs (Measure) |
 | [`contract`](contract/) | `como-contract` — the cross-product seams (labels, the adroit read slice, the golden export fixture), shared as one set of types |
 
+**New here?** The **[Getting Started guide](https://como-technologies.github.io/taps/getting-started/)**
+([source](getting-started/)) walks you from a fresh machine to a first
+trip around the loop on your own project.
+
 ## Building
 
-A Rust toolchain (pinned suite-wide in [`rust-toolchain.toml`](rust-toolchain.toml)),
-[`just`](https://github.com/casey/just), and [`mdbook`](https://rust-lang.github.io/mdBook/)
-(+ `mdbook-mermaid`) for the books.
+A Rust toolchain (pinned suite-wide in [`rust-toolchain.toml`](rust-toolchain.toml))
+and [`just`](https://github.com/casey/just); `just init` installs the
+rest (mdbook + preprocessors, cargo-audit, live-server, inotify-tools).
 
 ```sh
+just init                  # one-time: the tools the root recipes need
 cargo build                # everything
 cargo build -p <crate>     # one product
 just ci                    # the whole suite gate
@@ -29,7 +34,7 @@ just ci                    # the whole suite gate
 
 `just ci` at the root is the gate — fmt, clippy, the workspace test suite,
 the per-product invariant lanes (`just lanes`), `adr-check` over every
-product's ADR corpus with the workspace's own adroit, and all six books.
+product's ADR corpus with the workspace's own adroit, and all seven books.
 `just crate-audit` runs separately (its own CI job plus a weekly sweep) so
 a fresh advisory can't mask the code gates. Heavier per-product lanes
 (adroit's Vue build, tuesday's `dx` builds, assessments' Tailwind) live in
@@ -38,7 +43,9 @@ each product's own justfile.
 ## Documentation
 
 - **Published books:** <https://como-technologies.github.io/taps/> — one
-  site, per-product paths. Start with the portfolio book.
+  site, per-product paths. Start with the portfolio book, or jump
+  straight to the [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
+  `just books-serve` mirrors the whole site locally on one port.
 - **Operating the suite** (stand-up, verification rings, the end-to-end
   demo): [`portfolio/OPERATIONS.md`](portfolio/OPERATIONS.md).
 - Each product carries its own docs under `<product>/docs/` — including its

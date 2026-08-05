@@ -69,3 +69,10 @@ review your team's.
 | [tuesday](./loop/measure.md) | Capacity measurement | Measure |
 | [pulse](./loop/measure.md) | Anonymous sentiment | Measure |
 | [Services](./services.md) | The engagement layer | every stage |
+
+## Ready to try it?
+
+The **[Getting Started guide](../getting-started/)**
+— its own book — takes you from a fresh machine to a first trip around
+the loop on your own project: install, knowledge base, assessment,
+decisions, a merged PR, and the measurement that prices it.

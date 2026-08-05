@@ -15,7 +15,8 @@ into one `target/` dir, and shares one dependency table. A single
 or clones caches anymore. Each app's ADR corpus ships **inside its own
 published mdbook source** at the uniform `docs/src/adr/` path.
 
-**Toolchain.** A Rust toolchain with `cargo`, `just`, and `mdbook`; `git`;
+**Toolchain.** A Rust toolchain with `cargo` and `just` (root
+`just init` installs the cargo-side tools, mdbook included); `git`;
 Docker with its daemon up and the `docker compose` plugin (the Adopt demo
 runs a throwaway Gitea forge in it); `gh` is optional (GitHub read-only
 legs). The AI lanes are **optional**: only the demo's `--live` variants call
@@ -163,4 +164,6 @@ root) and, hardware permitting, ring 3's pre-baked demo path.
 ## Publishing
 
 Standing the suite up locally needs no remotes. Publishing the books to
-Pages rides the repo's own CI (one workflow, all six books, one site).
+Pages rides the repo's own CI (one workflow, all seven books, one site —
+the layout is the root `just site` recipe; `just books-serve` mirrors it
+locally).
