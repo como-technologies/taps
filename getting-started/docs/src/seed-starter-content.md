@@ -1,8 +1,5 @@
 # Step 3 — Seed starter content
 
-> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
-> yet — commands and claims may change as the dogfood walk reaches it.
-
 A blank page is a bad day one. The kit ships
 [starter content](../portfolio/starter-content.html) — a glossary and a
 working guide, typed and wikilinked — so your fresh space has something
