@@ -1,8 +1,5 @@
 # Step 2 — Create your knowledge base
 
-> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
-> yet — commands and claims may change as the dogfood walk reaches it.
-
 Everything the loop produces — the assessment's findings, the decisions,
 the plans, the measurements — lands in one place:
 [the knowledge base](../portfolio/knowledge-base.html). Before anything else, you
@@ -30,14 +27,30 @@ mkdir -p ~/myproject-kb/.claude
 cp -r ~/taps/llm-wiki/kit/skills ~/myproject-kb/.claude/skills
 ```
 
-Open Claude Code (or your MCP client — see the kit's Claude Desktop
-notes) in `~/myproject-kb` and talk: search the corpus, draft pages, file guidance.
-Every write goes through the same validation gates regardless of who — or
-what — authored it.
+No harness on this machine yet? (A Step 0 clean room won't have one.)
+Claude Code installs in one line, and its first launch handles a
+browserless box gracefully — it prints a login URL; open that on any
+machine with a browser, sign in, and paste the code back:
 
-> 🚧 **Unverified.** The exact `.mcp.json` contents may assume `llm-wiki`
-> and `adroit` on `PATH` — Step 1's `just install` provides that; the
-> walk will confirm the wiring end to end.
+```sh
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+Now start your session **in the KB directory** — not the `~/taps`
+checkout you just cloned, tempting as that is. The kit you copied is
+per-directory config: Claude Code only loads the `.mcp.json`, the
+`CLAUDE.md` conventions, and the skills from where it starts.
+
+```sh
+cd ~/myproject-kb
+claude
+```
+
+Then talk: search the corpus, draft pages, file guidance. `/mcp` should
+show the `llm-wiki` server connected (it finds `llm-wiki` and `adroit`
+on `PATH` — Step 1's `just install` put them there), and every write
+goes through the same validation gates regardless of who — or what —
+authored it.
 
 ## Verify
 
