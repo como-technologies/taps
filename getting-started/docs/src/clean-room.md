@@ -1,9 +1,5 @@
 # Step 0 — A clean room (optional)
 
-> 🚧 **Changed since its last walk.** The create block now bakes incus
-> in for Step 2's appliance — unverified until the next walkthrough.
-> Existing `walk` containers predate it: recreate, don't just restore.
-
 Everything in this guide works directly on your machine — if you like
 living that way, skip to [Step 1](./install.md) and go. This page is for
 the rest of us: a disposable [incus](https://linuxcontainers.org/incus/)
