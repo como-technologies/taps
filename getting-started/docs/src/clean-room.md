@@ -115,7 +115,8 @@ incus config device remove walk taps-src
 The clone's `origin` points at the now-vanished mount — fine for a walk
 (nothing pushes from a clean room); use the normal GitHub URL when you
 want a live remote. Then skip Step 1's clone — you already have
-`~/taps`.
+`~/taps`. Need newer commits later? Repeat the dance: re-add the
+device, `git -C ~/taps pull` inside, remove the device.
 
 > A `snapshot restore` reverts *devices* along with the filesystem —
 > restoring `pristine` drops the mount (good: no lingering host access)
