@@ -13,7 +13,9 @@ do what was decided.
    anything adjacent. If an existing guide covers it, propose updating
    that page instead of authoring a near-duplicate.
 2. **Scaffold**: `wiki_content_new` under `guides/<topic-slug>`, then
-   write the body to the returned path with frontmatter:
+   `wiki_content_write` the full page (frontmatter + body) to the same
+   URI — pages are written through the tool surface, never to a
+   filesystem path:
 
    ```yaml
    ---

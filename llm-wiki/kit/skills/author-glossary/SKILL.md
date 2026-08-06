@@ -11,8 +11,9 @@ Follow the Como authoring contract (`docs/guides/como-authoring.md`).
 1. **Check it isn't defined**: `wiki_search` the term and its synonyms.
    If an entry exists, update or alias it — never author a second
    definition of the same concept.
-2. **Scaffold**: `wiki_content_new` under `glossary/<term-slug>`, write
-   the body to the returned path:
+2. **Scaffold**: `wiki_content_new` under `glossary/<term-slug>`, then
+   `wiki_content_write` the full page (frontmatter + body) to the same
+   URI — through the tool surface, never to a filesystem path:
 
    ```yaml
    ---

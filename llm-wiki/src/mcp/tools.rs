@@ -315,7 +315,7 @@ pub fn tool_list() -> Vec<Tool> {
         ),
         Tool::new(
             "wiki_resolve",
-            "Resolve a slug or wiki:// URI to its local filesystem path. Use before writing content directly to disk.",
+            "Resolve a slug or wiki:// URI to its filesystem path on the server — a diagnostics aid for co-located tooling. Content writes go through wiki_content_write, never directly to disk.",
             schema(
                 json!({
                     "uri": str_prop("Slug or wiki:// URI"),
