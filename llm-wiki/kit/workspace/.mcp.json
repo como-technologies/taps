@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "kb": {
+      "command": "incus",
+      "args": ["exec", "kb", "--", "su", "-", "kb", "-c", "llm-wiki serve"]
+    }
+  }
+}

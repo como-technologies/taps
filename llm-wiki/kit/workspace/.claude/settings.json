@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(incus exec kb:*)",
+      "Bash(incus file push kb:*)",
+      "Bash(incus file pull kb:*)",
+      "Bash(incus file edit kb:*)",
+      "Bash(incus file delete kb:*)"
+    ]
+  }
+}

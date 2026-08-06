@@ -14,5 +14,6 @@ CLAUDE.md
 
 
 # The kit ships template copies of files the repo otherwise ignores
-!kit/claude-code/.mcp.json
-!kit/claude-code/CLAUDE.md
+!kit/workspace/.mcp.json
+!kit/workspace/CLAUDE.md
+!kit/workspace/.claude
