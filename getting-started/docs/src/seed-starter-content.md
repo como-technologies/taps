@@ -39,16 +39,6 @@ writes will face — strict frontmatter validation, typed schemas, link
 checks. When a gate fails it names its rule, and the kit's instructions
 are to fix the page, never the process.
 
-## Where are the decisions?
-
-The starter set also carries a decision corpus — deliberately *not*
-seeded here. Decisions are born through `adroit`, which enters the walk
-at Step 5, and the loop runs in this order on purpose: first the space
-learns your vocabulary and how things work here (this step), then the
-assessment reads against that context (Step 4), and only then is there
-something real to decide about. The decision corpus arrives with the
-tool that owns it.
-
 ## Verify
 
 ```sh
