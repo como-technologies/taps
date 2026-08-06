@@ -19,7 +19,9 @@ sudo incus admin init --minimal    # one-time: default network + storage
 
 > If Docker is (or was) installed on this host, its firewall rules break
 > container networking — the container gets an address but no internet.
-> The suite retired Docker for exactly this reason (portfolio ADR-0014).
+> The suite retired Docker for exactly this reason (portfolio ADR-0014);
+> the [Removing Docker appendix](./appendix-de-docker.md) has the
+> cleanup script.
 
 ## Create the container
 

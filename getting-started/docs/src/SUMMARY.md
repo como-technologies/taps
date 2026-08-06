@@ -11,3 +11,7 @@
 - [Adopt](./adopt.md)
 - [Measure](./measure.md)
 - [Around again](./around-again.md)
+
+---
+
+[Appendix — Removing Docker](./appendix-de-docker.md)
