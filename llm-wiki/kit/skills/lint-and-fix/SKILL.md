@@ -23,10 +23,11 @@ contract (`docs/guides/como-authoring.md`).
    - `missing-fields` / `unknown-type`: fix the frontmatter to the
      schema. If the schema seems wrong, stop and surface it — schemas
      change by human decision, not during a lint pass.
-3. **Never touch `decision` pages.** Lint findings in the decision
-   corpus belong to adroit: report them, and where the session has an
-   adroit door (its MCP server or CLI) use `adroit check` /
-   `adroit relink` — no direct edits, ever.
+3. **Never touch tool-owned classes** (`decision`, `plan`,
+   `measure-report`). Their lint findings belong to their owning
+   tools: report them, and where the session has that tool's door
+   (for decisions: adroit's MCP server or CLI, `adroit check` /
+   `adroit relink`) route the fix through it — no direct edits, ever.
 4. **Re-gate**: `wiki_ingest` the touched pages, re-run `wiki_lint`,
    and report before/after error and warning counts. Zero introduced
    errors is the bar; pre-existing warnings you deliberately left are

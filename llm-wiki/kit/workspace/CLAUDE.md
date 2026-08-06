@@ -25,10 +25,17 @@ no corpus here and no filesystem path to one.
   author content pages `status: generated` with low `confidence` and
   let humans promote; pin evidence citations as `path@commit` in
   `citations:`; no page is born an orphan.
-- **The decision boundary**: never author `decision` frontmatter and
-  never modify a space's decision corpus. Decisions are born only
-  through `adroit`. If this session has no adroit door (its MCP server
-  or CLI), decisions are read-only — say so rather than improvising.
+- **Class ownership is the write boundary.** Some page classes are
+  tool artifacts, not conversation output: `decision` and `plan` are
+  born only through `adroit`; `measure-report` only through the
+  measure lane (tuesday/pulse). Never author their frontmatter with
+  the wiki tools — a harness writing one isn't authoring, it's
+  forging. The rule is general: a tool-owned class enters the space
+  through its owning tool's door, and when this session has no such
+  door those classes are read-only — say so rather than improvising.
+  Content classes (`concept`, `doc`, `guide`, `glossary-entry`,
+  `paper`, `worked-example`, …) are yours to author, through the wiki
+  tools, under the contract.
 - **Gates are the workflow, not an obstacle**: `wiki_ingest` after
   writing, `wiki_lint` before declaring done. A validation failure
   names its rule — fix the page, never the process. If you believe the
