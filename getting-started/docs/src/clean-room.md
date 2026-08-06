@@ -69,7 +69,13 @@ incus exec walk -- bash -c '
 incus exec walk -- bash -c '
   apt-get update && apt-get install -y git incus
   incus admin init --minimal
-  adduser dev incus-admin'
+  adduser dev incus-admin
+  # nested idmap: the incus package delegates a billion uids to root —
+  # more than this container itself has, so nested launches die in
+  # newuidmap. Shrink the delegation; nested containers share it.
+  sed -i "/^root:/d" /etc/subuid /etc/subgid
+  echo "root:1000000:65536" | tee -a /etc/subuid /etc/subgid >/dev/null
+  systemctl restart incus'
 ```
 
 ## Snapshot before you touch anything
