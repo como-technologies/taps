@@ -1,5 +1,24 @@
 {
   "permissions": {
+    "allow": [
+      "mcp__kb__wiki_search",
+      "mcp__kb__wiki_list",
+      "mcp__kb__wiki_content_read",
+      "mcp__kb__wiki_content_new",
+      "mcp__kb__wiki_content_write",
+      "mcp__kb__wiki_content_commit",
+      "mcp__kb__wiki_ingest",
+      "mcp__kb__wiki_lint",
+      "mcp__kb__wiki_suggest",
+      "mcp__kb__wiki_graph",
+      "mcp__kb__wiki_stats",
+      "mcp__kb__wiki_history",
+      "mcp__kb__wiki_index_status",
+      "mcp__kb__wiki_index_rebuild",
+      "mcp__kb__wiki_export",
+      "mcp__kb__wiki_resolve",
+      "mcp__kb__wiki_spaces_list"
+    ],
     "deny": [
       "Bash(incus exec kb:*)",
       "Bash(incus file push kb:*)",

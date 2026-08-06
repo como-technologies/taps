@@ -69,8 +69,13 @@ kit/
    "kb": { "type": "http", "url": "http://kb.internal:8080/mcp" }
    ```
 
-   The `.claude/settings.json` deny rules and the `.mcp.json` entry key
-   both name the container `kb` — keep them in sync if you rename.
+   The `.claude/settings.json` rules and the `.mcp.json` entry key all
+   name the appliance `kb` — keep them in sync if you rename. The
+   settings pre-authorize the authoring lane (search, read, write,
+   ingest, lint, …) since the engine's gates live server-side; the
+   sharp lifecycle tools — space create/remove, `wiki_schema`,
+   `wiki_config` — still prompt, because permission rules can't see
+   arguments and those can delete or loosen things.
 5. Open Claude Code in the workspace and talk. The worked example shows
    a full session.
 
