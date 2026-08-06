@@ -25,9 +25,28 @@ sudo incus admin init --minimal    # one-time: default network + storage
 
 ## Create the container
 
-One block — launch, wait for boot, add a sudo-capable user (the guide's
-commands assume one), and bake in git so a snapshot restore doesn't cost
-a reinstall:
+First, a project of its own — it keeps the guide's containers (and
+their snapshots) apart from anything else your incus hosts, and it
+sidesteps hosts whose current project is restricted (restricted
+projects block snapshot creation, which this guide leans on):
+
+```sh
+# instances-only: images, profiles, networks, and storage stay shared
+# with the default project, so launches work with no further setup
+incus project create taps \
+    -c features.images=false -c features.profiles=false \
+    -c features.networks=false \
+    -c features.storage.volumes=false -c features.storage.buckets=false
+incus project switch taps
+```
+
+(`switch` sets your client's active project — everything below just
+works, no `--project` flags. Switch back to your usual one afterwards
+with `incus project switch default`.)
+
+Then one block — launch, wait for boot, add a sudo-capable user (the
+guide's commands assume one), and bake in git so a snapshot restore
+doesn't cost a reinstall:
 
 ```sh
 # launch: nesting lets Step 6's throwaway forge run containers inside
