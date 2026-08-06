@@ -50,11 +50,14 @@ every mechanical gate in the tutorial works without a model).
 
 ## Conventions
 
-Every command is paste-and-go with two concrete paths:
+Every command is paste-and-go with three concrete names:
 
 - **`~/taps`** — where Step 1 clones the suite
-- **`~/myproject-kb`** — your knowledge base space, born in Step 2
+- **`kb`** — the appliance container holding your knowledge base,
+  launched in Step 2 (your space lives inside it as `myproject`)
+- **`~/kb-workspace`** — the authoring workspace your AI sessions run
+  in, made in Step 2
 
 Prefer different locations or a real project name? Substitute as you
-paste — the paths appear literally in every command, so there's nothing
+paste — the names appear literally in every command, so there's nothing
 to set up first and nothing to forget.

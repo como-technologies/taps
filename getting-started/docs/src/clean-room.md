@@ -1,5 +1,9 @@
 # Step 0 — A clean room (optional)
 
+> 🚧 **Changed since its last walk.** The create block now bakes incus
+> in for Step 2's appliance — unverified until the next walkthrough.
+> Existing `walk` containers predate it: recreate, don't just restore.
+
 Everything in this guide works directly on your machine — if you like
 living that way, skip to [Step 1](./install.md) and go. This page is for
 the rest of us: a disposable [incus](https://linuxcontainers.org/incus/)
@@ -49,7 +53,8 @@ guide's commands assume one), and bake in git so a snapshot restore
 doesn't cost a reinstall:
 
 ```sh
-# launch: nesting lets Step 6's throwaway forge run containers inside
+# launch: nesting lets later steps run containers inside this one —
+# Step 2's KB appliance and Step 6's throwaway forge
 incus launch images:ubuntu/24.04 walk -c security.nesting=true
 
 # wait for boot: first an IP (the real readiness signal — network up,
@@ -63,8 +68,12 @@ incus exec walk -- bash -c '
   echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev
   chmod 0440 /etc/sudoers.d/dev'
 
-# git now, so it's in the pristine snapshot
-incus exec walk -- bash -c 'apt-get update && apt-get install -y git'
+# git and incus now, so a snapshot restore doesn't cost a reinstall
+# (incus: Step 2's KB appliance runs as a container inside this one)
+incus exec walk -- bash -c '
+  apt-get update && apt-get install -y git incus
+  incus admin init --minimal
+  adduser dev incus-admin'
 ```
 
 ## Snapshot before you touch anything
