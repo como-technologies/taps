@@ -1,8 +1,5 @@
 # Step 2 — Create your knowledge base
 
-> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
-> yet — commands and claims may change as the dogfood walk reaches it.
-
 Everything the loop produces — the assessment's findings, the decisions,
 the plans, the measurements — lands in one place:
 [the knowledge base](../portfolio/knowledge-base.html). It lives in an
