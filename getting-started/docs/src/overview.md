@@ -61,3 +61,7 @@ Every command is paste-and-go with three concrete names:
 Prefer different locations or a real project name? Substitute as you
 paste — the names appear literally in every command, so there's nothing
 to set up first and nothing to forget.
+
+Using Claude Code? The taps repo ships **`/walk-the-guide`** — open a
+session in your clone and it walks these steps *with* you, from Step 0,
+handing you the parts only a human can do.
