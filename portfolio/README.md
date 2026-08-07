@@ -51,11 +51,9 @@ Run `just` (or `just --list`) any time to see every available recipe.
 
 ## CI
 
-This product's `just ci` builds the book. ADR-corpus validation lives at
-the workspace root: the root `just adr-check` (a leg of the root
-`just ci`) seeds every product's decision corpus — including this one's
-(`docs/src/adr/`) — into an ephemeral KB space and validates it with the
-in-tree adroit.
+This product's `just ci` builds the book. The decision corpus
+(`docs/src/adr/`) is validated on demand: seed it into an ephemeral KB
+space and check it with the in-tree adroit.
 
 ## Layout
 

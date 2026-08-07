@@ -130,6 +130,5 @@ set covers trust-zone isolation via the Cargo graph, the composition-root state
 split, the postcard wire format, the `Sensitive`/newtype redaction convention,
 k-anonymity threshold enforcement, CMK/DEK envelope encryption with
 crypto-shredding, and the decision to park product development at M0 for the
-portfolio dogfood. Corpus validation runs at the taps workspace root: the
-root `just adr-check` (a leg of the root `just ci`) validates every
-product's corpus with the in-tree adroit.
+portfolio dogfood. Corpus validation is on demand with the in-tree adroit: seed the corpus
+into an ephemeral space and run `adroit check`.

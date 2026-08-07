@@ -16,9 +16,8 @@ init:
 
 # Run all CI checks: the blocking format gate, both clippy lanes, the four
 # cargo lanes (`lanes` covers the workspace test run, so `ci` does not also
-# run `test`), the server-feature test lane, the book build, the ADR
-# corpus gate, and the dependency vulnerability audit.
-# ADR-corpus validation is the workspace-root `just adr-check`.
+# run `test`), the server-feature test lane, the book build, and the
+# dependency vulnerability audit.
 ci: fmt-check lint lint-server lanes test-server book crate-audit
 
 # Format code

@@ -132,8 +132,7 @@ just adopt-slice # live-ollama dogfood rehearsal of the Adopt read slice (temp c
   ADR-0020 the live tool is KB-space-only, so working with it means seeding an
   ephemeral space (`adroit seed --from docs/src/adr --dir <space>`); never use
   a bare `adroit new` here (`ADROIT_DIR` points at the external dogfood repo).
-  Gated in CI: the workspace-root `just adr-check` (a leg of the root
-  `just ci`) seeds every product's corpus into a temp space and runs `check`
+  Validated on demand: seed the corpus into a temp space and run `check`
   on it. See the book's Development → Decision Records page.
 
 ## Read/query layer (shared by all surfaces)

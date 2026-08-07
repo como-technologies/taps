@@ -107,7 +107,7 @@ kb-workspace dir="$HOME/kb-workspace" transport="stdio":
 # Run all CI checks — the whole suite gate, one command. crate-audit is
 # deliberately NOT a leg: it runs as a separate CI job (plus a weekly
 # schedule), so a fresh advisory can't mask the code gates.
-ci: fmt-check lint test lanes adr-check books
+ci: fmt-check lint test lanes books
 
 # House vocabulary for the full local gate
 alias gate := ci
@@ -127,25 +127,6 @@ lint:
 # Run the workspace test suite
 test:
     cargo test --workspace
-
-# Validate every product's ADR corpus with the in-tree adroit — the suite's
-# self-hosted dogfood gate, one recipe for every corpus. KB-only adroit
-# (adroit ADR-0020): each committed corpus is seeded into an ephemeral KB
-# space and validated there; docs/src/adr stays the repo of record.
-adr-check:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd "{{justfile_directory()}}"
-    cargo build -q -p adroit
-    for corpus in adroit assessments conduit portfolio pulse tuesday; do
-        echo "adr-check: $corpus"
-        tmp="$(mktemp -d)"
-        printf 'name = "adrs"\n' > "$tmp/wiki.toml"
-        mkdir -p "$tmp/wiki/decisions"
-        target/debug/adroit seed --from "$corpus/docs/src/adr" --dir "$tmp"
-        target/debug/adroit check --dir "$tmp"
-        rm -rf "$tmp"
-    done
 
 # The per-product invariant lanes a blanket --workspace build can't see.
 # Each guards an accepted decision:

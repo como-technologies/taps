@@ -38,8 +38,7 @@ conduit init                  # .conduit store + the standing label set
 
 The pinned adroit is KB-only (its ADR-0020; conduit ADR-0017): it reads a
 KB **space**, so the in-repo legacy corpus is first seeded into an
-ephemeral one — the same bootstrap the workspace-root `just adr-check`
-performs on every CI run:
+ephemeral one — the suite's standard corpus bootstrap:
 
 ```sh
 space=$(mktemp -d)

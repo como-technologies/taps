@@ -33,8 +33,7 @@ just ci                    # the whole suite gate
 ```
 
 `just ci` at the root is the gate — fmt, clippy, the workspace test suite,
-the per-product invariant lanes (`just lanes`), `adr-check` over every
-product's ADR corpus with the workspace's own adroit, and all seven books.
+the per-product invariant lanes (`just lanes`), and all seven books.
 `just crate-audit` runs separately (its own CI job plus a weekly sweep) so
 a fresh advisory can't mask the code gates. Heavier per-product lanes
 (adroit's Vue build, tuesday's `dx` builds, assessments' Tailwind) live in

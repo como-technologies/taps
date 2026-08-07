@@ -12,8 +12,7 @@ init:
 # a weekly schedule), so a fresh advisory can't mask the code gates.
 # init-adroit runs BEFORE test: it places the in-tree adroit at
 # .conduit/bin/adroit, which tests/demo_init.rs needs to exercise the
-# corpus-space seeding. ADR-corpus validation is the workspace-root
-# `just adr-check` (one recipe, every product's corpus).
+# corpus-space seeding.
 ci: fmt-check lint init-adroit test book
 
 # Format code

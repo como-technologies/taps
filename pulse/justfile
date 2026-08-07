@@ -9,10 +9,9 @@ init:
     cargo install --locked mdbook mdbook-gruvbox cargo-edit cargo-audit
     mdbook-gruvbox install docs
 
-# Run all CI checks: the CLAUDE.md pre-push checklist + book + ADR validation
-# + dependency audit. This local gate is the source of truth (nothing is
-# pushed in park mode).
-# ADR-corpus validation is the workspace-root `just adr-check`.
+# Run all CI checks: the CLAUDE.md pre-push checklist + book + dependency
+# audit. This local gate is the source of truth (nothing is pushed in
+# park mode).
 ci: fmt-check lint test book crate-audit
 
 # House vocabulary for the full local gate

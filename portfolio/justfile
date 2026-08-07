@@ -7,7 +7,6 @@ init:
     cargo install --locked mdbook mdbook-mermaid mdbook-gruvbox
 
 # Run all CI checks (used by .github/workflows/ci.yml)
-# ADR-corpus validation is the workspace-root `just adr-check`.
 ci: book
 
 # Build the book

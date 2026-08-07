@@ -49,12 +49,10 @@ just ci      # at the workspace root
 ```
 
 One command is the whole gate: fmt + clippy + the full workspace test
-suite + `adr-check`, which validates **every** product's ADR
-corpus with the freshly built in-tree adroit — since adroit went KB-only
-(adroit ADR-0020, portfolio ADR-0009) that leg seeds each committed corpus
-into an ephemeral KB space and validates it there, so the gate also
-exercises the KB machinery on every run. Green means every app is
-internally sound and every corpus validates.
+suite + the per-product invariant lanes + every book. Green means every
+app is internally sound and every book builds. (ADR corpora are validated
+on demand with the in-tree adroit — the automated `adr-check` leg retired
+during the onboarding walk, taps#46.)
 
 Suite *coherence* is no longer a gate at all — it is the crate graph.
 The seams live once in the `como-contract` crate (effort labels, the

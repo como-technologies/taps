@@ -3,7 +3,7 @@
 tuesday follows the Como house conventions: a `justfile` as the single entry
 point, this mdbook under `docs/` (all project documentation lives in the book —
 no standalone docs), and an adroit-managed `docs/src/adr/` corpus validated
-by the workspace-root `just adr-check`.
+on demand with the in-tree adroit.
 
 ```sh
 just            # list every recipe
@@ -40,17 +40,13 @@ The reconciliation-era hedges are gone (M2 hedge removal); every gate in
 Keep the `justfile` recipe comments and this page in sync if gate scope
 ever changes.
 
-## The ADR gate
+## ADR-corpus validation
 
-ADR-corpus validation is the workspace-root `just adr-check`, a leg of the
-root `just ci`: it builds the in-tree adroit (`cargo build -p adroit`),
-seeds each product's `docs/src/adr` — tuesday's included — into an
-ephemeral KB space, and runs `adroit check` on it. The per-product
-adroit-resolution chain retired with the move to the single workspace.
-
-```sh
-just adr-check   # from the workspace root
-```
+Validation is on demand with the in-tree adroit: build it
+(`cargo build -p adroit`), seed `docs/src/adr` into an ephemeral KB
+space, and run `adroit check` on it (see Decision Records for the exact
+commands). The per-product adroit-resolution chain retired with the move
+to the single workspace.
 
 ## The book
 

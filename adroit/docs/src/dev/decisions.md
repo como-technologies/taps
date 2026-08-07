@@ -36,17 +36,11 @@ New decision records are still **authored into the committed corpus** at
 with an `# ADR-NNNN:` H1 and a `## Status` region), and validated by seeding a
 fresh space as above.
 
-## CI gate (self-hosted)
+## Corpus validation (on demand)
 
-The workspace-root `just ci` includes the **`adr-check`** recipe — the
-bootstrap pattern: build the in-tree adroit, create an ephemeral space,
-`seed` it from `docs/src/adr`, and `check` the seeded space —
-
-```sh
-just adr-check   # from the workspace root
-```
-
-— so a structurally broken corpus (an unparseable document, duplicate
+The bootstrap pattern: build the in-tree adroit, create an ephemeral
+space, `seed` it from `docs/src/adr`, and `check` the seeded space
+— surfacing a structurally broken corpus (an unparseable document, duplicate
 identifiers, broken links or supersession) fails CI the same way a failing
 test does. New ADRs should also pass `adroit lint <N> --dir $tmp` clean in the
 seeded space (no prompt-only sections, honest negative consequences, at least

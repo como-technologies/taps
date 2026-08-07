@@ -20,7 +20,7 @@ cargo run -p pulse-test-harness --features reqwest-transport --bin pulse-simulat
 cargo test --workspace
 ```
 
-With [just](https://github.com/casey/just) installed, the justfile is the single entry point: `just ci` runs the product gate (format check, clippy, tests, book build, dependency audit; ADR validation runs at the taps workspace root via `just adr-check`); `just simulate` runs the protocol simulation; `just dogfood` writes the deterministic Measure report (`out/pulse-report.json`, seeded simulated respondents -- see the book's "Dogfood: The Measure Report" page); `just --list` shows everything.
+With [just](https://github.com/casey/just) installed, the justfile is the single entry point: `just ci` runs the product gate (format check, clippy, tests, book build, dependency audit); `just simulate` runs the protocol simulation; `just dogfood` writes the deterministic Measure report (`out/pulse-report.json`, seeded simulated respondents -- see the book's "Dogfood: The Measure Report" page); `just --list` shows everything.
 
 ## Documentation
 

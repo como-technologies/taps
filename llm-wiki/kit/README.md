@@ -92,16 +92,15 @@ server; decisions work through adroit's guarded MCP write slice
 (`adroit mcp --allow-write`, its ADR-0021) — destructive-annotated tools
 the human approves per call.
 
-## Why the suite's CI gates don't use `spaces create`
+## Why ad-hoc corpus checks don't use `spaces create`
 
-Recorded here per portfolio#7 (wave 1): the sibling repos' `adr-check`
-gates hand-scaffold a two-line `wiki.toml` instead of calling
-`llm-wiki spaces create`, deliberately. Those gates exist to validate
-each repo's committed decision corpus through adroit and must stay fast
-and dependency-light — requiring an llm-wiki build in every sibling's CI
-buys no additional assertion there, since the corpus check is adroit's.
-Provisioning is exercised where it matters: this repo's own tests
-(`tests/spaces.rs`) cover the schema library, hooks, strictness, and
-weights on every run, and every kit session starts with a real
-`spaces create`. If a sibling gate ever needs admission-hook coverage,
-that is the moment to revisit — not before.
+Recorded here per portfolio#7 (wave 1): seeding a committed decision
+corpus into an ephemeral space for an `adroit check` hand-scaffolds a
+two-line `wiki.toml` instead of calling `llm-wiki spaces create`,
+deliberately — the corpus check is adroit's, and requiring an llm-wiki
+build buys no additional assertion there. Provisioning is exercised
+where it matters: this repo's own tests (`tests/spaces.rs`) cover the
+schema library, hooks, strictness, and weights on every run, and every
+kit session starts with a real `spaces create`. If a corpus check ever
+needs admission-hook coverage, that is the moment to revisit — not
+before.

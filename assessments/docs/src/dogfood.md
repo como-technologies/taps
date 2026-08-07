@@ -205,9 +205,9 @@ guarantee for free, mechanically, from both sides:
 The loop line's `just seam-check` recipe (a jq join of `validate -o json`
 against a dry-run import's seed summary) has not been ported to main's
 justfile; the golden-export test is the seam gate `just ci` actually
-runs. ADR-corpus validation — this book's corpus included — is the
-workspace-root `just adr-check`, which runs the in-tree adroit; the
-former resolution chain is retired.
+runs. ADR-corpus validation — this book's corpus included — is on demand
+with the in-tree adroit (seed into an ephemeral space, `adroit check`);
+the former resolution chain is retired.
 
 ## Where the loop goes next
 

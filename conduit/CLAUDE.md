@@ -43,15 +43,14 @@ The customer demo kit (`demo/kit/demo-up`, per-beat scripts, `demo-down`)
 packages the full TAPS engagement demo — narrated script:
 `docs/src/usage/customer-demo.md`; design: ADR-0015.
 
-ADR-corpus validation is the workspace-root `just adr-check` (one recipe,
-every product's corpus). `just init-adroit` is a `ci` leg
+`just init-adroit` is a `ci` leg
 here because tests/demo_init.rs needs the binary at .conduit/bin/adroit.
 `cargo audit` runs as a separate CI job (`just crate-audit`, plus a weekly
 schedule) so a fresh advisory can't mask the code gates.
 The `docs/src/adr` corpus is the legacy-format repo of record (ADR-0017):
-adroit is KB-only (adroit ADR-0020), so the root `adr-check` seeds the
-corpus into an ephemeral space and validates it there. A new entry matches
-the existing legacy format exactly and must pass the root `just adr-check`.
+adroit is KB-only (adroit ADR-0020), so validation seeds the corpus into
+an ephemeral space and checks it there. A new entry matches the existing
+legacy format exactly and must pass `adroit check` on a seeded space.
 adroit's forge integration stays disabled.
 
 Env-gated test legs: `CONDUIT_E2E_GITEA=1` (live Gitea conformance),

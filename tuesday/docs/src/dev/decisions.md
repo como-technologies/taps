@@ -13,12 +13,10 @@ printf 'name = "adrs"
 adroit seed --from docs/src/adr --dir $tmp   # bootstrap the space
 adroit list --dir $tmp                       # what has been decided
 adroit show 5 --dir $tmp -o json             # one decision, machine-readable
-adroit check --dir $tmp                      # what the CI gate runs
+adroit check --dir $tmp                      # validate the seeded space
 ```
 
-The workspace-root `just adr-check` (a leg of the root `just ci`) runs
-exactly that seed-and-check for every product's corpus with the in-tree
-adroit. New decisions are authored as legacy-shape files in `docs/src/adr/`
+New decisions are authored as legacy-shape files in `docs/src/adr/`
 (see the corpus for the house form) and validated the same way.
 
 ## Reading the statuses honestly
