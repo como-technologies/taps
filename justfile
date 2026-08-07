@@ -58,6 +58,52 @@ versions:
     done
     [ "$found" = 1 ] || { echo "no release binaries found — run 'just install' first"; exit 1; }
 
+# A KB for developing tools against: registers ~/spaces/NAME in your
+# registry (idempotent — spaces create no-ops if it exists) and serves
+# the streamable-HTTP transport in the foreground, Ctrl-C to stop.
+# Harness authoring doesn't need this (a workspace's .mcp.json spawns
+# its own stdio serve); this is the stable endpoint for a tool under
+# development, extra sessions, or curl.
+# Serve a local dev KB over HTTP (localhost:8080/mcp)
+kb-dev name="devkb":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v llm-wiki >/dev/null || { echo "llm-wiki not on PATH — run 'just install' first" >&2; exit 1; }
+    llm-wiki spaces create "$HOME/spaces/{{name}}" --name "{{name}}" --set-default
+    exec llm-wiki serve --http
+
+# Stamps the kit template (posture CLAUDE.md, settings, skills) into DIR
+# and rewrites .mcp.json for local use — the shipped one is the guide's
+# incus bridge. transport=stdio (default) spawns a private serve per
+# session; transport=http points at a running `just kb-dev` (prefer this
+# when kb-dev is up: two engines on one space contend for index locks).
+# Create a local authoring workspace (cd there and run your harness)
+kb-workspace dir="$HOME/kb-workspace" transport="stdio":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    dir="{{dir}}"
+    mkdir -p "$dir"
+    cp -r llm-wiki/kit/workspace/. "$dir"/
+    mkdir -p "$dir/.claude/skills"
+    cp -r llm-wiki/kit/skills/. "$dir/.claude/skills/"
+    case "{{transport}}" in
+        stdio) printf '%s\n' \
+            '{' \
+            '  "mcpServers": {' \
+            '    "kb": { "command": "llm-wiki", "args": ["serve"] }' \
+            '  }' \
+            '}' > "$dir/.mcp.json" ;;
+        http) printf '%s\n' \
+            '{' \
+            '  "mcpServers": {' \
+            '    "kb": { "type": "http", "url": "http://localhost:8080/mcp" }' \
+            '  }' \
+            '}' > "$dir/.mcp.json" ;;
+        *) echo "unknown transport: {{transport}} (stdio|http)" >&2; exit 1 ;;
+    esac
+    echo "workspace ready: $dir ({{transport}})"
+
 # Run all CI checks — the whole suite gate, one command. crate-audit is
 # deliberately NOT a leg: it runs as a separate CI job (plus a weekly
 # schedule), so a fresh advisory can't mask the code gates.
