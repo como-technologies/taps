@@ -1,7 +1,9 @@
-//! Headless CLI for amaker — `author`, `export`, `validate`, `schema`.
+//! Headless CLI for amaker — `author`, `export`, `validate`, `schema`,
+//! `publish`.
 //!
-//! `export`, `validate`, and `schema` never construct an AI provider, so they
-//! need no API key — `export` only needs `DATA_DIR` (default `./data`).
+//! `export`, `validate`, `schema`, and `publish` never construct an AI
+//! provider, so they need no API key — `export` and `publish` only need
+//! `DATA_DIR` (default `./data`); `publish` additionally needs `KB_URL`.
 //! `author` builds a complete assessment from a brief via the configured
 //! provider; `AI_PROVIDER=ollama` runs fully local with no key.
 //!
@@ -17,6 +19,8 @@ use clap::{Parser, Subcommand};
 use amaker_core::config;
 use amaker_core::models::{Assessment, ProjectId};
 use amaker_core::services::{DataFormat, ExportService, StorageService};
+
+pub mod publish;
 
 /// AI-assisted assessment authoring: web app + headless CLI.
 #[derive(Parser, Debug)]
@@ -62,6 +66,15 @@ pub enum Command {
         /// Output file (stdout when omitted)
         #[arg(long)]
         out: Option<PathBuf>,
+    },
+    /// Publish a project's assessment + analysis to the KB as amaker-owned
+    /// pages (needs KB_URL; provider-free like export)
+    Publish {
+        /// Project ID (UUID) under DATA_DIR/projects/
+        project_id: ProjectId,
+        /// Target space name (overrides KB_WIKI)
+        #[arg(long)]
+        wiki: Option<String>,
     },
     /// Author a complete assessment from a brief, headlessly (needs an AI
     /// provider: AI_PROVIDER=ollama runs fully local)
@@ -111,6 +124,14 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
             Ok(())
         }
         Command::Schema { out } => schema_cmd(out.as_deref()),
+        Command::Publish { project_id, wiki } => {
+            dotenvy::dotenv().ok();
+            let storage = fs_storage(data_dir_from_env());
+            storage.init().await?;
+            let report = publish::publish_cmd(storage, project_id, wiki).await?;
+            println!("{}", serde_json::to_string_pretty(&report)?);
+            Ok(())
+        }
         Command::Author {
             brief,
             context,

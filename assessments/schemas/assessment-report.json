@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/como-technologies/taps/assessments/schemas/v0.1.0/assessment-report.json",
+  "title": "Assessment report type",
+  "description": "The analyzed result of a filled-in assessment: scorecard, gaps, roadmap. Born only through amaker (x-owner); downstream stages consume this page.",
+  "type": "object",
+  "required": ["title", "type", "status", "assessment"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Stable opaque page identifier (ULID, tool-generated)."
+    },
+    "title": {
+      "type": "string",
+      "description": "The report's title"
+    },
+    "type": {
+      "type": "string",
+      "description": "Page type from registry"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "superseded"],
+      "description": "Whether this is the current report for its assessment"
+    },
+    "assessment": {
+      "type": "string",
+      "description": "Slug of the assessment page this report analyzes"
+    },
+    "assessment_id": {
+      "type": "string",
+      "description": "amaker's stable assessment identifier (UUID)"
+    },
+    "version": {
+      "type": "string",
+      "description": "The published amaker version the responses answered"
+    },
+    "generated": {
+      "type": "string",
+      "description": "Date this report was generated (YYYY-MM-DD)"
+    },
+    "overall_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Weighted pass percent across definite answers"
+    },
+    "passed": { "type": "integer", "description": "Questions resolving to pass" },
+    "failed": { "type": "integer", "description": "Questions resolving to fail" },
+    "unknown": { "type": "integer", "description": "Questions answered Unknown" },
+    "unanswered": { "type": "integer", "description": "Questions with no answer" },
+    "gaps": {
+      "type": "integer",
+      "description": "Definite gaps (polarity-aware failed answers)"
+    }
+  },
+  "x-owner": "amaker",
+  "x-wiki-types": {
+    "assessment-report": "An analyzed assessment result (amaker artifact): scorecard, gap inventory, and prioritized roadmap for one respondent set"
+  }
+}

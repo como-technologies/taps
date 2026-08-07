@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/como-technologies/taps/assessments/schemas/v0.1.0/assessment.json",
+  "title": "Assessment type",
+  "description": "A published assessment definition: what will be measured and why. Born only through amaker (x-owner); the analyzed result is the companion assessment-report page.",
+  "type": "object",
+  "required": ["title", "type", "status"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Stable opaque page identifier (ULID, tool-generated)."
+    },
+    "title": {
+      "type": "string",
+      "description": "The assessment's name"
+    },
+    "type": {
+      "type": "string",
+      "description": "Page type from registry"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "draft", "superseded"],
+      "description": "Lifecycle of this published definition"
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line description of what the assessment measures"
+    },
+    "goal": {
+      "type": "string",
+      "description": "Why this assessment exists — what the answers are for"
+    },
+    "assessment_id": {
+      "type": "string",
+      "description": "amaker's stable assessment identifier (UUID)"
+    },
+    "version": {
+      "type": "string",
+      "description": "The published amaker version this page reflects"
+    },
+    "domains": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Domain names, in assessment order"
+    },
+    "questions": {
+      "type": "integer",
+      "description": "Total question count across all practices"
+    }
+  },
+  "x-owner": "amaker",
+  "x-wiki-types": {
+    "assessment": "A published assessment definition (amaker artifact): domains, practices, and questions — what will be measured and why"
+  }
+}

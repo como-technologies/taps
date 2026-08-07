@@ -12,6 +12,7 @@ publish = false
 [dependencies]
 
 [dev-dependencies]
+amaker-core = { path = "../assessments/crates/amaker-core" }
 anyhow.workspace = true
 como-kb-client = { path = "../kb-client" }
 serde_json.workspace = true

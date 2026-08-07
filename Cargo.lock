@@ -291,9 +291,13 @@ version = "0.1.0"
 dependencies = [
  "amaker-core",
  "anyhow",
+ "chrono",
  "clap",
+ "como-kb-client",
  "dotenvy",
+ "serde",
  "serde_json",
+ "serde_yaml",
  "tempfile",
  "tokio",
 ]
@@ -9996,6 +10000,7 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 name = "taps-tests"
 version = "0.1.0"
 dependencies = [
+ "amaker-core",
  "anyhow",
  "como-kb-client",
  "serde_json",

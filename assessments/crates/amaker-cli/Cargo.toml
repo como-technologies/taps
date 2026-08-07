@@ -14,8 +14,12 @@ path = "src/main.rs"
 
 [dependencies]
 amaker-core = { path = "../amaker-core" }
+como-kb-client = { path = "../../../kb-client" }
 clap.workspace = true
 anyhow = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
 dotenvy = { workspace = true }
