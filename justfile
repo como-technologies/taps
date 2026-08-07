@@ -58,6 +58,14 @@ versions:
     done
     [ "$found" = 1 ] || { echo "no release binaries found — run 'just install' first"; exit 1; }
 
+# The taps-level seams: live in-tree binaries driven at each other over
+# their transports (taps-tests crate), env-gated so the plain workspace
+# test run stays hermetic. Builds what the tests spawn, then runs them.
+# Run the cross-product integration tests
+integration:
+    cargo build -p llm-wiki -p amaker-cli
+    TAPS_INTEGRATION=1 cargo test -p taps-tests
+
 # A KB for developing tools against: registers ~/spaces/NAME in your
 # registry (idempotent — spaces create no-ops if it exists) and serves
 # the streamable-HTTP transport in the foreground, Ctrl-C to stop.

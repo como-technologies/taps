@@ -1,0 +1,15 @@
+[package]
+name = "como-kb-client"
+description = "Shared KB transport client: how a taps tool talks to an llm-wiki appliance (streamable-HTTP MCP)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+anyhow.workspace = true
+rmcp = { workspace = true, features = ["client", "transport-streamable-http-client-reqwest"] }
+serde_json.workspace = true
+tokio.workspace = true

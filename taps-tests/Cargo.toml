@@ -1,0 +1,19 @@
+[package]
+name = "taps-tests"
+description = "taps-level integration tests: live products driven at each other over their transports — no product internals imported"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+repository.workspace = true
+license = "UNLICENSED"
+publish = false
+
+[dependencies]
+
+[dev-dependencies]
+anyhow.workspace = true
+como-kb-client = { path = "../kb-client" }
+serde_json.workspace = true
+tempfile.workspace = true
+tokio.workspace = true

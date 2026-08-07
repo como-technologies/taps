@@ -566,6 +566,25 @@ pub fn handle_schema(server: &McpServer, args: &Map<String, Value>) -> ToolHandl
                 body_template.as_deref(),
             )
             .map_err(|e| format!("{e}"))?;
+            // A new type changes the space's type registry, and the mounted
+            // context is immutable — remount so this live process validates
+            // and indexes the new type from here on (a one-shot CLI process
+            // never needs this; a long-running serve always does).
+            let entry = engine
+                .config
+                .wikis
+                .iter()
+                .find(|w| w.name == wiki_name)
+                .cloned();
+            drop(engine);
+            if report.status == "registered"
+                && let Some(entry) = entry
+            {
+                server
+                    .manager
+                    .mount_wiki(&entry)
+                    .map_err(|e| format!("remount after register failed: {e}"))?;
+            }
             let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
             ok_text(s)
         }

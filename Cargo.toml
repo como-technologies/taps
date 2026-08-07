@@ -5,8 +5,10 @@ members = [
     "assessments/crates/*",
     "conduit",
     "contract",
+    "kb-client",
     "llm-wiki",
     "pulse/crates/*",
+    "taps-tests",
     "tuesday/crates/*",
 ]
 
