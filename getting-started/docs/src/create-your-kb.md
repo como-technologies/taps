@@ -27,12 +27,16 @@ incus exec kb -- systemctl is-system-running --wait >/dev/null 2>&1 || true
 # an unprivileged user to own the spaces
 incus exec kb -- adduser --disabled-password --gecos "" kb
 
+# git: the engine embeds its own git for versioning spaces, but page
+# history (wiki_history) shells out to the real thing
+incus exec kb -- sh -c 'apt-get update -qq && apt-get install -y -qq git'
+
 # install the engine: the llm-wiki you built in Step 1
 incus file push ~/.cargo/bin/llm-wiki kb/usr/local/bin/llm-wiki --mode 0755
 ```
 
-That's the whole appliance: one unprivileged user, one binary, your
-spaces. It's deliberately boring — `llm-wiki serve` runs identically as
+That's the whole appliance: one unprivileged user, one binary (plus
+git, its one external dependency), your spaces. It's deliberately boring — `llm-wiki serve` runs identically as
 a bare terminal process, a systemd unit, or a pod; a container is just
 the deployment this guide walks. The kit's
 [README](https://github.com/como-technologies/taps/tree/main/llm-wiki/kit)
