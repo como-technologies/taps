@@ -36,7 +36,8 @@ incus file push ~/.cargo/bin/llm-wiki kb/usr/local/bin/llm-wiki --mode 0755
 
 # the standing door: serve the HTTP transport as a service. Every
 # client — your sessions, tools, a second session inspecting alongside —
-# dials this one engine.
+# dials this one engine. --any-host: clients dial the appliance by its
+# network address, so the localhost-only Host check must be off.
 incus exec kb -- sh -c 'cat > /etc/systemd/system/llm-wiki.service <<UNIT
 [Unit]
 Description=llm-wiki KB appliance
@@ -44,7 +45,7 @@ After=network.target
 
 [Service]
 User=kb
-ExecStart=/usr/local/bin/llm-wiki serve --http
+ExecStart=/usr/local/bin/llm-wiki serve --http --any-host
 Restart=on-failure
 
 [Install]

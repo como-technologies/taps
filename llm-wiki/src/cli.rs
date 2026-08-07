@@ -196,6 +196,11 @@ pub enum Commands {
         /// Enable HTTP transport (optional port, e.g. :8080)
         #[arg(long, value_name = "PORT")]
         http: Option<Option<String>>,
+        /// Serve HTTP to any Host header. Without it only localhost names
+        /// are admitted (DNS-rebinding protection for local serving) — a
+        /// network appliance dialed by address needs this flag.
+        #[arg(long, requires = "http")]
+        any_host: bool,
         /// Enable ACP transport
         #[arg(long)]
         acp: bool,

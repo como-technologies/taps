@@ -47,13 +47,22 @@ async fn serve_http(
     server: McpServer,
     port: u16,
     serve_cfg: &config::ServeConfig,
+    any_host: bool,
     cancel: CancellationToken,
 ) -> Result<()> {
     let addr: SocketAddr = ([0, 0, 0, 0], port).into();
 
-    let config = StreamableHttpServerConfig::default()
-        .with_cancellation_token(cancel.child_token())
-        .with_allowed_hosts(serve_cfg.http_allowed_hosts.clone());
+    // Host-header checking is DNS-rebinding protection for local serving.
+    // An appliance dialed by its network address needs it off (--any-host):
+    // the boundary there is the network, and address-enumeration in config
+    // would go stale on every DHCP lease.
+    let config =
+        StreamableHttpServerConfig::default().with_cancellation_token(cancel.child_token());
+    let config = if any_host {
+        config.disable_allowed_hosts()
+    } else {
+        config.with_allowed_hosts(serve_cfg.http_allowed_hosts.clone())
+    };
 
     let service: StreamableHttpService<McpServer, LocalSessionManager> =
         StreamableHttpService::new(move || Ok(server.clone()), Default::default(), config);
@@ -105,6 +114,7 @@ async fn serve_http(
 pub async fn serve(
     config_path: &std::path::Path,
     http_flag: Option<Option<u16>>,
+    any_host: bool,
     acp: bool,
     watch: bool,
 ) -> Result<()> {
@@ -223,7 +233,7 @@ pub async fn serve(
         });
 
         if http_enabled {
-            serve_http(mcp_server, resolved_port, &serve_cfg, cancel).await?;
+            serve_http(mcp_server, resolved_port, &serve_cfg, any_host, cancel).await?;
         } else {
             serve_stdio(mcp_server, shutdown_rx).await?;
         }
@@ -231,7 +241,7 @@ pub async fn serve(
         acp_handle.abort();
         let _ = acp_handle.await;
     } else if http_enabled {
-        serve_http(mcp_server, resolved_port, &serve_cfg, cancel).await?;
+        serve_http(mcp_server, resolved_port, &serve_cfg, any_host, cancel).await?;
     } else {
         serve_stdio(mcp_server, shutdown_rx).await?;
     }
