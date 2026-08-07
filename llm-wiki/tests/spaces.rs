@@ -689,24 +689,25 @@ fn register_existing_no_prior_toml_creates_wiki_toml() {
 // ── Como provisioning (llm-wiki#14) ───────────────────────────────────────────
 
 #[test]
-fn create_installs_como_schema_library() {
+fn create_installs_engine_schema_library() {
     let dir = tempfile::tempdir().unwrap();
     let wiki_path = dir.path().join("kb");
     let cfg = config_path(dir.path());
 
     spaces::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
 
-    for schema in [
-        "decision.json",
-        "guide.json",
-        "glossary-entry.json",
-        "worked-example.json",
-        "plan.json",
-        "measure-report.json",
-    ] {
+    for schema in ["guide.json", "glossary-entry.json", "worked-example.json"] {
         assert!(
             wiki_path.join("schemas").join(schema).is_file(),
-            "missing Como schema {schema}"
+            "missing engine schema {schema}"
+        );
+    }
+    // Tool-owned artifact classes are not stamped (taps#65): they arrive
+    // only when their owning tool registers them over the transport.
+    for schema in ["decision.json", "plan.json", "measure-report.json"] {
+        assert!(
+            !wiki_path.join("schemas").join(schema).exists(),
+            "ghost schema {schema} stamped into a fresh space"
         );
     }
 }

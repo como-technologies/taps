@@ -44,9 +44,9 @@ fn embedded_unknown_type() {
 }
 
 #[test]
-fn embedded_list_types_returns_21() {
+fn embedded_list_types_returns_18() {
     let reg = SpaceTypeRegistry::from_embedded();
-    assert_eq!(reg.list_types().len(), 21);
+    assert_eq!(reg.list_types().len(), 18);
 }
 
 #[test]
@@ -186,7 +186,7 @@ fn build_falls_back_to_embedded_when_no_schemas_dir() {
 
     let reg = SpaceTypeRegistry::build(dir.path()).unwrap();
     assert!(reg.is_known("concept"));
-    assert_eq!(reg.list_types().len(), 21);
+    assert_eq!(reg.list_types().len(), 18);
 }
 
 // ── validate ──────────────────────────────────────────────────────────────────

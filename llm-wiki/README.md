@@ -11,8 +11,9 @@ A git-backed Markdown wiki — searchable, typed, graph-linked. Accessible from
 the command line, from any MCP-compatible agent, or from any IDE via ACP.
 
 llm-wiki is the **Como KB product** — the knowledge-base substrate of the
-Como suite. It ships the Como schema library and zero-flag admission
-provisioning in `spaces create`, and the
+Como suite. It ships the engine-owned content-class schemas and zero-flag
+admission provisioning in `spaces create` (tools register their own
+artifact classes over the transport via `wiki_schema register`), and the
 **[Como authoring kit](kit/README.md)** — skills, harness configs, the
 [authoring contract](docs/guides/como-authoring.md), and a captured
 worked example — for pointing an AI harness at a space and authoring
