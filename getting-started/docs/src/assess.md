@@ -37,44 +37,22 @@ Three services come up — author (`:3000`), respond (`:3001`), analyze
 > as a new user you run it locally, which also keeps your material on
 > your machine.
 
-## Open the appliance's HTTP door
+## Tell amaker where the KB is
 
-Your sessions have reached the space over stdio, spawned per session.
-Tools connect differently: over the appliance's **HTTP transport** — a
-standing endpoint any client can reach. Give the appliance one (run
-where you launched `kb` in Step 2):
-
-```sh
-incus exec kb -- sh -c 'cat > /etc/systemd/system/llm-wiki.service <<UNIT
-[Unit]
-Description=llm-wiki KB appliance
-After=network.target
-
-[Service]
-User=kb
-ExecStart=/usr/local/bin/llm-wiki serve --http
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-systemctl enable --now llm-wiki'
-
-# the appliance address tools will dial
-incus list kb -c4 -f csv
-```
-
-Then tell amaker where the door is — two lines in the same `.env` that
-holds your API key:
+amaker dials the same standing door your sessions have used since
+Step 2 — the appliance's HTTP endpoint. Two lines in the same `.env`
+that holds your API key:
 
 ```sh
+# the appliance address: incus list kb -c4 -f csv
 KB_URL=http://<kb-address>:8080/mcp
 KB_WIKI=myproject
 ```
 
 That pair is the suite's convention: every taps tool that talks to a KB
 reads it. No tool ever touches a space's filesystem — the transport is
-the only door.
+the only door, and everything you've met so far walks through the same
+one.
 
 ## Author your assessment
 

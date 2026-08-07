@@ -33,6 +33,24 @@ incus exec kb -- sh -c 'apt-get update -qq && apt-get install -y -qq git'
 
 # install the engine: the llm-wiki you built in Step 1
 incus file push ~/.cargo/bin/llm-wiki kb/usr/local/bin/llm-wiki --mode 0755
+
+# the standing door: serve the HTTP transport as a service. Every
+# client — your sessions, tools, a second session inspecting alongside —
+# dials this one engine.
+incus exec kb -- sh -c 'cat > /etc/systemd/system/llm-wiki.service <<UNIT
+[Unit]
+Description=llm-wiki KB appliance
+After=network.target
+
+[Service]
+User=kb
+ExecStart=/usr/local/bin/llm-wiki serve --http
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl enable --now llm-wiki'
 ```
 
 That's the whole appliance: one unprivileged user, one binary (plus
@@ -50,9 +68,11 @@ One command, run on the appliance — the operator's console:
 incus exec kb -- su - kb -c 'llm-wiki spaces create ~/spaces/myproject --name myproject --set-default'
 ```
 
-That provisions the whole thing: the Como schema library, strict
-validation, admission hooks, and search weights. No flags to remember —
-a fresh space is born ready.
+That provisions the whole thing: the engine's content-class schemas,
+strict validation, admission hooks, and search weights. No flags to
+remember — a fresh space is born ready. (Born knowing only *content*
+classes, deliberately: tools bring their own page classes with them,
+registered the first time each one connects.)
 
 ## Make your workspace
 
@@ -63,6 +83,16 @@ here; one workspace reaches every space the appliance hosts.
 ```sh
 cp -r ~/taps/llm-wiki/kit/workspace ~/kb-workspace
 cp -r ~/taps/llm-wiki/kit/skills ~/kb-workspace/.claude/skills
+
+# point the workspace at the appliance's standing door
+KB_ADDR=$(incus list kb -c4 -f csv | cut -d' ' -f1)
+cat > ~/kb-workspace/.mcp.json <<EOF
+{
+  "mcpServers": {
+    "kb": { "type": "http", "url": "http://$KB_ADDR:8080/mcp" }
+  }
+}
+EOF
 ```
 
 No harness on this machine yet? (A Step 0 clean room won't have one.)
@@ -81,9 +111,12 @@ cd ~/kb-workspace
 claude
 ```
 
-`/mcp` should show the `kb` server connected — the kit's `.mcp.json`
-starts `llm-wiki serve` inside the appliance and speaks to it over
-stdio. Then talk: search, draft, ask it what spaces it can reach.
+`/mcp` should show the `kb` server connected — over the appliance's
+HTTP door. One engine serves every client, so a second session (or a
+teammate, or a tool) can work alongside without stepping on this one.
+Then talk: search, draft, ask it what spaces it can reach. (The kit
+also documents a stdio variant that spawns a private engine per
+session — the no-appliance solo path; this guide walks the door.)
 
 One thing you'll notice the workspace *won't* do is shell into the
 appliance — the kit's settings deny it. Every write goes through the
