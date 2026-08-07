@@ -67,6 +67,18 @@ pub enum Command {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Import an assessment file as a new project with a published version —
+    /// the headless authoring door (validate → import → respondents answer)
+    Import {
+        /// Assessment file; format inferred from extension (.yaml/.yml/.json/.toml)
+        file: PathBuf,
+        /// Project name (default: the assessment's name)
+        #[arg(long)]
+        name: Option<String>,
+        /// Published version name
+        #[arg(long, default_value = "v1")]
+        version: String,
+    },
     /// Publish a project's assessment + analysis to the KB as amaker-owned
     /// pages (needs KB_URL; provider-free like export)
     Publish {
@@ -124,6 +136,38 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
             Ok(())
         }
         Command::Schema { out } => schema_cmd(out.as_deref()),
+        Command::Import {
+            file,
+            name,
+            version,
+        } => {
+            dotenvy::dotenv().ok();
+            let assessment = validate_cmd(&file)?;
+            let storage = fs_storage(data_dir_from_env());
+            storage.init().await?;
+            let project = amaker_core::models::Project::new(
+                name.unwrap_or_else(|| assessment.name.clone()),
+                None,
+            );
+            storage.save_project(&project).await?;
+            // Store as YAML regardless of input format — the storage layer's
+            // one representation (same normalization the web app performs).
+            let yaml = ExportService::to_data(&assessment, DataFormat::Yaml)?;
+            storage.save_assessment_yaml(project.id, &yaml).await?;
+            storage.publish_version(project.id, &version, None).await?;
+            println!(
+                "{}",
+                serde_json::json!({
+                    "project_id": project.id,
+                    "name": project.name,
+                    "version": version,
+                    "domains": assessment.domain_count(),
+                    "practices": assessment.practice_count(),
+                    "questions": assessment.question_count(),
+                })
+            );
+            Ok(())
+        }
         Command::Publish { project_id, wiki } => {
             dotenvy::dotenv().ok();
             let storage = fs_storage(data_dir_from_env());

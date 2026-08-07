@@ -4,10 +4,12 @@
 > yet — commands and claims may change as the dogfood walk reaches it.
 
 The loop opens with evidence: a structured maturity assessment of your
-project, not a gut feeling. [amaker](../portfolio/loop/assess.html) is the authoring
-environment — you and an assistant build the assessment together, a
-respondent fills it in, and the analysis exports in exactly the shape
-Step 5 consumes.
+project, not a gut feeling. [amaker](../portfolio/loop/assess.html) is
+the assessment tool — and the first tool in this guide that reaches your
+KB the way every tool does: over the appliance's transport. amaker owns
+two page classes, `assessment` and `assessment-report`. Your space has
+never heard of them; it learns them the moment amaker first connects,
+and only amaker writes them.
 
 ## Stand up amaker locally
 
@@ -35,28 +37,111 @@ Three services come up — author (`:3000`), respond (`:3001`), analyze
 > as a new user you run it locally, which also keeps your material on
 > your machine.
 
+## Open the appliance's HTTP door
+
+Your sessions have reached the space over stdio, spawned per session.
+Tools connect differently: over the appliance's **HTTP transport** — a
+standing endpoint any client can reach. Give the appliance one (run
+where you launched `kb` in Step 2):
+
+```sh
+incus exec kb -- sh -c 'cat > /etc/systemd/system/llm-wiki.service <<UNIT
+[Unit]
+Description=llm-wiki KB appliance
+After=network.target
+
+[Service]
+User=kb
+ExecStart=/usr/local/bin/llm-wiki serve --http
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl enable --now llm-wiki'
+
+# the appliance address tools will dial
+incus list kb -c4 -f csv
+```
+
+Then tell amaker where the door is — two lines in the same `.env` that
+holds your API key:
+
+```sh
+KB_URL=http://<kb-address>:8080/mcp
+KB_WIKI=myproject
+```
+
+That pair is the suite's convention: every taps tool that talks to a KB
+reads it. No tool ever touches a space's filesystem — the transport is
+the only door.
+
 ## Author your assessment
 
-In the authoring UI, describe what you want to understand — your
-project's testing maturity, its platform readiness, its delivery
-practice — and co-create the assessment tree (domain → practice →
-question) with the assistant: it drafts, you correct and steer. Publish
-a version when it says what you mean.
+Authoring is judgment work you can delegate to your assistant — the
+agent is the assist. Paste this into your **workspace session**
+(`~/kb-workspace`, from Step 2):
 
-> 🚧 **Unverified.** The walk will pin down the minimal authoring path —
-> how small a useful first assessment can be, and how long it takes.
+```text
+Author a maturity assessment of this project's delivery practice as an
+amaker assessment file at ~/assessment.yaml. Ground it in the myproject
+space: search and read what we know before drafting. Shape: 2-3
+domains, each with 1-2 practices, each practice with 2-4 yes/no
+questions — set each question's polarity, and give negative findings a
+remediation and roles. Then, from ~/taps/assessments, run
+`amaker validate ~/assessment.yaml` and fix what it reports until the
+file validates, and finish with `amaker import ~/assessment.yaml` —
+tell me the project_id it prints.
+```
 
-## Respond and analyze
+`import` is the headless authoring door: your drafted file becomes a
+project with a published version, ready for a respondent. (Prefer
+clicking? The author UI at `:3000` co-creates the same thing
+conversationally — assistant drafts, you steer, publish a version when
+it says what you mean.)
 
-Fill in the published assessment as the respondent (`:3001`), then open
-the analysis (`:3002`): scorecard, gaps, roadmap, narrative.
+## Respond — this part is you
 
-## Export for the next stage
+Open the respond app (`:3001`, or `http://walk.local:3001` from the
+clean room), pick the assessment, and answer as the respondent. The
+questions exist to collect *your* ground truth about the project —
+that's the one seat in this loop that stays human on purpose.
 
-Export the assessment analysis — a schema-validated document, not a
-deck. This file is the hand-off: Step 5 seeds your decision backlog from
-it directly.
+## Analyze and publish
 
-> 🚧 **Unverified.** Where the export lives in the UI, its default
-> format, and the exact file the Prescribe step imports — the walk will
-> confirm and this page will name them precisely.
+The analyze app (`:3002`) shows the scorecard, gaps, and roadmap as you
+answer. When it reflects reality, land the result in your space —
+either ask your workspace session to run it, or do it yourself:
+
+```sh
+cd ~/taps/assessments
+amaker publish <project-id>
+```
+
+The report it prints is the whole story: both schemas registered
+(`registered` on first contact, `unchanged` ever after), two pages
+written — `assessments/<name>` and `assessments/<name>-report` — and
+the admission gate's verdict, including how many pages the search index
+actually picked up. Publishing is repeatable: re-answer, re-publish.
+
+## Verify
+
+Ask your workspace session:
+
+```text
+What does our assessment report say about the project? Cite pages.
+```
+
+It finds `assessments/<name>-report` by search and reads it — the wiki
+tools read amaker's pages like any others; ownership is a *write*
+boundary. Then look at what first contact did to your space's
+vocabulary:
+
+```sh
+incus exec kb -- su - kb -c 'llm-wiki schema list --wiki myproject'
+```
+
+`assessment` and `assessment-report` are registered now, each carrying
+`x-owner: amaker` — your space learned amaker's classes when amaker
+showed up, not a moment earlier. Step 5 picks the loop up from these
+pages.

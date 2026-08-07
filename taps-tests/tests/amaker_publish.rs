@@ -1,11 +1,12 @@
 //! Seam: amaker → a live llm-wiki appliance, over streamable HTTP, driven
 //! through amaker's own door (`amaker publish`, the CLI binary).
 //!
-//! Setup note: fixture data is created with amaker-core's storage/response
-//! services — the same code amaker's services run — because amaker has no
-//! headless door for creating projects and responses yet. All *assertions*
-//! go through transports only: the publish CLI's stdout report and the KB's
-//! wiki tools.
+//! Setup goes through amaker's own doors where they exist: the project is
+//! created with `amaker import` (the headless authoring door). Answers are
+//! recorded with amaker-core's response service — deliberately: responding
+//! is the one human-only act in the loop, so there is no headless door for
+//! it. All *assertions* go through transports only: the publish CLI's
+//! stdout report and the KB's wiki tools.
 
 mod helpers;
 
@@ -46,39 +47,48 @@ domains:
 ";
 
 async fn seed_amaker_data(data_dir: &std::path::Path) -> String {
-    use amaker_core::models::{Answer, AnswerValue, Project};
+    use amaker_core::models::{Answer, AnswerValue};
     use amaker_core::services::{ResponseService, StorageService};
     use amaker_core::storage_backend::{build_store, filesystem};
 
+    // The headless authoring door: a drafted assessment file becomes a
+    // project with a published version.
+    let file = data_dir.join("release-readiness.yaml");
+    std::fs::write(&file, ASSESSMENT_YAML).expect("write assessment file");
+    let output = std::process::Command::new(bin("amaker"))
+        .env("DATA_DIR", data_dir)
+        .args(["import", "--name", "Release Readiness"])
+        .arg(&file)
+        .output()
+        .expect("run amaker import");
+    assert!(
+        output.status.success(),
+        "import failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let imported: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("import report is JSON");
+    let project_id: amaker_core::models::ProjectId =
+        imported["project_id"].as_str().unwrap().parse().unwrap();
+
+    // Responding is human work; the test stands in for the respondent via
+    // the same service the assess app uses.
     let storage = StorageService::new(build_store(&filesystem(data_dir)).expect("store"));
-    storage.init().await.expect("init");
-
-    let project = Project::new("Release Readiness".to_string(), None);
-    storage.save_project(&project).await.expect("save project");
-    storage
-        .save_assessment_yaml(project.id, ASSESSMENT_YAML)
-        .await
-        .expect("save assessment");
-    storage
-        .publish_version(project.id, "v1", None)
-        .await
-        .expect("publish version");
-
-    let responses = ResponseService::new(storage.clone());
-    responses.ensure_primary(project.id).await.expect("primary");
+    let responses = ResponseService::new(storage);
+    responses.ensure_primary(project_id).await.expect("primary");
     use amaker_core::models::ids::QuestionId;
     let q1: QuestionId = "44444444-4444-4444-8444-444444444444".parse().unwrap();
     let q2: QuestionId = "55555555-5555-4555-8555-555555555555".parse().unwrap();
     responses
-        .upsert_answer(project.id, q1, Answer::new(AnswerValue::Yes))
+        .upsert_answer(project_id, q1, Answer::new(AnswerValue::Yes))
         .await
         .expect("answer q1");
     responses
-        .upsert_answer(project.id, q2, Answer::new(AnswerValue::Yes))
+        .upsert_answer(project_id, q2, Answer::new(AnswerValue::Yes))
         .await
         .expect("answer q2");
 
-    project.id.to_string()
+    project_id.to_string()
 }
 
 #[tokio::test(flavor = "multi_thread")]

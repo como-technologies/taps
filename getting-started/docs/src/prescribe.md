@@ -10,21 +10,15 @@ The tool is [adroit](../portfolio/loop/prescribe.html).
 
 ## Seed the backlog from the assessment
 
-Point adroit at Step 4's export:
+Step 4 left the assessment and its report as typed pages in your space;
+this step's decisions start from what those pages say.
 
-```sh
-adroit import path/to/assessment-export.yaml --dir ~/myproject-kb
-adroit list --dir ~/myproject-kb
-```
-
-`import` seeds one proposed ADR per prescription and reports exactly what
-it seeded and what it skipped (`-o json` for the machine view). With an
-AI provider configured, `--ai` drafts fuller bodies — every draft passes
-through a mechanical sanitizer before it touches a page.
-
-> 🚧 **Unverified.** The import path expects the assessments exporter's
-> schema (the pinned cross-product contract). The walk confirms the
-> export from Step 4 imports without hand-editing.
+> 🚧 **Unverified — and expected to change.** This page still describes
+> adroit's pre-appliance, filesystem-bound shape (`--dir` at a local
+> path). When the walk reaches this step, adroit becomes a transport
+> client of the appliance like every other tool, consuming the
+> assessment pages directly, and this page gets rewritten from the
+> walk. Read the commands below as the old shape, not a promise.
 
 ## Refine the decisions
 
