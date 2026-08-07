@@ -42,7 +42,9 @@ incus project switch taps
 
 (`switch` sets your client's active project — everything below just
 works, no `--project` flags. Switch back to your usual one afterwards
-with `incus project switch default`.)
+with `incus project switch default`. Walked before? If the project
+still exists, `create` errors — harmless; the `switch` is what
+matters.)
 
 Then one block — launch, wait for boot, add a sudo-capable user (the
 guide's commands assume one), and bake in what every walk needs — git,

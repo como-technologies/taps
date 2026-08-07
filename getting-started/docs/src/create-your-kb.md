@@ -33,25 +33,6 @@ incus exec kb -- sh -c 'apt-get update -qq && apt-get install -y -qq git'
 
 # install the engine: the llm-wiki you built in Step 1
 incus file push ~/.cargo/bin/llm-wiki kb/usr/local/bin/llm-wiki --mode 0755
-
-# the standing door: serve the HTTP transport as a service. Every
-# client — your sessions, tools, a second session inspecting alongside —
-# dials this one engine. --any-host: clients dial the appliance by its
-# network address, so the localhost-only Host check must be off.
-incus exec kb -- sh -c 'cat > /etc/systemd/system/llm-wiki.service <<UNIT
-[Unit]
-Description=llm-wiki KB appliance
-After=network.target
-
-[Service]
-User=kb
-ExecStart=/usr/local/bin/llm-wiki serve --http --any-host
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-systemctl enable --now llm-wiki'
 ```
 
 That's the whole appliance: one unprivileged user, one binary (plus
@@ -74,6 +55,37 @@ strict validation, admission hooks, and search weights. No flags to
 remember — a fresh space is born ready. (Born knowing only *content*
 classes, deliberately: tools bring their own page classes with them,
 registered the first time each one connects.)
+
+## Stand the door up
+
+Now the standing door: serve the HTTP transport as a service. Every
+client — your sessions, tools, a second session inspecting alongside —
+dials this one engine.
+
+```sh
+# --any-host: clients dial the appliance by its network address, so
+# the localhost-only Host check must be off
+incus exec kb -- sh -c 'cat > /etc/systemd/system/llm-wiki.service <<UNIT
+[Unit]
+Description=llm-wiki KB appliance
+After=network.target
+
+[Service]
+User=kb
+ExecStart=/usr/local/bin/llm-wiki serve --http --any-host
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl enable --now llm-wiki'
+```
+
+The engine mounts its spaces at boot — the door stands up *after* the
+space exists so it opens already knowing `myproject`. Create more
+spaces later and they mount live when made through the tools; spaces
+made on the operator console need a `systemctl restart llm-wiki` to
+appear.
 
 ## Make your workspace
 
