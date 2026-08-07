@@ -1,11 +1,11 @@
 # Command Line
 
 `amaker` is the headless CLI for scripting the Assess stage — authoring,
-exporting, validating, and emitting the JSON Schema. (The interactive web
-apps are separate workspace crates: `amaker-author`, `amaker-assess`,
-`amaker-analyze`.) Of the commands, only `author` talks to an AI provider —
-`export`, `validate`, and `schema` never construct one, so **no API key is
-needed** to run them (and `author` needs none either with
+importing, exporting, validating, publishing to the KB, and emitting the
+JSON Schema. (The interactive web apps are separate workspace crates:
+`amaker-author`, `amaker-assess`, `amaker-analyze`.) Of the commands, only
+`author` talks to an AI provider — everything else never constructs one,
+so **no API key is needed** (and `author` needs none either with
 `AI_PROVIDER=ollama`).
 
 ```text
@@ -15,8 +15,30 @@ Commands:
   export    Export a project's assessment (reads DATA_DIR, default ./data)
   validate  Validate an assessment file against the JSON Schema
   schema    Write the assessment JSON Schema
+  import    Import an assessment file as a new project with a published version
+  publish   Publish a project's assessment + analysis to the KB
   author    Author a complete assessment from a brief, headlessly
 ```
+
+## `import <file> [--name NAME] [--version v1]`
+
+The headless authoring door: a validated assessment file (any drafted
+YAML/JSON/TOML — hand-written, agent-written, or `author`'s output)
+becomes a new project under `DATA_DIR` with a published version, ready
+for respondents. Validation is the same gate `validate` runs, including
+placeholder rejection. Prints the new `project_id` as JSON.
+
+## `publish <project-id> [--wiki NAME]`
+
+Lands the project's assessment definition and the primary respondent's
+analysis (scorecard, definite gaps, prioritized roadmap) in the KB as
+two typed pages — `assessment` and `assessment-report`, classes amaker
+owns and registers on first contact (`x-owner: amaker`). Needs `KB_URL`
+(the appliance's streamable-HTTP MCP endpoint; `KB_WIKI` optionally
+names the space — the suite-wide pair, honored from `.env`). The pages
+enter through the KB's admission gates; the printed report carries the
+gate's verdict, including how many pages the search index picked up.
+Repeatable: schemas come back `unchanged`, pages refresh.
 
 ## `export <project-id> [--format yaml|json|toml] [--out FILE]`
 
