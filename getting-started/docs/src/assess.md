@@ -11,6 +11,10 @@ Step 5 consumes.
 
 ## Stand up amaker locally
 
+You'll need an Anthropic API key — create one at
+[platform.claude.com/settings/keys](https://platform.claude.com/settings/keys)
+(sign-up is free; usage is pay-as-you-go).
+
 ```sh
 cd ~/taps/assessments
 cp .env.example .env        # put your ANTHROPIC_API_KEY in it
