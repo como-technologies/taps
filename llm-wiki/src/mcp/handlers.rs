@@ -304,9 +304,17 @@ pub fn handle_content_commit(server: &McpServer, args: &Map<String, Value>) -> T
         .unwrap_or_default();
     let all = slugs.is_empty();
 
-    let hash = ops::content_commit(&engine, &wiki_name, &slugs, all, message.as_deref())
-        .map_err(|e| format!("{e}"))?;
-    ok_text(hash)
+    let report = ops::content_commit(
+        &engine,
+        &server.manager,
+        &wiki_name,
+        &slugs,
+        all,
+        message.as_deref(),
+    )
+    .map_err(|e| format!("{e}"))?;
+    let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
+    ok_text(s)
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────

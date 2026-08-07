@@ -256,13 +256,22 @@ fn main() -> Result<()> {
                 let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
                 let wiki_name = engine.resolve_wiki_name(cli.wiki.as_deref()).to_string();
 
-                let hash =
-                    ops::content_commit(&engine, &wiki_name, &slugs, all, message.as_deref())?;
+                let report = ops::content_commit(
+                    &engine,
+                    &manager,
+                    &wiki_name,
+                    &slugs,
+                    all,
+                    message.as_deref(),
+                )?;
 
-                if hash.is_empty() {
+                if report.commit.is_empty() {
                     println!("Nothing to commit");
                 } else {
-                    println!("{hash}");
+                    println!("{} ({} indexed)", report.commit, report.indexed);
+                }
+                for w in &report.warnings {
+                    eprintln!("warning: {w}");
                 }
             }
         },

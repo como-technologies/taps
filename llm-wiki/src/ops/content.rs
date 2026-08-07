@@ -236,45 +236,83 @@ fn resolve_body_template(repo_root: &Path, type_name: &str) -> Option<String> {
     crate::default_schemas::embedded_body_template(type_name).map(|s| s.to_string())
 }
 
-/// Commit specified slugs (or all uncommitted files) to git and return the commit hash.
+/// Result of committing pending changes: the admission event plus what
+/// the index consumer did with it.
+#[derive(Debug, serde::Serialize)]
+pub struct CommitReport {
+    /// Commit hash, or empty string if there was nothing to commit.
+    pub commit: String,
+    /// Pages (re)indexed by the post-commit index update.
+    pub indexed: usize,
+    /// Index entries removed by the post-commit index update.
+    pub index_deleted: usize,
+    /// Non-fatal problems (an un-indexed commit is reported here, not hidden).
+    pub warnings: Vec<String>,
+}
+
+/// Commit specified slugs (or all uncommitted files) to git, then update
+/// the search index — engine commits never fire the managed post-commit
+/// hook (git2 doesn't run hooks), so this is the index consumer.
 pub fn content_commit(
     engine: &EngineState,
+    manager: &crate::engine::WikiEngine,
     wiki_name: &str,
     slugs: &[String],
     all: bool,
     message: Option<&str>,
-) -> Result<String> {
+) -> Result<CommitReport> {
     let space = engine.space(wiki_name)?;
 
     if slugs.is_empty() && !all {
         bail!("specify slugs or --all");
     }
 
-    if all {
+    let hash = if all {
         let msg = message.unwrap_or("commit: all");
-        return git::commit(&space.repo_root, msg);
+        git::commit(&space.repo_root, msg)?
+    } else {
+        let mut paths = Vec::new();
+        for s in slugs {
+            let slug = Slug::try_from(s.as_str())?;
+            let resolved = slug.resolve(&space.wiki_root)?;
+            if resolved.file_name() == Some(std::ffi::OsStr::new("index.md")) {
+                let bundle_dir = resolved.parent().unwrap();
+                for entry in walkdir::WalkDir::new(bundle_dir)
+                    .into_iter()
+                    .filter_map(|e| e.ok())
+                {
+                    if entry.path().is_file() {
+                        paths.push(entry.path().to_path_buf());
+                    }
+                }
+            } else {
+                paths.push(resolved);
+            }
+        }
+        let path_refs: Vec<&Path> = paths.iter().map(|p| p.as_path()).collect();
+        let default_msg = format!("commit: {}", slugs.join(", "));
+        let msg = message.unwrap_or(&default_msg);
+        git::commit_paths(&space.repo_root, &path_refs, msg)?
+    };
+
+    let mut report = CommitReport {
+        commit: hash,
+        indexed: 0,
+        index_deleted: 0,
+        warnings: Vec::new(),
+    };
+    if report.commit.is_empty() {
+        return Ok(report);
     }
 
-    let mut paths = Vec::new();
-    for s in slugs {
-        let slug = Slug::try_from(s.as_str())?;
-        let resolved = slug.resolve(&space.wiki_root)?;
-        if resolved.file_name() == Some(std::ffi::OsStr::new("index.md")) {
-            let bundle_dir = resolved.parent().unwrap();
-            for entry in walkdir::WalkDir::new(bundle_dir)
-                .into_iter()
-                .filter_map(|e| e.ok())
-            {
-                if entry.path().is_file() {
-                    paths.push(entry.path().to_path_buf());
-                }
-            }
-        } else {
-            paths.push(resolved);
+    match manager.refresh_index(wiki_name) {
+        Ok(r) => {
+            report.indexed = r.updated;
+            report.index_deleted = r.deleted;
         }
+        Err(e) => report.warnings.push(format!(
+            "committed but index update failed ({e}) — search is stale; run wiki_index_rebuild"
+        )),
     }
-    let path_refs: Vec<&Path> = paths.iter().map(|p| p.as_path()).collect();
-    let default_msg = format!("commit: {}", slugs.join(", "));
-    let msg = message.unwrap_or(&default_msg);
-    git::commit_paths(&space.repo_root, &path_refs, msg)
+    Ok(report)
 }

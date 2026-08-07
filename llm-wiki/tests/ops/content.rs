@@ -374,6 +374,16 @@ fn content_commit_all() {
     )
     .unwrap();
 
-    let hash = ops::content_commit(&engine, "test", &[], true, Some("test commit")).unwrap();
-    assert!(!hash.is_empty());
+    let report =
+        ops::content_commit(&engine, &manager, "test", &[], true, Some("test commit")).unwrap();
+    assert!(!report.commit.is_empty());
+    // The commit is the admission event: what it admitted is indexed and
+    // the baseline advances with it — no stale index, no silent skip.
+    assert!(report.indexed >= 1, "committed page should be indexed");
+    assert!(report.warnings.is_empty());
+    let space = engine.space("test").unwrap();
+    assert_eq!(
+        space.index_manager.last_commit().as_deref(),
+        Some(report.commit.as_str())
+    );
 }

@@ -251,11 +251,16 @@ fn content_commit_after_write() {
         json!({"uri": slug, "content": content, "wiki": SPACE_NAME}),
     );
 
-    let hash = mcp.call(
+    let data = mcp.call_json(
         "wiki_content_commit",
         json!({"slugs": slug, "message": "test: commit test page", "wiki": SPACE_NAME}),
     );
+    let hash = data["commit"].as_str().unwrap();
     assert!(hash.len() > 5, "commit hash should be a valid git SHA");
+    assert!(
+        data["indexed"].as_u64().unwrap() >= 1,
+        "committed page should be indexed"
+    );
 
     let resolved = mcp.call_json("wiki_resolve", json!({"uri": slug, "wiki": SPACE_NAME}));
     assert_eq!(

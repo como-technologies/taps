@@ -397,6 +397,35 @@ impl SpaceIndexManager {
 
         writer.commit()?;
         self.reload_reader()?;
+
+        // Advance the recorded baseline. Only rebuild() wrote state.toml
+        // before, so a space maintained by incremental updates reported
+        // itself stale and page-less forever — and the next diff kept
+        // starting from the last full build. Count through the writer's
+        // index handle: unlike self.searcher(), it exists even when the
+        // manager was never open()ed.
+        let searcher = writer.index().reader()?.searcher();
+        let pages = searcher.search(&tantivy::query::AllQuery, &tantivy::collector::Count)?;
+        let sections = searcher.search(
+            &tantivy::query::TermQuery::new(
+                Term::from_field_text(is.field("type"), "section"),
+                tantivy::schema::IndexRecordOption::Basic,
+            ),
+            &tantivy::collector::Count,
+        )?;
+        let state = IndexState {
+            schema_hash: registry.schema_hash().to_string(),
+            built: Utc::now().to_rfc3339(),
+            pages,
+            sections,
+            commit: git::current_head(repo_root).unwrap_or_default(),
+            types: registry.type_hashes().clone(),
+        };
+        std::fs::write(
+            self.index_path.join("state.toml"),
+            toml::to_string_pretty(&state)?,
+        )?;
+
         Ok(UpdateReport { updated, deleted })
     }
 

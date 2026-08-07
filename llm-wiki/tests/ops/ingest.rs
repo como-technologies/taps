@@ -30,6 +30,58 @@ fn ingest_validates_and_indexes() {
     assert_eq!(report.pages_validated, 1);
 }
 
+// ── taps#62: ingest is the index consumer ─────────────────────────────────────
+//
+// Engine commits go through git2, which never runs the managed post-commit
+// hook, and mount-time catch-up has already passed — so ingest itself must
+// index what it admits, advance the recorded baseline, and say so in the
+// report.
+
+#[test]
+fn ingest_indexes_synchronously_and_advances_state() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+
+    {
+        let engine = manager.state.read().unwrap();
+        let space = engine.space("test").unwrap();
+        fs::write(
+            space.wiki_root.join("concepts/seed-one.md"),
+            "---\ntitle: \"Seed One\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\nFirst seeded page.\n",
+        )
+        .unwrap();
+        fs::write(
+            space.wiki_root.join("concepts/seed-two.md"),
+            "---\ntitle: \"Seed Two\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\nSecond seeded page.\n",
+        )
+        .unwrap();
+    }
+
+    let report = {
+        let engine = manager.state.read().unwrap();
+        ops::ingest(&engine, &manager, "concepts", false, "test").unwrap()
+    };
+    assert!(report.pages_validated >= 2);
+    assert!(!report.commit.is_empty());
+    assert!(
+        report.indexed >= 2,
+        "seeded pages must be indexed by the ingest itself, got {}",
+        report.indexed
+    );
+
+    let engine = manager.state.read().unwrap();
+    let space = engine.space("test").unwrap();
+    assert_eq!(
+        space.index_manager.last_commit().as_deref(),
+        Some(report.commit.as_str()),
+        "index baseline must advance to the ingest commit"
+    );
+    let status = ops::index_status(&engine, "test").unwrap();
+    assert!(!status.stale, "index must not report stale after ingest");
+    assert!(status.pages > 0, "index status must count the seeded pages");
+}
+
 #[test]
 fn ingest_dry_run_does_not_commit() {
     let dir = tempfile::tempdir().unwrap();

@@ -74,8 +74,36 @@ pub fn ingest_with_redact(
     )?;
 
     if !dry_run {
-        if let Err(e) = manager.refresh_index(wiki_name) {
-            tracing::warn!(error = %e, "incremental index update failed after ingest");
+        // The engine is its own index consumer: commits made through git2
+        // never fire the managed post-commit hook, and mount-time catch-up
+        // has already run — so if this doesn't index the admitted pages,
+        // nothing will. The outcome goes in the caller's report, not a log.
+        match manager.refresh_index(wiki_name) {
+            Ok(r)
+                if r.updated == 0
+                    && r.deleted == 0
+                    && report.pages_validated > 0
+                    && !report.commit.is_empty() =>
+            {
+                // A commit admitted pages but the incremental diff found
+                // nothing — the baseline is unusable; rebuild from the tree.
+                match manager.rebuild_index(wiki_name) {
+                    Ok(rb) => report.indexed = rb.pages_indexed,
+                    Err(e) => report.warnings.push(format!(
+                        "pages committed but not indexed ({e}) — search is stale; run wiki_index_rebuild"
+                    )),
+                }
+            }
+            Ok(r) => {
+                report.indexed = r.updated;
+                report.index_deleted = r.deleted;
+            }
+            Err(e) => match manager.rebuild_index(wiki_name) {
+                Ok(rb) => report.indexed = rb.pages_indexed,
+                Err(e2) => report.warnings.push(format!(
+                    "index update failed ({e}) and rebuild failed ({e2}) — search is stale; run wiki_index_rebuild"
+                )),
+            },
         }
 
         // Validate edge targets after index update (targets must be indexed)

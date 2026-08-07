@@ -48,6 +48,12 @@ pub struct IngestReport {
     /// Redaction reports for any files that had secrets removed.
     #[serde(default)]
     pub redacted: Vec<RedactionReport>,
+    /// Pages (re)indexed by the post-ingest index update.
+    #[serde(default)]
+    pub indexed: usize,
+    /// Index entries removed by the post-ingest index update.
+    #[serde(default)]
+    pub index_deleted: usize,
 }
 
 /// Walk `path` (file or directory), validate, optionally redact, commit, and return a report.
