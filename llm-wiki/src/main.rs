@@ -641,10 +641,11 @@ fn main() -> Result<()> {
             dry_run,
         } => {
             if dry_run {
-                let mut transports = vec!["stdio".to_string()];
-                if http.is_some() {
-                    transports.push("http".to_string());
-                }
+                let mut transports = if http.is_some() {
+                    vec!["http".to_string()]
+                } else {
+                    vec!["stdio".to_string()]
+                };
                 if acp {
                     transports.push("acp".to_string());
                 }
@@ -655,11 +656,23 @@ fn main() -> Result<()> {
                 return Ok(());
             }
 
-            let http_port = http
-                .and_then(|opt| opt.and_then(|s| s.trim_start_matches(':').parse::<u16>().ok()));
+            // --http enables the transport; the optional value overrides the
+            // config port. (Bare `--http` used to collapse to None and
+            // silently fall back to stdio-only.)
+            let http_flag = match http {
+                None => None,
+                Some(None) => Some(None),
+                Some(Some(s)) => {
+                    let port = s
+                        .trim_start_matches(':')
+                        .parse::<u16>()
+                        .map_err(|_| anyhow::anyhow!("invalid --http port: {s}"))?;
+                    Some(Some(port))
+                }
+            };
 
             let rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(llm_wiki::server::serve(&config_path, http_port, acp, watch))?;
+            rt.block_on(llm_wiki::server::serve(&config_path, http_flag, acp, watch))?;
         }
 
         // ── Stats ───────────────────────────────────────────────────────

@@ -96,7 +96,7 @@ async fn serve_http(
 /// Start the wiki server — spawns stdio, HTTP, ACP, and watcher transports as configured.
 pub async fn serve(
     config_path: &std::path::Path,
-    http_port: Option<u16>,
+    http_flag: Option<Option<u16>>,
     acp: bool,
     watch: bool,
 ) -> Result<()> {
@@ -107,16 +107,19 @@ pub async fn serve(
         let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
         let count = engine.spaces.len();
         let cfg = engine.config.serve.clone();
-        let http = http_port.is_some() || cfg.http;
-        let port = http_port.unwrap_or(cfg.http_port);
+        // Bare --http enables the transport on the config port; an
+        // explicit port overrides it.
+        let http = http_flag.is_some() || cfg.http;
+        let port = http_flag.flatten().unwrap_or(cfg.http_port);
         (count, cfg, http, port)
     };
 
-    // 2. Log startup summary
-    let mut transports = vec!["stdio".to_string()];
-    if http_enabled {
-        transports.push(format!("http :{resolved_port}"));
-    }
+    // 2. Log startup summary — http and stdio are alternatives, not a pair
+    let mut transports = if http_enabled {
+        vec![format!("http :{resolved_port}")]
+    } else {
+        vec!["stdio".to_string()]
+    };
     if acp {
         transports.push("acp".to_string());
     }
