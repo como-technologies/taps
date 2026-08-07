@@ -45,8 +45,8 @@ works, no `--project` flags. Switch back to your usual one afterwards
 with `incus project switch default`.)
 
 Then one block — launch, wait for boot, add a sudo-capable user (the
-guide's commands assume one), and bake in git so a snapshot restore
-doesn't cost a reinstall:
+guide's commands assume one), and bake in what every walk needs — git,
+nested incus, mDNS — so a snapshot restore doesn't cost a reinstall:
 
 ```sh
 # launch: nesting lets later steps run containers inside this one —
@@ -76,7 +76,25 @@ incus exec walk -- bash -c '
   sed -i "/^root:/d" /etc/subuid /etc/subgid
   echo "root:1000000:65536" | tee -a /etc/subuid /etc/subgid >/dev/null
   systemctl restart incus'
+
+# mDNS: later steps bring up web apps in here, and this is what lets
+# your host browser reach them as http://walk.local:<port>. Advertise
+# eth0 only — the nested bridge address is unreachable from outside.
+incus exec walk -- bash -c '
+  apt-get install -y avahi-daemon
+  sed -i "s/^#*allow-interfaces=.*/allow-interfaces=eth0/" /etc/avahi/avahi-daemon.conf
+  systemctl restart avahi-daemon'
 ```
+
+One check back on the **host** before snapshotting:
+
+```sh
+getent hosts walk.local   # → the container's eth0 address
+```
+
+Empty? Your host isn't resolving mDNS — standard on desktop distros,
+absent on some servers: `sudo apt-get install -y avahi-daemon libnss-mdns`
+and check again.
 
 ## Snapshot before you touch anything
 

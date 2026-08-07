@@ -60,6 +60,10 @@ run: tailwind-build
     ( cargo run -p amaker-analyze 2>&1 | awk '{print "[analyze]  " $0; fflush()}' ) &
     wait
 
+# `run`, but reachable from outside this machine/container: binds 0.0.0.0 instead of loopback
+run-exposed:
+    AUTHOR_HOST=0.0.0.0 ASSESS_HOST=0.0.0.0 ANALYZE_HOST=0.0.0.0 just run
+
 # Run the author binary only.
 run-author *ARGS: tailwind-build
     #!/usr/bin/env bash
@@ -85,7 +89,7 @@ _open-when-ready PORT URL:
         if (echo > /dev/tcp/127.0.0.1/{{PORT}}) 2>/dev/null; then
             (command -v xdg-open >/dev/null && xdg-open "{{URL}}" >/dev/null 2>&1) \
                 || (command -v open >/dev/null && open "{{URL}}" >/dev/null 2>&1) \
-                || echo "no browser opener (xdg-open/open) on PATH" >&2
+                || echo "no browser opener (xdg-open/open) on PATH — open {{URL}} yourself" >&2
             exit 0
         fi
         sleep 0.5

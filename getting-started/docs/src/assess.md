@@ -24,6 +24,13 @@ just run                    # builds, starts author/assess/analyze, opens the br
 Three services come up — author (`:3000`), respond (`:3001`), analyze
 (`:3002`) — writing to a local `./data` directory. Ctrl-C stops them all.
 
+> **In the clean room?** The container can't open your host's browser —
+> `just run` says so and keeps serving, but it binds loopback, invisible
+> from outside. Use `just run-exposed` instead (same stack, bound
+> `0.0.0.0`) and browse from your machine: <http://walk.local:3000>,
+> `:3001`, `:3002` — the mDNS baked in at
+> [Step 0](./clean-room.md#create-the-container) does the naming.
+
 > The hosted amaker instances are gated to Como's own organization —
 > as a new user you run it locally, which also keeps your material on
 > your machine.
