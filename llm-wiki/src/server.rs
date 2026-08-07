@@ -17,10 +17,18 @@ use crate::mcp::McpServer;
 
 async fn serve_stdio(server: McpServer, mut shutdown: watch::Receiver<bool>) -> Result<()> {
     let transport = rmcp::transport::io::stdio();
-    let service = server
-        .serve(transport)
-        .await
-        .map_err(|e| anyhow::anyhow!("failed to start MCP stdio server: {e}"))?;
+    // serve() blocks on the MCP initialize handshake — with no client
+    // speaking on stdin it would never resolve, so the shutdown signal
+    // must be able to cancel the wait-for-client too.
+    let service = tokio::select! {
+        s = server.serve(transport) => {
+            s.map_err(|e| anyhow::anyhow!("failed to start MCP stdio server: {e}"))?
+        }
+        _ = shutdown.changed() => {
+            tracing::info!("stdio: shutdown before a client connected");
+            return Ok(());
+        }
+    };
 
     tokio::select! {
         result = service.waiting() => {

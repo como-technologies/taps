@@ -672,7 +672,13 @@ fn main() -> Result<()> {
             };
 
             let rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(llm_wiki::server::serve(&config_path, http_flag, acp, watch))?;
+            let result = rt.block_on(llm_wiki::server::serve(&config_path, http_flag, acp, watch));
+            // The stdio transport reads stdin on tokio's blocking pool, and a
+            // tty read never returns without input or EOF — a plain Runtime
+            // drop would wait on it forever after Ctrl-C. Give teardown a
+            // moment, then abandon the stuck read and exit.
+            rt.shutdown_timeout(std::time::Duration::from_millis(500));
+            result?;
         }
 
         // ── Stats ───────────────────────────────────────────────────────
