@@ -429,6 +429,17 @@ pub enum SchemaAction {
         #[arg(long)]
         format: Option<String>,
     },
+    /// Register a type schema (idempotent; never overwrites — identical
+    /// content is a no-op, different content is a named conflict)
+    Register {
+        /// Type name (must be declared in the schema's x-wiki-types)
+        name: String,
+        /// Path to the JSON Schema file to read
+        schema_path: String,
+        /// Path to an optional Markdown body template
+        #[arg(long)]
+        template: Option<String>,
+    },
     /// Register a custom type
     Add {
         /// Type name

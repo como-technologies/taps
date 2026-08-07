@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use clap::Parser;
 
 use llm_wiki::cli::{
@@ -585,6 +585,28 @@ fn main() -> Result<()> {
                         let content = ops::schema_show(&engine, &wiki_name, &name)?;
                         println!("{content}");
                     }
+                }
+                SchemaAction::Register {
+                    name,
+                    schema_path,
+                    template,
+                } => {
+                    let schema_content = std::fs::read_to_string(&schema_path)
+                        .with_context(|| format!("failed to read {schema_path}"))?;
+                    let body_template = template
+                        .map(|p| {
+                            std::fs::read_to_string(&p)
+                                .with_context(|| format!("failed to read {p}"))
+                        })
+                        .transpose()?;
+                    let report = ops::schema_register(
+                        &engine,
+                        &wiki_name,
+                        &name,
+                        &schema_content,
+                        body_template.as_deref(),
+                    )?;
+                    println!("{}", serde_json::to_string_pretty(&report)?);
                 }
                 SchemaAction::Add { name, schema_path } => {
                     let msg = ops::schema_add(&engine, &wiki_name, &name, Path::new(&schema_path))?;

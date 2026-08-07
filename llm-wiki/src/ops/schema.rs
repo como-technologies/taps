@@ -131,18 +131,26 @@ pub fn schema_add(
         msg.push_str(&format!(", added [types.{type_name}] to wiki.toml"));
     }
 
-    // Validate index resolution, then rebuild the search index. Registering
-    // a type changes the union index schema; the existing tantivy index no
-    // longer matches it and any later rebuild would fail with "An index
-    // exists but the schema does not match". Clear the stale index and
-    // rebuild it with the new registry + schema so subsequent commands work.
+    msg.push_str(&rebuild_space_index(engine, space));
+
+    Ok(msg)
+}
+
+/// Rebuild the type registry and search index after a schema change.
+/// Registering a type changes the union index schema; the existing tantivy
+/// index no longer matches it and any later rebuild would fail with "An index
+/// exists but the schema does not match". Clear the stale index and rebuild
+/// it with the new registry + schema so subsequent commands work. Returns a
+/// human-readable outcome note.
+fn rebuild_space_index(engine: &EngineState, space: &crate::engine::SpaceContext) -> String {
     match space_builder::build_space(&space.repo_root, &engine.config.index.tokenizer) {
         Ok((new_registry, new_index_schema)) => {
             let index_path = space.index_manager.index_path().to_path_buf();
             let search_dir = index_path.join("search-index");
-            if search_dir.exists() {
-                std::fs::remove_dir_all(&search_dir)
-                    .with_context(|| format!("failed to clear {}", search_dir.display()))?;
+            if search_dir.exists()
+                && let Err(e) = std::fs::remove_dir_all(&search_dir)
+            {
+                return format!(", failed to clear stale index: {e}");
             }
             // Fresh manager: the mounted one still holds a reader opened on
             // the old schema, which must not be reused for the new index.
@@ -153,16 +161,151 @@ pub fn schema_add(
                 &new_index_schema,
                 &new_registry,
             ) {
-                Ok(_) => msg.push_str(", search index rebuilt"),
-                Err(e) => msg.push_str(&format!(
+                Ok(_) => ", search index rebuilt".to_string(),
+                Err(e) => format!(
                     ", stale search index cleared (rebuild failed: {e}); it will be rebuilt on the next command"
-                )),
+                ),
             }
         }
-        Err(e) => msg.push_str(&format!("\nWARNING: index resolution failed: {e}")),
+        Err(e) => format!("\nWARNING: index resolution failed: {e}"),
+    }
+}
+
+/// Report from `schema register`.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SchemaRegisterReport {
+    /// The registered type name.
+    pub type_name: String,
+    /// `"registered"` (new) or `"unchanged"` (identical content already present).
+    pub status: String,
+    /// `x-owner` declared in the schema, if any — ownership as data.
+    pub owner: Option<String>,
+    /// Human-readable outcome notes (commit, index rebuild).
+    pub notes: Vec<String>,
+}
+
+/// Register a type schema carried over the transport: validate it, admit it
+/// idempotently, never overwrite. Identical content → `unchanged`; same type
+/// with different content → a hard named conflict (schema evolution is an
+/// explicit future surface, not a silent overwrite).
+pub fn schema_register(
+    engine: &EngineState,
+    wiki_name: &str,
+    type_name: &str,
+    schema_content: &str,
+    template: Option<&str>,
+) -> Result<SchemaRegisterReport> {
+    let space = engine.space(wiki_name)?;
+
+    // The type name becomes a filename — keep it slug-shaped.
+    if !type_name
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        || type_name.is_empty()
+        || type_name.starts_with('-')
+    {
+        bail!("invalid type name '{type_name}': lowercase letters, digits, and '-' only");
     }
 
-    Ok(msg)
+    let schema_value: serde_json::Value =
+        serde_json::from_str(schema_content).context("schema is not valid JSON")?;
+    jsonschema::Validator::new(&schema_value)
+        .map_err(|e| anyhow::anyhow!("schema is not a valid JSON Schema: {e}"))?;
+
+    // The schema must self-declare the type it defines.
+    let declares = schema_value
+        .get("x-wiki-types")
+        .and_then(|v| v.as_object())
+        .map(|obj| obj.contains_key(type_name))
+        .unwrap_or(false);
+    if !declares {
+        bail!("schema does not declare '{type_name}' in x-wiki-types");
+    }
+
+    let owner = schema_value
+        .get("x-owner")
+        .and_then(|v| v.as_str())
+        .map(str::to_string);
+
+    // Idempotence / conflict: compare against the effective existing schema.
+    if space.type_registry.is_known(type_name) {
+        let existing = schema_show(engine, wiki_name, type_name)?;
+        let existing_value: serde_json::Value = serde_json::from_str(&existing)
+            .with_context(|| format!("existing schema for '{type_name}' is not valid JSON"))?;
+        let template_matches = match template {
+            None => true,
+            Some(t) => {
+                let tmpl_path = space
+                    .repo_root
+                    .join("schemas")
+                    .join(format!("{type_name}.md"));
+                std::fs::read_to_string(&tmpl_path)
+                    .map(|c| c == t)
+                    .unwrap_or(false)
+            }
+        };
+        if existing_value == schema_value && template_matches {
+            return Ok(SchemaRegisterReport {
+                type_name: type_name.to_string(),
+                status: "unchanged".to_string(),
+                owner,
+                notes: vec![],
+            });
+        }
+        let existing_owner = existing_value
+            .get("x-owner")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unowned");
+        bail!(
+            "type '{type_name}' is already registered with different content \
+             (existing owner: {existing_owner}, submitted owner: {}) — \
+             refusing to overwrite; schema evolution is an explicit operation, not a re-register",
+            owner.as_deref().unwrap_or("unowned")
+        );
+    }
+
+    // New type: write schema (+ template), commit, rebuild.
+    let schemas_dir = space.repo_root.join("schemas");
+    std::fs::create_dir_all(&schemas_dir)
+        .with_context(|| format!("failed to create {}", schemas_dir.display()))?;
+    let schema_path = schemas_dir.join(format!("{type_name}.json"));
+    std::fs::write(&schema_path, schema_content)
+        .with_context(|| format!("failed to write {}", schema_path.display()))?;
+    let mut committed_paths = vec![schema_path.clone()];
+    if let Some(t) = template {
+        let tmpl_path = schemas_dir.join(format!("{type_name}.md"));
+        std::fs::write(&tmpl_path, t)
+            .with_context(|| format!("failed to write {}", tmpl_path.display()))?;
+        committed_paths.push(tmpl_path);
+    }
+
+    let mut notes = Vec::new();
+    let resolved = space.resolved_config(&engine.config);
+    if resolved.ingest.auto_commit {
+        let path_refs: Vec<&Path> = committed_paths.iter().map(|p| p.as_path()).collect();
+        let msg = format!(
+            "schema register: {type_name} (owner: {})",
+            owner.as_deref().unwrap_or("unowned")
+        );
+        match git::commit_paths(&space.repo_root, &path_refs, &msg) {
+            Ok(hash) if !hash.is_empty() => notes.push(format!("committed {hash}")),
+            Ok(_) => {}
+            Err(e) => notes.push(format!("commit failed: {e}")),
+        }
+    }
+
+    notes.push(
+        rebuild_space_index(engine, space)
+            .trim_start_matches(", ")
+            .to_string(),
+    );
+
+    Ok(SchemaRegisterReport {
+        type_name: type_name.to_string(),
+        status: "registered".to_string(),
+        owner,
+        notes,
+    })
 }
 
 /// Summary of a `schema remove` operation.

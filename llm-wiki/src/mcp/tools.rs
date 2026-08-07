@@ -329,9 +329,11 @@ pub fn tool_list() -> Vec<Tool> {
             "Inspect and manage type schemas",
             schema(
                 json!({
-                    "action": str_prop("Action: list, show, add, remove, validate"),
-                    "type": opt_str("Type name (for show/add/remove/validate)"),
+                    "action": str_prop("Action: list, show, register, add, remove, validate"),
+                    "type": opt_str("Type name (for show/register/add/remove/validate)"),
                     "template": opt_bool("Return frontmatter template instead of schema (for show)"),
+                    "schema": opt_str("JSON Schema content (for register — must declare the type in x-wiki-types; x-owner records the owning tool)"),
+                    "body_template": opt_str("Markdown body template content (for register, optional)"),
                     "schema_path": opt_str("Path to schema file (for add)"),
                     "delete": opt_bool("Also delete schema file (for remove)"),
                     "delete_pages": opt_bool("Also delete page files from disk (for remove)"),

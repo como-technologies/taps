@@ -553,6 +553,22 @@ pub fn handle_schema(server: &McpServer, args: &Map<String, Value>) -> ToolHandl
                 ok_text(content)
             }
         }
+        "register" => {
+            let type_name = arg_str(args, "type").ok_or("type is required for register")?;
+            let schema_content =
+                arg_str(args, "schema").ok_or("schema is required for register")?;
+            let body_template = arg_str(args, "body_template");
+            let report = ops::schema_register(
+                &engine,
+                &wiki_name,
+                &type_name,
+                &schema_content,
+                body_template.as_deref(),
+            )
+            .map_err(|e| format!("{e}"))?;
+            let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
+            ok_text(s)
+        }
         "add" => {
             let type_name = arg_str(args, "type").ok_or("type is required for add")?;
             let schema_path =

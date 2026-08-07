@@ -121,3 +121,133 @@ fn schema_remove_unknown_type_is_noop() {
     assert!(!report.wiki_toml_updated);
     assert!(!report.schema_file_deleted);
 }
+
+// ── schema register (taps#65: tools bring their own vocabulary) ───────────────
+
+const ASSESSMENT_SCHEMA: &str = r#"{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Assessment type",
+  "type": "object",
+  "required": ["title", "type", "status"],
+  "properties": {
+    "title": { "type": "string" },
+    "type": { "type": "string" },
+    "status": { "type": "string" }
+  },
+  "x-wiki-types": { "assessment": "A published assessment definition" },
+  "x-owner": "amaker"
+}"#;
+
+#[test]
+fn schema_register_new_type_with_owner() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let report = ops::schema_register(
+        &engine,
+        "test",
+        "assessment",
+        ASSESSMENT_SCHEMA,
+        Some("Body template.\n"),
+    )
+    .unwrap();
+    assert_eq!(report.status, "registered");
+    assert_eq!(report.owner.as_deref(), Some("amaker"));
+
+    let space = engine.space("test").unwrap();
+    assert!(space.repo_root.join("schemas/assessment.json").is_file());
+    assert!(space.repo_root.join("schemas/assessment.md").is_file());
+}
+
+#[test]
+fn schema_register_identical_is_unchanged() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    ops::schema_register(&engine, "test", "assessment", ASSESSMENT_SCHEMA, None).unwrap();
+    // Re-mount so the registry knows the new type, as a fresh process would.
+    drop(engine);
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let report =
+        ops::schema_register(&engine, "test", "assessment", ASSESSMENT_SCHEMA, None).unwrap();
+    assert_eq!(report.status, "unchanged");
+}
+
+#[test]
+fn schema_register_different_content_is_conflict() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    ops::schema_register(&engine, "test", "assessment", ASSESSMENT_SCHEMA, None).unwrap();
+    drop(engine);
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let altered = ASSESSMENT_SCHEMA.replace("A published assessment definition", "Different");
+    let err = ops::schema_register(&engine, "test", "assessment", &altered, None).unwrap_err();
+    let msg = format!("{err}");
+    assert!(msg.contains("different content"), "got: {msg}");
+    assert!(msg.contains("amaker"), "conflict names the owners: {msg}");
+}
+
+#[test]
+fn schema_register_conflicts_with_engine_class() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    // `concept` is engine-owned and stamped at create — a different schema
+    // under that name must be refused, never overwritten.
+    let hijack = ASSESSMENT_SCHEMA.replace("assessment", "concept");
+    let err = ops::schema_register(&engine, "test", "concept", &hijack, None).unwrap_err();
+    assert!(format!("{err}").contains("different content"));
+}
+
+#[test]
+fn schema_register_rejects_undeclared_type() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let err =
+        ops::schema_register(&engine, "test", "other-name", ASSESSMENT_SCHEMA, None).unwrap_err();
+    assert!(format!("{err}").contains("x-wiki-types"));
+}
+
+#[test]
+fn schema_register_rejects_unsafe_type_name() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    for bad in ["../evil", "UPPER", "has space", "", "-leading"] {
+        let err = ops::schema_register(&engine, "test", bad, ASSESSMENT_SCHEMA, None).unwrap_err();
+        assert!(
+            format!("{err}").contains("invalid type name"),
+            "'{bad}' should be rejected"
+        );
+    }
+}
+
+#[test]
+fn schema_register_rejects_invalid_json_schema() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let err =
+        ops::schema_register(&engine, "test", "assessment", "not json at all", None).unwrap_err();
+    assert!(format!("{err}").contains("not valid JSON"));
+}
