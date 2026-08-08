@@ -14,6 +14,36 @@ of the wall (in `~/taps`); watch them enter the only way anything does.
 In a hurry, or a purist? Skip to [Step 4](./assess.md) — nothing later
 depends on the starter set.
 
+## Grant the session its reach
+
+The seed asks your session to read files from `~/taps` — your side of
+the wall — and to drive the appliance's tools without stopping between
+pages. The kit's shipped settings are deliberately narrow; a tutorial
+rig doesn't have to be. Pre-grant the walk's whole surface — this
+overlay is yours (`settings.local.json`), the kit's own settings stay
+untouched:
+
+```sh
+cat > ~/kb-workspace/.claude/settings.local.json <<'EOF'
+{
+  "enableAllProjectMcpServers": true,
+  "permissions": {
+    "additionalDirectories": ["~/taps"],
+    "allow": ["mcp__kb"]
+  }
+}
+EOF
+```
+
+`additionalDirectories` opens `~/taps` to the session (the starter set
+lives there); `mcp__kb` trusts every tool the appliance serves — the
+content tools the kit already lists, and the schema operations later
+steps lean on. On a production workspace you'd grant narrowly and
+answer prompts as they come; this rig is a throwaway, and pre-granting
+makes every session in the walk paste-and-go. (Prefer the prompts?
+Skip this block — the page still works, you'll just approve as you
+watch.)
+
 ## Seed
 
 Paste this into your workspace session:
@@ -28,8 +58,8 @@ anything you introduced until it's clean. This is a seed, not a
 rewrite — don't change the pages' content.
 ```
 
-(Your harness may ask before reading `~/taps` — that's your side of the
-wall, so approving is fine.)
+(Skipped the grant block? Your harness will ask before reading
+`~/taps` — that's your side of the wall, so approving is fine.)
 
 Watch what happens: every page passes the same admission gate your own
 writes will face — strict frontmatter validation, typed schemas, link
