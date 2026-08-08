@@ -116,6 +116,7 @@ pub fn run_lint(
             wiki_root,
             active_rules.contains("broken-cross-wiki-link"),
             &mounted,
+            &space.type_registry,
         )?);
     }
     if active_rules.contains("missing-fields") {
@@ -360,15 +361,22 @@ fn rule_broken_link(
     wiki_root: &Path,
     check_cross_wiki: bool,
     mounted_wiki_names: &HashSet<String>,
+    registry: &SpaceTypeRegistry,
 ) -> Result<Vec<LintFinding>> {
     let f_slug = is.field("slug");
-    let link_fields = [
+    // The same field set the orphan rule credits: built-in link fields
+    // plus every registered type's `x-graph-edges` declarations. If a
+    // field can un-orphan a target, its targets must resolve.
+    let mut link_fields: BTreeSet<&str> = [
         "body_links",
         "sources",
         "concepts",
         "document_refs",
         "superseded_by",
-    ];
+    ]
+    .into_iter()
+    .collect();
+    link_fields.extend(registry.all_edge_fields());
 
     let all_addrs = searcher.search(&AllQuery, &tantivy::collector::DocSetCollector)?;
 

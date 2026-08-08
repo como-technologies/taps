@@ -23,7 +23,7 @@ review workflow.
 
 | Rule ID | Severity | What it catches |
 |---------|----------|-----------------|
-| `broken-link` | error | A slug or stable page id in `body_links` or frontmatter edge fields (`sources`, `concepts`, `superseded_by`) does not exist in the index |
+| `broken-link` | error | A slug or stable page id in `body_links` or frontmatter edge fields (built-ins like `sources`, `concepts`, `superseded_by`, plus every registered `x-graph-edges` field, e.g. `relates_to`) does not exist in the index |
 | `missing-fields` | error | Required frontmatter fields (per type schema) are absent |
 | `unknown-type` | error | The `type` field value is not registered in the type registry |
 | `duplicate-id` | error | Two or more pages declare the same stable `id` — resolution needs uniqueness the filesystem no longer guarantees |

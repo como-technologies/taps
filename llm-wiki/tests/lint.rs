@@ -267,6 +267,61 @@ fn broken_link_clean_when_all_slugs_exist() {
     );
 }
 
+#[test]
+fn broken_link_detects_missing_relates_to_target() {
+    let dir = tempfile::tempdir().unwrap();
+    let wiki_root = setup_repo(dir.path());
+
+    // relates_to is an x-graph-edges field: it credits its target against
+    // the orphan rule, so a dangling one must fail broken-link too.
+    write_page(
+        &wiki_root,
+        "glossary/term.md",
+        "---\ntitle: \"Term\"\ntype: glossary-entry\nstatus: active\nsummary: \"x\"\nlast_updated: 2026-01-01T00:00:00Z\nrelates_to:\n  - glossary/does-not-exist\n---\n\nBody.\n",
+    );
+
+    let engine = build_engine(dir.path(), &wiki_root);
+    let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
+    let findings = findings_for_rule(&report.findings, "broken-link");
+
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.slug == "glossary/term" && f.message.contains("relates_to")),
+        "dangling relates_to should be flagged by broken-link: {findings:?}"
+    );
+    assert!(
+        findings.iter().all(|f| f.severity == Severity::Error),
+        "broken frontmatter references are errors, same as body links"
+    );
+}
+
+#[test]
+fn broken_link_clean_when_relates_to_target_exists() {
+    let dir = tempfile::tempdir().unwrap();
+    let wiki_root = setup_repo(dir.path());
+
+    write_page(
+        &wiki_root,
+        "glossary/term.md",
+        "---\ntitle: \"Term\"\ntype: glossary-entry\nstatus: active\nsummary: \"x\"\nlast_updated: 2026-01-01T00:00:00Z\nrelates_to:\n  - glossary/other\n---\n\nBody.\n",
+    );
+    write_page(
+        &wiki_root,
+        "glossary/other.md",
+        "---\ntitle: \"Other\"\ntype: glossary-entry\nstatus: active\nsummary: \"x\"\nlast_updated: 2026-01-01T00:00:00Z\n---\n\nExists.\n",
+    );
+
+    let engine = build_engine(dir.path(), &wiki_root);
+    let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
+    let findings = findings_for_rule(&report.findings, "broken-link");
+
+    assert!(
+        findings.is_empty(),
+        "resolving relates_to should not be flagged: {findings:?}"
+    );
+}
+
 // ── unknown-type ──────────────────────────────────────────────────────────────
 
 #[test]
