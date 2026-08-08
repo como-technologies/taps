@@ -54,6 +54,35 @@ reads it. No tool ever touches a space's filesystem — the transport is
 the only door, and everything you've met so far walks through the same
 one.
 
+## Hand your session the tool
+
+The three web apps are *your* seats — browser, human judgment. Your
+session gets amaker another way: the `amaker` binary you built in
+Step 1 serves its whole command surface over MCP (`amaker mcp`), so the
+agent drives the same commands a terminal would — validate, import,
+status, publish — as typed tools, never through a shell. Add it beside
+`kb`:
+
+```sh
+KB_ADDR=$(incus list kb -c4 -f csv | cut -d" " -f1)
+cat > ~/kb-workspace/.mcp.json <<EOF
+{
+  "mcpServers": {
+    "kb": { "type": "http", "url": "http://$KB_ADDR:8080/mcp" },
+    "amaker": {
+      "type": "stdio",
+      "command": "bash",
+      "args": ["-lc", "cd ~/taps/assessments && exec amaker mcp"]
+    }
+  }
+}
+EOF
+```
+
+(The `cd` matters: the server resolves `.env` — your API key, the
+`KB_URL`/`KB_WIKI` pair — and its `./data` directory from where it
+runs, exactly like the terminal commands do.)
+
 ## Grant the session its reach
 
 From here on, your sessions read files on your side of the wall
@@ -69,14 +98,15 @@ cat > ~/kb-workspace/.claude/settings.local.json <<'EOF'
   "enableAllProjectMcpServers": true,
   "permissions": {
     "additionalDirectories": ["~/taps"],
-    "allow": ["mcp__kb"]
+    "allow": ["mcp__kb", "mcp__amaker"]
   }
 }
 EOF
 ```
 
-`additionalDirectories` opens `~/taps` to the session; `mcp__kb` trusts
-every tool the appliance serves. On a production workspace you'd grant
+`additionalDirectories` opens `~/taps` to the session; the `mcp__`
+entries trust every tool the appliance and amaker serve. On a
+production workspace you'd grant
 narrowly and answer prompts as they come; this rig is a throwaway, and
 pre-granting makes every session in the walk paste-and-go. (Prefer the
 prompts? Skip this block — the pages still work, you'll just approve as
@@ -94,10 +124,9 @@ amaker assessment file at ~/assessment.yaml. Ground it in the myproject
 space: search and read what we know before drafting. Shape: 2-3
 domains, each with 1-2 practices, each practice with 2-4 yes/no
 questions — set each question's polarity, and give negative findings a
-remediation and roles. Then, from ~/taps/assessments, run
-`amaker validate ~/assessment.yaml` and fix what it reports until the
-file validates, and finish with `amaker import ~/assessment.yaml` —
-tell me the project_id it prints.
+remediation and roles. Then check it with amaker's validate tool and
+fix what it reports until the file validates, and finish with amaker's
+import tool — tell me the project_id it reports.
 ```
 
 `import` is the headless authoring door: your drafted file becomes a
@@ -116,8 +145,10 @@ that's the one seat in this loop that stays human on purpose.
 ## Analyze and publish
 
 The analyze app (`:3002`) shows the scorecard, gaps, and roadmap as you
-answer. When it reflects reality, land the result in your space —
-either ask your workspace session to run it, or do it yourself:
+answer. When it reflects reality, land the result in your space — ask
+your workspace session (amaker's `status` tool tells it your response
+is in — `response.complete` — and `publish` lands it), or do it
+yourself from a terminal:
 
 ```sh
 cd ~/taps/assessments

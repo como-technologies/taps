@@ -12,7 +12,10 @@ use crate::error::AppError;
 use crate::models::Assessment;
 
 /// Supported data formats for import/export.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "lowercase")]
 pub enum DataFormat {
     Json,
     Yaml,

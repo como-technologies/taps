@@ -16,6 +16,8 @@ path = "src/main.rs"
 amaker-core = { path = "../amaker-core" }
 como-kb-client = { path = "../../../kb-client" }
 clap.workspace = true
+rmcp = { workspace = true }
+schemars = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }

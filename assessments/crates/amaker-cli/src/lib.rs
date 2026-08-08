@@ -1,11 +1,16 @@
 //! Headless CLI for amaker — `author`, `export`, `validate`, `schema`,
-//! `publish`.
+//! `import`, `publish`, `list`, `status`, and `mcp`.
 //!
-//! `export`, `validate`, `schema`, and `publish` never construct an AI
-//! provider, so they need no API key — `export` and `publish` only need
-//! `DATA_DIR` (default `./data`); `publish` additionally needs `KB_URL`.
-//! `author` builds a complete assessment from a brief via the configured
-//! provider; `AI_PROVIDER=ollama` runs fully local with no key.
+//! The command surface is defined once, in [`surface`]: each command's
+//! parameters derive both `clap::Args` and `schemars::JsonSchema`, so the
+//! terminal (`--help`), automation (argv + JSON output), and agents
+//! (`amaker mcp`, see [`mcp`]) describe and drive the same commands. The
+//! web apps are the human seats; this binary is every other caller's door.
+//!
+//! Apart from `author` (which builds an assessment from a brief via the
+//! configured provider; `AI_PROVIDER=ollama` runs fully local), no command
+//! constructs an AI provider or needs a key — only `DATA_DIR` (default
+//! `./data`), plus `KB_URL` for `publish`.
 //!
 //! `export` serializes through `ExportService::to_data` — the same path the
 //! web route uses — so the two are byte-identical by construction; `export`
@@ -20,7 +25,13 @@ use amaker_core::config;
 use amaker_core::models::{Assessment, ProjectId};
 use amaker_core::services::{DataFormat, ExportService, StorageService};
 
+pub mod mcp;
 pub mod publish;
+pub mod surface;
+
+use surface::{
+    ExportParams, ImportParams, PublishParams, SchemaParams, StatusParams, ValidateParams,
+};
 
 /// AI-assisted assessment authoring: web app + headless CLI.
 #[derive(Parser, Debug)]
@@ -43,51 +54,40 @@ pub enum OutputFormat {
 #[derive(Subcommand, Debug)]
 pub enum Command {
     /// Export a project's assessment (reads DATA_DIR, default ./data)
-    Export {
-        /// Project ID (UUID) under DATA_DIR/projects/
-        project_id: ProjectId,
-        /// Output format: yaml, json, or toml
-        #[arg(long, default_value = "yaml", value_parser = parse_data_format)]
-        format: DataFormat,
-        /// Output file (stdout when omitted)
-        #[arg(long)]
-        out: Option<PathBuf>,
-    },
+    Export(ExportParams),
     /// Validate an assessment file against the JSON Schema
     Validate {
-        /// Assessment file; format inferred from extension (.yaml/.yml/.json/.toml)
-        file: PathBuf,
+        #[command(flatten)]
+        params: ValidateParams,
         /// Output format: `human` (default) or `json`
         #[arg(short = 'o', long = "output", value_enum, default_value_t = OutputFormat::Human)]
         output: OutputFormat,
     },
     /// Write the assessment JSON Schema
-    Schema {
-        /// Output file (stdout when omitted)
-        #[arg(long)]
-        out: Option<PathBuf>,
-    },
+    Schema(SchemaParams),
     /// Import an assessment file as a new project with a published version —
     /// the headless authoring door (validate → import → respondents answer)
-    Import {
-        /// Assessment file; format inferred from extension (.yaml/.yml/.json/.toml)
-        file: PathBuf,
-        /// Project name (default: the assessment's name)
-        #[arg(long)]
-        name: Option<String>,
-        /// Published version name
-        #[arg(long, default_value = "v1")]
-        version: String,
-    },
+    Import(ImportParams),
     /// Publish a project's assessment + analysis to the KB as amaker-owned
     /// pages (needs KB_URL; provider-free like export)
-    Publish {
-        /// Project ID (UUID) under DATA_DIR/projects/
-        project_id: ProjectId,
-        /// Target space name (overrides KB_WIKI)
-        #[arg(long)]
-        wiki: Option<String>,
+    Publish(PublishParams),
+    /// List every project with its latest published version
+    List {
+        /// Output format: `human` (default) or `json`
+        #[arg(short = 'o', long = "output", value_enum, default_value_t = OutputFormat::Human)]
+        output: OutputFormat,
     },
+    /// Show a project's published versions and the respondent's progress
+    Status {
+        #[command(flatten)]
+        params: StatusParams,
+        /// Output format: `human` (default) or `json`
+        #[arg(short = 'o', long = "output", value_enum, default_value_t = OutputFormat::Human)]
+        output: OutputFormat,
+    },
+    /// Serve this same command surface to agents over MCP stdio (run with
+    /// cwd at the amaker checkout so .env and ./data resolve)
+    Mcp,
     /// Author a complete assessment from a brief, headlessly (needs an AI
     /// provider: AI_PROVIDER=ollama runs fully local)
     Author {
@@ -113,16 +113,18 @@ pub enum Command {
 /// Dispatch a parsed [`Cli`] invocation.
 pub async fn run(cli: Cli) -> anyhow::Result<()> {
     match cli.command {
-        Command::Export {
-            project_id,
-            format,
-            out,
-        } => {
+        Command::Export(params) => {
             dotenvy::dotenv().ok();
-            export_cmd(&data_dir_from_env(), project_id, format, out.as_deref()).await
+            export_cmd(
+                &data_dir_from_env(),
+                params.project_id,
+                params.format,
+                params.out.as_deref(),
+            )
+            .await
         }
-        Command::Validate { file, output } => {
-            let assessment = validate_cmd(&file)?;
+        Command::Validate { params, output } => {
+            let assessment = validate_cmd(&params.file)?;
             match output {
                 OutputFormat::Human => println!(
                     "valid: '{}' — {} domains, {} practices, {} questions",
@@ -135,46 +137,77 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
             }
             Ok(())
         }
-        Command::Schema { out } => schema_cmd(out.as_deref()),
-        Command::Import {
-            file,
-            name,
-            version,
-        } => {
+        Command::Schema(params) => schema_cmd(params.out.as_deref()),
+        Command::Import(params) => {
             dotenvy::dotenv().ok();
-            let assessment = validate_cmd(&file)?;
-            let storage = fs_storage(data_dir_from_env());
-            storage.init().await?;
-            let project = amaker_core::models::Project::new(
-                name.unwrap_or_else(|| assessment.name.clone()),
-                None,
-            );
-            storage.save_project(&project).await?;
-            // Store as YAML regardless of input format — the storage layer's
-            // one representation (same normalization the web app performs).
-            let yaml = ExportService::to_data(&assessment, DataFormat::Yaml)?;
-            storage.save_assessment_yaml(project.id, &yaml).await?;
-            storage.publish_version(project.id, &version, None).await?;
-            println!(
-                "{}",
-                serde_json::json!({
-                    "project_id": project.id,
-                    "name": project.name,
-                    "version": version,
-                    "domains": assessment.domain_count(),
-                    "practices": assessment.practice_count(),
-                    "questions": assessment.question_count(),
-                })
-            );
+            let report = surface::import_core(&data_dir_from_env(), &params).await?;
+            println!("{report}");
             Ok(())
         }
-        Command::Publish { project_id, wiki } => {
+        Command::Publish(params) => {
             dotenvy::dotenv().ok();
-            let storage = fs_storage(data_dir_from_env());
-            storage.init().await?;
-            let report = publish::publish_cmd(storage, project_id, wiki).await?;
+            let report = surface::publish_core(&data_dir_from_env(), &params).await?;
             println!("{}", serde_json::to_string_pretty(&report)?);
             Ok(())
+        }
+        Command::List { output } => {
+            dotenvy::dotenv().ok();
+            let report = surface::list_core(&data_dir_from_env()).await?;
+            match output {
+                OutputFormat::Human => {
+                    let empty = Vec::new();
+                    let projects = report["projects"].as_array().unwrap_or(&empty);
+                    if projects.is_empty() {
+                        println!("no projects under DATA_DIR");
+                    }
+                    for p in projects {
+                        println!(
+                            "{}  '{}'  latest={}",
+                            p["project_id"].as_str().unwrap_or("?"),
+                            p["name"].as_str().unwrap_or("?"),
+                            p["latest_version"]["name"].as_str().unwrap_or("none"),
+                        );
+                    }
+                }
+                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+            }
+            Ok(())
+        }
+        Command::Status { params, output } => {
+            dotenvy::dotenv().ok();
+            let report = surface::status_core(&data_dir_from_env(), &params).await?;
+            match output {
+                OutputFormat::Human => {
+                    let r = &report["response"];
+                    let response = if r.is_null() {
+                        "no response yet".to_string()
+                    } else {
+                        format!(
+                            "response {}/{} answered on {}{}",
+                            r["answered"],
+                            r["total"],
+                            r["version"].as_str().unwrap_or("?"),
+                            if r["complete"].as_bool().unwrap_or(false) {
+                                " — complete"
+                            } else {
+                                ""
+                            },
+                        )
+                    };
+                    println!(
+                        "'{}'  versions={}  {}",
+                        report["name"].as_str().unwrap_or("?"),
+                        report["versions"].as_array().map(Vec::len).unwrap_or(0),
+                        response,
+                    );
+                }
+                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+            }
+            Ok(())
+        }
+        Command::Mcp => {
+            dotenvy::dotenv().ok();
+            mcp::serve(data_dir_from_env()).await
         }
         Command::Author {
             brief,
@@ -294,13 +327,13 @@ pub async fn author_cmd(
 }
 
 /// `DATA_DIR` with the same default the web app's `Config` uses.
-fn data_dir_from_env() -> PathBuf {
+pub(crate) fn data_dir_from_env() -> PathBuf {
     PathBuf::from(std::env::var("DATA_DIR").unwrap_or_else(|_| "./data".to_string()))
 }
 
 /// Build a filesystem-backed `StorageService` rooted at `dir` (the CLI's
 /// `DATA_DIR`). Local-store construction is effectively infallible.
-fn fs_storage(dir: impl AsRef<Path>) -> StorageService {
+pub(crate) fn fs_storage(dir: impl AsRef<Path>) -> StorageService {
     let store = amaker_core::build_store(&amaker_core::filesystem(dir))
         .expect("build local filesystem store");
     StorageService::new(store)
@@ -309,7 +342,7 @@ fn fs_storage(dir: impl AsRef<Path>) -> StorageService {
 /// Load a stored project's assessment and serialize it — the CLI half of the
 /// shared export path (the web route uses `ExportService::to_data` too, so the
 /// output is byte-identical by construction).
-async fn export_project(
+pub(crate) async fn export_project(
     storage: &StorageService,
     project_id: ProjectId,
     format: DataFormat,
@@ -333,7 +366,7 @@ fn json_schema_pretty() -> String {
 }
 
 /// Parse a `DataFormat` for clap (origin's `DataFormat` isn't a `ValueEnum`).
-fn parse_data_format(s: &str) -> Result<DataFormat, String> {
+pub(crate) fn parse_data_format(s: &str) -> Result<DataFormat, String> {
     DataFormat::from_str(s).ok_or_else(|| format!("expected one of yaml|json|toml, got '{s}'"))
 }
 
@@ -464,31 +497,26 @@ mod tests {
             "out.json",
         ])
         .unwrap();
-        let Command::Export {
-            project_id,
-            format,
-            out,
-        } = cli.command
-        else {
+        let Command::Export(p) = cli.command else {
             panic!("expected export command");
         };
         assert_eq!(
-            project_id.to_string(),
+            p.project_id.to_string(),
             "550e8400-e29b-41d4-a716-446655440000"
         );
-        assert_eq!(format, DataFormat::Json);
-        assert_eq!(out.as_deref(), Some(std::path::Path::new("out.json")));
+        assert_eq!(p.format, DataFormat::Json);
+        assert_eq!(p.out.as_deref(), Some(std::path::Path::new("out.json")));
     }
 
     #[test]
     fn export_format_defaults_to_yaml_and_out_to_stdout() {
         let cli = Cli::try_parse_from(["amaker", "export", "550e8400-e29b-41d4-a716-446655440000"])
             .unwrap();
-        let Command::Export { format, out, .. } = cli.command else {
+        let Command::Export(p) = cli.command else {
             panic!("expected export command");
         };
-        assert_eq!(format, DataFormat::Yaml);
-        assert_eq!(out, None);
+        assert_eq!(p.format, DataFormat::Yaml);
+        assert_eq!(p.out, None);
     }
 
     #[test]
@@ -509,10 +537,10 @@ mod tests {
     #[test]
     fn validate_takes_a_file_and_defaults_to_human_output() {
         let cli = Cli::try_parse_from(["amaker", "validate", "assessment.yaml"]).unwrap();
-        let Command::Validate { file, output } = cli.command else {
+        let Command::Validate { params, output } = cli.command else {
             panic!("expected validate command");
         };
-        assert_eq!(file, std::path::PathBuf::from("assessment.yaml"));
+        assert_eq!(params.file, std::path::PathBuf::from("assessment.yaml"));
         assert_eq!(output, OutputFormat::Human);
     }
 
@@ -532,16 +560,16 @@ mod tests {
     #[test]
     fn schema_out_is_optional() {
         let cli = Cli::try_parse_from(["amaker", "schema"]).unwrap();
-        let Command::Schema { out } = cli.command else {
+        let Command::Schema(p) = cli.command else {
             panic!("expected schema command");
         };
-        assert_eq!(out, None);
+        assert_eq!(p.out, None);
 
         let cli = Cli::try_parse_from(["amaker", "schema", "--out", "schema.json"]).unwrap();
-        let Command::Schema { out } = cli.command else {
+        let Command::Schema(p) = cli.command else {
             panic!("expected schema command");
         };
-        assert_eq!(out, Some(std::path::PathBuf::from("schema.json")));
+        assert_eq!(p.out, Some(std::path::PathBuf::from("schema.json")));
     }
 
     // ===== Behavior of the headless commands =====
@@ -987,6 +1015,78 @@ domains:
         assert!(
             chain.contains("authoring failed"),
             "stderr must be actionable: {chain}"
+        );
+    }
+
+    // ===== the shared surface: list / status / mcp =====
+
+    #[tokio::test]
+    async fn list_core_reports_projects_with_latest_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let id = seed_project(dir.path()).await;
+        let storage = fs_storage(dir.path());
+        storage.publish_version(id, "v1", None).await.unwrap();
+
+        let report = surface::list_core(dir.path()).await.unwrap();
+        let projects = report["projects"].as_array().unwrap();
+        assert_eq!(projects.len(), 1);
+        assert_eq!(projects[0]["project_id"], serde_json::json!(id));
+        assert_eq!(
+            projects[0]["latest_version"]["name"],
+            serde_json::json!("v1")
+        );
+    }
+
+    #[tokio::test]
+    async fn status_core_tracks_the_respondent_to_completion() {
+        use amaker_core::models::{Answer, AnswerValue};
+        use amaker_core::services::ResponseService;
+
+        let dir = tempfile::tempdir().unwrap();
+        let id = seed_project(dir.path()).await;
+        let storage = fs_storage(dir.path());
+        storage.publish_version(id, "v1", None).await.unwrap();
+
+        // Before anyone answers: versions visible, response null.
+        let params = surface::StatusParams { project_id: id };
+        let report = surface::status_core(dir.path(), &params).await.unwrap();
+        assert_eq!(report["versions"].as_array().unwrap().len(), 1);
+        assert!(report["response"].is_null());
+
+        // The primary respondent answers the seeded assessment's one question.
+        let responses = ResponseService::new(storage.clone());
+        let response = responses.ensure_primary(id).await.unwrap();
+        let question_id = "44444444-4444-4444-8444-444444444444".parse().unwrap();
+        responses
+            .upsert_answer(id, question_id, Answer::new(AnswerValue::Yes))
+            .await
+            .unwrap();
+        drop(response);
+
+        let report = surface::status_core(dir.path(), &params).await.unwrap();
+        let r = &report["response"];
+        assert_eq!(r["answered"], serde_json::json!(1));
+        assert_eq!(r["total"], serde_json::json!(1));
+        assert_eq!(
+            r["complete"],
+            serde_json::json!(true),
+            "all questions answered must read as complete: {r}"
+        );
+    }
+
+    /// The MCP surface serves exactly the commands the clap surface
+    /// defines for automation — one definition, both doors. `author`
+    /// (interactive, provider-bound) and `mcp` itself are deliberately
+    /// CLI-only.
+    #[test]
+    fn mcp_surface_serves_the_command_surface() {
+        let mut names = crate::mcp::AmakerServer::tool_names();
+        names.sort();
+        assert_eq!(
+            names,
+            [
+                "export", "import", "list", "publish", "schema", "status", "validate"
+            ]
         );
     }
 
