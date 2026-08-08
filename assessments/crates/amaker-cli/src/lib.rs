@@ -152,13 +152,17 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
         }
         Command::List { output } => {
             dotenvy::dotenv().ok();
-            let report = surface::list_core(&data_dir_from_env()).await?;
+            let data_dir = data_dir_from_env();
+            let report = surface::list_core(&data_dir).await?;
             match output {
                 OutputFormat::Human => {
                     let empty = Vec::new();
                     let projects = report["projects"].as_array().unwrap_or(&empty);
                     if projects.is_empty() {
-                        println!("no projects under DATA_DIR");
+                        // Name the resolved dir: DATA_DIR is cwd-relative by
+                        // default, so a wrong cwd must look like a wrong cwd,
+                        // not like lost data.
+                        println!("no projects under {}", data_dir.display());
                     }
                     for p in projects {
                         println!(
