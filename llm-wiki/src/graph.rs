@@ -89,7 +89,9 @@ pub struct GraphMetrics {
     pub nodes: usize,
     /// Total number of edges.
     pub edges: usize,
-    /// Number of nodes with no incoming or outgoing edges.
+    /// Number of pages with no incoming edges. Sections, index pages, and
+    /// external placeholder nodes are exempt — the same population the
+    /// lint `orphan` rule judges.
     pub orphans: usize,
     /// Mean edge count per node (edges × 2 / nodes).
     pub avg_connections: f64,
@@ -102,11 +104,20 @@ pub fn compute_metrics(graph: &WikiGraph) -> GraphMetrics {
     let nodes = graph.node_count();
     let edges = graph.edge_count();
 
+    // An orphan is a page nothing points at — in-degree 0, regardless of
+    // its own outgoing links (a page that links out but can't be arrived
+    // at is still unreachable). Sections and index pages are structural,
+    // and external placeholders only exist because a local page points at
+    // them; all three are exempt, matching the lint `orphan` rule.
     let orphans = graph
         .node_indices()
         .filter(|&idx| {
-            graph.neighbors_directed(idx, Direction::Incoming).count() == 0
-                && graph.neighbors_directed(idx, Direction::Outgoing).count() == 0
+            let node = &graph[idx];
+            !node.external
+                && node.r#type != "section"
+                && node.slug != "index"
+                && !node.slug.ends_with("/index")
+                && graph.neighbors_directed(idx, Direction::Incoming).count() == 0
         })
         .count();
 

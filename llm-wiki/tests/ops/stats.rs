@@ -24,12 +24,26 @@ fn stats_orphan_count() {
     let engine = manager.state.read().unwrap();
 
     let result = ops::stats(&engine, "test").unwrap();
-    // Both pages are concepts with no inbound edges from other types
-    // (only a body wikilink from transformer to moe)
-    assert!(
-        result.orphans <= result.pages,
-        "orphans should not exceed total pages"
+    // transformer links moe, nothing links transformer. An orphan is a
+    // page with no incoming edges — outgoing links don't rescue it — so
+    // transformer is the one orphan. This pins the definition lint's
+    // `orphan` rule uses; the two surfaces must agree.
+    assert_eq!(
+        result.orphans, 1,
+        "expected exactly the unreferenced page as orphan (in-degree 0)"
     );
+}
+
+#[test]
+fn stats_orphans_zero_on_cycle() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki_with_cycle(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let result = ops::stats(&engine, "test").unwrap();
+    // a→b→c→a: every page has an incoming edge
+    assert_eq!(result.orphans, 0, "no orphans in a cycle");
 }
 
 #[test]
