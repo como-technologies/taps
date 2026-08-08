@@ -3,12 +3,11 @@ title: "ADR Review Process"
 type: guide
 status: active
 summary: "How the team creates, reviews, and decides ADRs: the two-stage workflow, roles, quorum, and the review window."
-last_updated: 2026-07-28T00:00:00Z
+last_updated: 2026-08-08T00:00:00Z
 relates_to:
   - glossary/decision-record
   - glossary/review-quorum
   - glossary/review-window
-  - decisions/0002-require-adrs-for-cross-team-architectural-decisions
 ---
 
 # ADR Review Process
@@ -35,7 +34,7 @@ quorum, and an audit trail. The workflow keeps them separate.
    ```
 
    It lands in the space's `decisions/` with the next reference and
-   status `proposed` in its frontmatter.
+   status [[glossary/proposed]] in its frontmatter.
 2. Fill in the body — conversationally through your harness, with
    `adroit draft` (the interview) or `adroit compose` (instruction-driven
    revision), or in your editor. Run `adroit lint <n>` to catch
@@ -61,9 +60,10 @@ When the proposal is ready for a decision:
    adroit set-status <n> accepted    # or: rejected
    ```
 
-Rejection uses the same mechanics — only the target status differs. Land
-the rejection rationale in the ADR body (a short `## Rejection Rationale`
-section) *before* the decision, so the record explains itself.
+Rejection uses the same mechanics — only the target status
+([[glossary/rejected]]) differs. Land the rejection rationale in the ADR
+body (a short `## Rejection Rationale` section) *before* the decision,
+so the record explains itself.
 
 ## Roles
 
@@ -101,8 +101,9 @@ section) *before* the decision, so the record explains itself.
 When a new decision replaces an old one: write the new ADR with its own,
 differentiated title, take it through Stage 2 as usual, then link the
 pair — `adroit supersede <new> <old>` writes both sides of the
-frontmatter link ([[glossary/superseded]]). Files never move; status
-lives in frontmatter.
+frontmatter link ([[glossary/superseded]]). Retiring a decision nothing
+replaces is different — that's [[glossary/deprecated]]. Files never
+move; status lives in frontmatter.
 
 ## Keeping the corpus honest
 
