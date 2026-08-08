@@ -34,7 +34,7 @@ kit/
     author-glossary/
     research/
     lint-and-fix/
-  starter/             starter content for a fresh space
+  starter/             decision seed for adroit (its curriculum; relocating to adroit's tree)
   claude-desktop/
     README.md          config snippet + current limits (MCP-only harness)
   worked-example/

@@ -24,11 +24,10 @@ sense.
 | [0 — A clean room (optional)](./clean-room.md)         | Stand up a disposable container to walk in           | incus                         |
 | [1 — Get the software](./install.md)                   | Clone the suite, install the tools                   | `just`                        |
 | [2 — Create your knowledge base](./create-your-kb.md)  | Stand up the space every stage writes to             | `llm-wiki`, the authoring kit |
-| [3 — Seed starter content](./seed-starter-content.md)  | Give the fresh space working content to react to     | `adroit`, `llm-wiki`          |
-| [4 — Assess](./assess.md)                              | Turn what you know into a structured assessment      | amaker                        |
-| [5 — Prescribe](./prescribe.md)                        | Seed and accept the decisions the assessment implies | `adroit`                      |
-| [6 — Adopt](./adopt.md)                                | Turn an accepted decision into a reviewed, merged PR | conduit                       |
-| [7 — Measure](./measure.md)                            | Price the decision and read the team's pulse         | tuesday, pulse                |
+| [3 — Assess](./assess.md)                              | Turn what you know into a structured assessment      | amaker                        |
+| [4 — Prescribe](./prescribe.md)                        | Seed and accept the decisions the assessment implies | `adroit`                      |
+| [5 — Adopt](./adopt.md)                                | Turn an accepted decision into a reviewed, merged PR | conduit                       |
+| [6 — Measure](./measure.md)                            | Price the decision and read the team's pulse         | tuesday, pulse                |
 | [Around again](./around-again.md)                      | Ask the KB what it all cost; re-assess               | everything                    |
 
 ## What you need
@@ -45,7 +44,7 @@ copy-paste block, run where you chose to work. Beyond that, two
 optional pieces, deferred to the steps that use them: an **AI
 harness** (Claude Code or any MCP client — Step 2's conversational door
 to the KB), and an **Anthropic API key or local
-[ollama](https://ollama.com)** for the AI-assisted lanes (Step 4 —
+[ollama](https://ollama.com)** for the AI-assisted lanes (Step 3 —
 every mechanical gate in the tutorial works without a model).
 
 ## Conventions

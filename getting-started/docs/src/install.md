@@ -26,7 +26,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 cargo install --locked just
 ```
 
-(Step 6's throwaway forge brings its own runtime requirement — that
+(Step 5's throwaway forge brings its own runtime requirement — that
 step names it when you get there.)
 
 ## Clone

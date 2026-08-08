@@ -5,7 +5,6 @@
 
 - [Get the software](./install.md)
 - [Create your knowledge base](./create-your-kb.md)
-- [Seed starter content](./seed-starter-content.md)
 - [Assess](./assess.md)
 - [Prescribe](./prescribe.md)
 - [Adopt](./adopt.md)

@@ -147,5 +147,5 @@ Your space: registered, default; an empty lint is fine — zero errors is
 the bar. (Same answers through the other door: ask your session to list
 its spaces and lint `myproject`.)
 
-Provisioned and validated — a blank canvas. Step 3 gives it something
-to react to.
+Provisioned and validated — a blank canvas, on purpose. Step 3 adds
+the first artifact to it, and it's genuinely yours: the assessment.

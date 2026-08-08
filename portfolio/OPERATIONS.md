@@ -122,8 +122,9 @@ kit's narrated page). Deeper conformance is env-gated: `CONDUIT_E2E_GITEA=1`
 
 The harness-first loop (portfolio ADR-0010) from the same cold clone,
 in two legs. The **mechanical leg** is scripted and verifiable with no AI
-anywhere — it stands a fully provisioned space up from the kit's starter
-content and ends gate-clean:
+anywhere — it stands a fully provisioned space up from the kit's
+decision seed and ends gate-clean (the kit's wiki starter set is gone:
+content follows schema ownership, and each tool contributes its own):
 
 ```sh
 cargo build -p llm-wiki -p adroit             # both in-tree, one target dir
@@ -133,7 +134,6 @@ export LLM_WIKI_CONFIG="$DIR.registry.toml"   # scope the registry to the run:
                                               # nothing lands in ~/.llm-wiki
 llm-wiki spaces create "$DIR" --name team --set-default
 adroit seed --from kit/starter/decisions --dir "$DIR"   # starter decisions, fresh identities
-cp -r kit/starter/wiki/. "$DIR/wiki/"                   # glossary + guides, typed pages
 llm-wiki ingest . --wiki team                           # strict admission gate
 adroit check --dir "$DIR"                               # semantic gate: clean
 llm-wiki lint --wiki team                               # zero errors is the rehearsed bar

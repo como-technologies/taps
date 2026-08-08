@@ -1,4 +1,4 @@
-# Step 6 — Adopt
+# Step 5 — Adopt
 
 > 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
 > yet — commands and claims may change as the dogfood walk reaches it.
@@ -27,7 +27,7 @@ just forge-up             # throwaway Gitea on localhost:3000
 ```
 
 > Gitea and amaker's authoring UI both default to port `3000` — stop
-> amaker first (Ctrl-C from Step 4), or start the forge on another port
+> amaker first (Ctrl-C from Step 3), or start the forge on another port
 > with `FORGE_PORT`.
 
 ## Point conduit at your project and your decisions
@@ -37,7 +37,7 @@ just init-adroit          # builds the in-tree adroit where conduit expects it
 ```
 
 Push your project to the local forge, then configure conduit with the
-repo and your KB space so it can read the accepted decisions from Step 5.
+repo and your KB space so it can read the accepted decisions from Step 4.
 
 > 🚧 **Unverified — the biggest open seam in this guide.** Two things
 > are moving here. First: today the polished path is the packaged
@@ -58,7 +58,7 @@ repo and your KB space so it can read the accepted decisions from Step 5.
 
 conduit opens a draft PR per decision task; nothing proceeds without you.
 Review the diff the way you review your team's work, request changes,
-and merge when it's right. The merged PR is the artifact Step 7 prices.
+and merge when it's right. The merged PR is the artifact Step 6 prices.
 
 ## Tear down
 

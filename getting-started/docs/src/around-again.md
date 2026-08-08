@@ -21,7 +21,7 @@ you can open.
 ## Re-assess
 
 Modernization is a cycle, not a project. When the next iteration starts,
-Step 4's assessment runs again — but this time it isn't starting from
+Step 3's assessment runs again — but this time it isn't starting from
 zero: the prior assessment, the decisions taken, and what they actually
 cost are all in the corpus, and the delta between two assessments is the
 evidence of movement.

@@ -1,4 +1,4 @@
-# Step 4 — Assess
+# Step 3 — Assess
 
 > 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
 > yet — commands and claims may change as the dogfood walk reaches it.
@@ -53,6 +53,34 @@ That pair is the suite's convention: every taps tool that talks to a KB
 reads it. No tool ever touches a space's filesystem — the transport is
 the only door, and everything you've met so far walks through the same
 one.
+
+## Grant the session its reach
+
+From here on, your sessions read files on your side of the wall
+(`~/taps`) and drive the appliance's tools without stopping between
+calls. The kit's shipped settings are deliberately narrow; a tutorial
+rig doesn't have to be. Pre-grant the walk's whole surface — this
+overlay is yours (`settings.local.json`), the kit's own settings stay
+untouched:
+
+```sh
+cat > ~/kb-workspace/.claude/settings.local.json <<'EOF'
+{
+  "enableAllProjectMcpServers": true,
+  "permissions": {
+    "additionalDirectories": ["~/taps"],
+    "allow": ["mcp__kb"]
+  }
+}
+EOF
+```
+
+`additionalDirectories` opens `~/taps` to the session; `mcp__kb` trusts
+every tool the appliance serves. On a production workspace you'd grant
+narrowly and answer prompts as they come; this rig is a throwaway, and
+pre-granting makes every session in the walk paste-and-go. (Prefer the
+prompts? Skip this block — the pages still work, you'll just approve as
+you watch.)
 
 ## Author your assessment
 
@@ -121,5 +149,5 @@ incus exec kb -- su - kb -c 'llm-wiki schema list --wiki myproject'
 
 `assessment` and `assessment-report` are registered now, each carrying
 `x-owner: amaker` — your space learned amaker's classes when amaker
-showed up, not a moment earlier. Step 5 picks the loop up from these
+showed up, not a moment earlier. Step 4 picks the loop up from these
 pages.

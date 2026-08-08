@@ -1,4 +1,4 @@
-# Step 5 — Prescribe
+# Step 4 — Prescribe
 
 > 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
 > yet — commands and claims may change as the dogfood walk reaches it.
@@ -10,7 +10,7 @@ The tool is [adroit](../portfolio/loop/prescribe.html).
 
 ## Seed the backlog from the assessment
 
-Step 4 left the assessment and its report as typed pages in your space;
+Step 3 left the assessment and its report as typed pages in your space;
 this step's decisions start from what those pages say.
 
 > 🚧 **Unverified — and expected to change.** This page still describes
@@ -43,6 +43,6 @@ adroit set-status 1 accepted --dir ~/myproject-kb
 adroit check --dir ~/myproject-kb          # the corpus stays sound
 ```
 
-Accepted decisions are the contract with the next stage: Step 6 reads
+Accepted decisions are the contract with the next stage: Step 5 reads
 **only** accepted ADRs. Everything still `proposed` waits, visible but
 inert.

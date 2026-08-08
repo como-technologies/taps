@@ -1,11 +1,14 @@
 # Starter content
 
-The content a fresh Como KB space starts from — so day one begins with a
-working corpus, not a blank page. Distilled from a delivered client
-engagement (content written fresh; no client material), formerly shipped
-as a clonable template repository; the template retired when the
-portfolio went harness-first (portfolio ADR-0010 — the archived repo
-remains the historical record).
+**What remains here is adroit's decision seed, in transit.** The kit
+used to ship wiki starter content too — an ADR-lifecycle glossary and a
+review-process guide. It was accurate, well-linked, and owned by the
+wrong product: a fresh space's first conversation was about a tool the
+reader hadn't met. Content now follows the same ownership boundary as
+schemas — each tool contributes its own documentation to a space when it
+integrates, and the engine contributes only what every KB benefits from.
+The wiki starter set is gone; a fresh space is a blank canvas until its
+tools teach it.
 
 ## What's here
 
@@ -19,36 +22,22 @@ decisions/            legacy-format ADR corpus, seeded via `adroit seed`
                       refactoring, testing, monitoring, incident
                       management, feature flags, runbooks, secrets,
                       library versioning)
-wiki/
-  glossary/           10 typed glossary-entry pages — the decision
-                      lifecycle vocabulary, defined once
-  guides/             the ADR review process, as a typed guide page
 ```
 
-The starter decisions are examples a team keeps, supersedes, or replaces
-— superseding a starter opinion *is* the process working. Nothing in
-them assumes a vendor, cloud, language, or CI system.
+This corpus is adroit's curriculum and relocates to adroit's tree with
+the ownership work; it lives here until that lands. Distilled from a
+delivered client engagement (content written fresh; no client
+material). The starter decisions are examples a team keeps, supersedes,
+or replaces — superseding a starter opinion *is* the process working.
+Nothing in them assumes a vendor, cloud, language, or CI system.
 
-## Bootstrap a space with it
+## Seed a space with it
 
 ```sh
-export LLM_WIKI_CONFIG="$DIR.registry.toml"   # ephemeral space => scoped registry;
-                                              # rm both together, no global litter
-llm-wiki spaces create "$DIR" --name myteam --set-default
-adroit seed --from kit/starter/decisions --dir "$DIR"   # decisions: fresh ULIDs, healed links
-cp -r kit/starter/wiki/. "$DIR/wiki/"                   # glossary + guides (typed pages)
-llm-wiki ingest . --wiki myteam                         # admit through the strict gate
+adroit seed --from kit/starter/decisions --dir "$DIR"   # fresh ULIDs, healed links
 adroit check --dir "$DIR"                               # the semantic gate
 ```
 
 Decisions ship in adroit's legacy bootstrap format on purpose: `seed`
 allocates each space its own page identities and heals the corpus's
-internal links, so two teams' spaces never share baked-in IDs. The
-glossary and guide pages ship as typed pages and go straight through
-ingest. Rehearsed on every change to this content: the sequence above
-ends with `check` clean and `lint` at **zero errors** (orphan advisories
-on not-yet-linked decisions are expected and are the lint doing its
-job — linking them into your own pages is the point of the starter).
-
-Then configure your harness ([kit/README.md](../README.md)) and author —
-the starter corpus is the floor, not the ceiling.
+internal links, so two teams' spaces never share baked-in IDs.

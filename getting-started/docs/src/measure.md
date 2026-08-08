@@ -1,4 +1,4 @@
-# Step 7 — Measure
+# Step 6 — Measure
 
 > 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
 > yet — commands and claims may change as the dogfood walk reaches it.
@@ -23,7 +23,7 @@ The month's capacity report lands as a typed page beside the decisions it
 prices, carrying its per-ADR attribution.
 
 > 🚧 **Unverified.** The walk confirms the label convention on the
-> Step 6 PRs (the shared contract crate defines it), how the binary is
+> Step 5 PRs (the shared contract crate defines it), how the binary is
 > built and invoked from a fresh clone, and what the report page looks
 > like for a one-decision month.
 
