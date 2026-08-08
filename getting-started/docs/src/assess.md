@@ -98,14 +98,17 @@ cat > ~/kb-workspace/.claude/settings.local.json <<'EOF'
   "enableAllProjectMcpServers": true,
   "permissions": {
     "additionalDirectories": ["~/taps"],
-    "allow": ["mcp__kb", "mcp__amaker"]
+    "allow": ["mcp__kb", "mcp__amaker", "Write(~/**)", "Edit(~/**)"]
   }
 }
 EOF
 ```
 
 `additionalDirectories` opens `~/taps` to the session; the `mcp__`
-entries trust every tool the appliance and amaker serve. On a
+entries trust every tool the appliance and amaker serve; the write
+grants cover the files this step's prompts create (the assessment
+draft lives in your home, not the KB — it enters the space only
+through amaker's publish). On a
 production workspace you'd grant
 narrowly and answer prompts as they come; this rig is a throwaway, and
 pre-granting makes every session in the walk paste-and-go. (Prefer the
