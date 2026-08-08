@@ -29,4 +29,4 @@ that prefer them.
 
 The full specification — page types, validation rules, the admission
 model — lives with the product, in the
-[llm-wiki repo](https://github.com/como-technologies/taps/blob/main/llm-wiki/docs/specifications/como-kb-spec.md).
+[llm-wiki repo](https://github.com/como-technologies/taps/blob/main/llm-wiki/docs/src/specifications/como-kb-spec.md).

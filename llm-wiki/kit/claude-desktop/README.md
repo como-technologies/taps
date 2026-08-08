@@ -43,6 +43,6 @@ Omit `--allow-write` for a read-only adroit server.
 | Author and transition `decision` pages | works via adroit's write slice — you approve each destructive tool call, which is exactly where acceptance lives. `compose` (AI body revision) additionally needs adroit's own provider configured server-side (`ai.enabled`; local ollama works). `draft`'s interactive interview and the forge integrations stay CLI-only by design |
 
 Paste the relevant sections of the Como authoring contract
-(`docs/guides/como-authoring.md`) into your project instructions — a
+(`docs/src/guides/como-authoring.md`) into your project instructions — a
 Desktop project has no CLAUDE.md discovery, so the contract must arrive
 via the project's custom instructions.

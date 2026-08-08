@@ -17,3 +17,5 @@ CLAUDE.md
 !kit/workspace/.mcp.json
 !kit/workspace/CLAUDE.md
 !kit/workspace/.claude
+# mdBook build output (source lives in docs/src; build-dir = "book" -> docs/book)
+/docs/book

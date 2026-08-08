@@ -20,7 +20,7 @@ no corpus here and no filesystem path to one.
   appliance/space you are acting on. Skills name tools generically
   (`wiki_search` on the relevant appliance) — tool prefixes come from
   this workspace's `.mcp.json` entry keys.
-- **Follow the Como authoring contract** — `docs/guides/como-authoring.md`
+- **Follow the Como authoring contract** — `docs/src/guides/como-authoring.md`
   in the llm-wiki repo. Short version: pick the right page class;
   author content pages `status: generated` with low `confidence` and
   let humans promote; pin evidence citations as `path@commit` in

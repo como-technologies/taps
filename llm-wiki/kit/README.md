@@ -2,7 +2,7 @@
 
 Everything needed to point an AI harness at a Como KB and author
 content that lands in the right shape. The contract the kit implements is
-[docs/guides/como-authoring.md](../docs/guides/como-authoring.md); the
+[docs/src/guides/como-authoring.md](../docs/src/guides/como-authoring.md); the
 decision behind the model is portfolio ADR-0010 (harness-first), plan of
 record portfolio#7; the workspace/appliance posture is taps issue 53.
 

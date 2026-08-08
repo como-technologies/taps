@@ -5,7 +5,7 @@ description: Author a guide page in a Como KB space from the current conversatio
 
 # Author a guide
 
-Follow the Como authoring contract (`docs/guides/como-authoring.md` in
+Follow the Como authoring contract (`docs/src/guides/como-authoring.md` in
 the llm-wiki repo). A guide operationalizes decisions — it says *how* to
 do what was decided.
 

@@ -15,10 +15,10 @@ Como suite. It ships the engine-owned content-class schemas and zero-flag
 admission provisioning in `spaces create` (tools register their own
 artifact classes over the transport via `wiki_schema register`), and the
 **[Como authoring kit](kit/README.md)** — skills, harness configs, the
-[authoring contract](docs/guides/como-authoring.md), and a captured
+[authoring contract](docs/src/guides/como-authoring.md), and a captured
 worked example — for pointing an AI harness at a space and authoring
 content that lands in the right shape. The KB contract itself is specified
-in [docs/specifications/como-kb-spec.md](docs/specifications/como-kb-spec.md).
+in [docs/src/specifications/como-kb-spec.md](docs/src/specifications/como-kb-spec.md).
 
 ---
 
@@ -119,7 +119,7 @@ llm-wiki serve
 Connect your agent or editor via its MCP config. The 23 tools are
 immediately available.
 
-→ [Getting started guide](docs/guides/getting-started.md)
+→ [Getting started guide](docs/src/guides/getting-started.md)
 
 ---
 
@@ -145,7 +145,7 @@ Start with `--acp` alongside `--http` to give ACP exclusive stdio:
 llm-wiki serve --acp --http :18765
 ```
 
-→ [ACP transport](docs/specifications/integrations/acp-transport.md) · [Configuration](docs/guides/configuration.md)
+→ [ACP transport](docs/src/specifications/integrations/acp-transport.md) · [Configuration](docs/src/guides/configuration.md)
 
 ---
 
@@ -169,7 +169,7 @@ llm-wiki serve --acp --http :18765
 | `wiki_schema` | Show, validate, or template a type schema |
 | `wiki_spaces_*` | Create, register, list, remove wiki spaces; supports custom `wiki_root` |
 
-Full tool reference: [`docs/specifications/tools/`](docs/specifications/tools/)
+Full tool reference: [`docs/src/specifications/tools/`](docs/src/specifications/tools/)
 
 ---
 
@@ -193,7 +193,7 @@ so id links survive `git mv` and existing slug links behave exactly as
 before. `content new --id` generates one; `lint` enforces uniqueness
 (`duplicate-id`) and shape (`id-format`). Wikis without ids are
 unaffected. Full contract:
-[`docs/specifications/model/page-identity.md`](docs/specifications/model/page-identity.md).
+[`docs/src/specifications/model/page-identity.md`](docs/src/specifications/model/page-identity.md).
 
 ---
 
@@ -231,10 +231,10 @@ runtime, no database, and nothing to keep running between sessions.
 
 | | |
 | - | - |
-| [Getting started](docs/guides/getting-started.md) | End-to-end walkthrough |
-| [Guides](docs/guides/README.md) | Configuration, custom types, multi-wiki, lint, graph |
-| [Specifications](docs/specifications/README.md) | Formal tool and model contracts |
-| [Como KB spec](docs/specifications/como-kb-spec.md) | The suite's knowledge-base contract |
+| [Getting started](docs/src/guides/getting-started.md) | End-to-end walkthrough |
+| [Guides](docs/src/guides/README.md) | Configuration, custom types, multi-wiki, lint, graph |
+| [Specifications](docs/src/specifications/README.md) | Formal tool and model contracts |
+| [Como KB spec](docs/src/specifications/como-kb-spec.md) | The suite's knowledge-base contract |
 | [Roadmap](docs/roadmap.md) | What shipped, what's next |
 | [Decisions](docs/decisions/README.md) | Architectural decision records |
 

@@ -20,23 +20,23 @@ cargo fmt                        # auto-format
 
 | Area                    | Location                                              |
 | ----------------------- | ----------------------------------------------------- |
-| Specifications          | [docs/specifications/](docs/specifications/README.md) |
-| Implementation notes    | [docs/implementation/](docs/implementation/README.md) |
+| Specifications          | [docs/src/specifications/](docs/src/specifications/README.md) |
+| Implementation notes    | [docs/src/implementation/](docs/src/implementation/README.md) |
 | Architectural decisions | [docs/decisions/](docs/decisions/README.md)           |
 
 
 ## Adding a Feature
 
-1. Read the relevant spec in `docs/specifications/`.
+1. Read the relevant spec in `docs/src/specifications/`.
 2. Implement in the correct module — see
-   [docs/implementation/](docs/implementation/README.md) for the module map.
+   [docs/src/implementation/](docs/src/implementation/README.md) for the module map.
 3. Write tests in `tests/<module>.rs` using `tempfile::tempdir()` for all
    filesystem operations.
 4. Run `cargo test`, `cargo clippy -- -D warnings`, `cargo fmt -- --check`.
 
 ### Adding an MCP tool
 
-See [docs/implementation/mcp-tool-pattern.md](docs/implementation/mcp-tool-pattern.md).
+See [docs/src/implementation/mcp-tool-pattern.md](docs/src/implementation/mcp-tool-pattern.md).
 
 ## No LLM Dependency Rule
 
@@ -46,7 +46,7 @@ crate as a dependency.
 
 ## Dev Standards
 
-See [docs/implementation/rust.md](docs/implementation/rust.md) for toolchain
+See [docs/src/implementation/rust.md](docs/src/implementation/rust.md) for toolchain
 details, error handling conventions, testing patterns, and code quality rules.
 
 ## Release Process

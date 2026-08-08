@@ -12,7 +12,7 @@ KB space — regardless of harness. Claude Code, Claude Desktop, or any
 MCP-capable client: the engine enforces *shape* deterministically (strict
 schemas, admission hooks, lint), and this contract covers the *intent* the
 engine cannot check. The packaged skills and harness configs live in
-[`kit/`](../../kit/README.md); this page is what they all implement.
+[`kit/`](https://github.com/como-technologies/taps/tree/main/llm-wiki/kit); this page is what they all implement.
 
 The decision of record behind this model is portfolio ADR-0010
 (harness-first: the harness is the primary human UI, the KB is the

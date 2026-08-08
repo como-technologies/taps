@@ -48,7 +48,7 @@ each closed with a live-verified, tracked finding.
 
 Chosen: **the Como fork** (now the in-tree `llm-wiki/` product), together
 with **adoption of the
-[Como KB specification](https://github.com/como-technologies/taps/blob/main/llm-wiki/docs/specifications/como-kb-spec.md)**
+[Como KB specification](https://github.com/como-technologies/taps/blob/main/llm-wiki/docs/src/specifications/como-kb-spec.md)**
 (now homed with the KB product) produced by the spike. The spike's
 verdict is GO, on evidence:
 

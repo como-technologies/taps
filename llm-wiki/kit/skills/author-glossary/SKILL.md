@@ -6,7 +6,7 @@ description: Author glossary-entry pages in a Como KB space - one term per page,
 # Author a glossary entry
 
 One term, one page: the title is the term, the body is the definition.
-Follow the Como authoring contract (`docs/guides/como-authoring.md`).
+Follow the Como authoring contract (`docs/src/guides/como-authoring.md`).
 
 1. **Check it isn't defined**: `wiki_search` the term and its synonyms.
    If an entry exists, update or alias it — never author a second

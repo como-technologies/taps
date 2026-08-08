@@ -16,7 +16,7 @@ registered wikis are mounted at startup.
 For session-oriented streaming in Zed or VS Code, use ACP instead. See
 [acp-transport.md](acp-transport.md).
 
-For Claude Code, the [Como authoring kit](../../../kit/README.md)
+For Claude Code, the [Como authoring kit](https://github.com/como-technologies/taps/tree/main/llm-wiki/kit)
 ships harness configs and skills for working against the server.
 
 

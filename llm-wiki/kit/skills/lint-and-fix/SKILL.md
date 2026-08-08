@@ -6,7 +6,7 @@ description: Run the Como KB lint pass and fix what it finds - broken links, orp
 # Lint and fix
 
 Mechanical hygiene, bounded by ownership. Follow the Como authoring
-contract (`docs/guides/como-authoring.md`).
+contract (`docs/src/guides/como-authoring.md`).
 
 1. **Run**: `wiki_lint` (JSON output). Triage by severity: errors gate,
    warnings advise.

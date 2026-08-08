@@ -1,0 +1,22 @@
+[book]
+title = "llm-wiki Documentation"
+authors = ["Como Technologies"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+
+[output.html]
+git-repository-url = "https://github.com/como-technologies/taps"
+edit-url-template = "https://github.com/como-technologies/taps/edit/main/llm-wiki/docs/src/{path}"
+
+sidebar-header-nav = false
+default-theme = "gruvbox"
+preferred-dark-theme = "gruvbox"
+additional-css = ["gruvbox/css/variables.css", "gruvbox/highlight.css"]
+additional-js = ["gruvbox/gruvbox.js", "gruvbox/mermaid-gruvbox.js"]
+
+[output.html.fold]
+enable = true
+level = 0

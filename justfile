@@ -164,6 +164,7 @@ books:
     mdbook build assessments/docs
     mdbook build conduit/docs
     mdbook build getting-started/docs
+    mdbook build llm-wiki/docs
     mdbook build portfolio/docs
     mdbook build pulse/docs
     mdbook build tuesday/docs
@@ -182,6 +183,7 @@ site: books
     cp -r assessments/target/book   target/site/assessments
     cp -r conduit/docs/book         target/site/conduit
     cp -r getting-started/target/book target/site/getting-started
+    cp -r llm-wiki/docs/book        target/site/llm-wiki
     cp -r portfolio/target/book     target/site/portfolio
     cp -r pulse/docs/book           target/site/pulse
     cp -r tuesday/docs/book         target/site/tuesday
@@ -198,6 +200,7 @@ site: books
       <li><a href="adroit/">adroit</a> — decision records (Prescribe)</li>
       <li><a href="assessments/">assessments</a> — amaker (Assess)</li>
       <li><a href="conduit/">conduit</a> — the Adopt engine</li>
+      <li><a href="llm-wiki/">llm-wiki</a> — the knowledge-base engine</li>
       <li><a href="pulse/">pulse</a> — anonymous signal (Measure)</li>
       <li><a href="tuesday/">tuesday</a> — effort attribution (Measure)</li>
       <li><a href="portfolio/">portfolio</a> — the book</li>
@@ -230,7 +233,7 @@ books-serve port="8000": _need-watch-tools site
     while inotifywait -qq -r -e modify,create,delete,move \
           --exclude '/docs/book/' \
           adroit/docs assessments/docs conduit/docs getting-started/docs \
-          portfolio/docs pulse/docs tuesday/docs docs-theme; do
+          llm-wiki/docs portfolio/docs pulse/docs tuesday/docs docs-theme; do
         sleep 0.3       # coalesce editor save bursts
         echo "change detected — rebuilding site…"
         if just site >/dev/null 2>&1; then
