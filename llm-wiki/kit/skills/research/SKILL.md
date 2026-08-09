@@ -22,11 +22,10 @@ training data is not.
 4. **Say what's missing.** If the KB doesn't answer the question, say so
    — and offer to capture the gap (a `stub` page, or a drafted guide via
    the author-guide skill) rather than filling it from your own priors.
-5. For decision content, prefer adroit's read surface when the session
-   has an adroit door (its MCP server, or `adroit show/list/ask` where
-   a CLI reaches the corpus) — it is the decision head and carries the
-   corpus semantics. Without one, decision pages are readable like any
-   page via the wiki tools; treat them as read-only.
+5. For tool-owned classes (schemas carrying `x-owner`), prefer the
+   owning tool's read surface when the session has its door — it
+   carries the class's semantics. Without one, those pages are readable
+   like any page via the wiki tools; treat them as read-only.
 
 Never present an ungrounded answer as the KB's position. "The space
 doesn't record this" is a correct, useful answer.

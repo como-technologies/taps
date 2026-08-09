@@ -45,8 +45,6 @@ each product's own justfile.
   site, per-product paths. Start with the portfolio book, or jump
   straight to the [Getting Started guide](https://como-technologies.github.io/taps/getting-started/).
   `just books-serve` mirrors the whole site locally on one port.
-- **Operating the suite** (stand-up, verification rings, the end-to-end
-  demo): [`portfolio/OPERATIONS.md`](portfolio/OPERATIONS.md).
 - Each product carries its own docs under `<product>/docs/` — including its
   decision records at the uniform `docs/src/adr/` path — and its own
   README for product-level detail.

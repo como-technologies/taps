@@ -12,8 +12,7 @@ they work together, and links to each tool's own docs for the details.
 Start with the rendered [Introduction](docs/src/introduction.md). The
 hands-on tutorial is its own book — the
 [Getting Started guide](../getting-started/) — kept out of this one on
-purpose. This README is about how to **build and work on the book**. For
-standing the whole suite up locally, see [OPERATIONS.md](OPERATIONS.md).
+purpose. This README is about how to **build and work on the book**.
 
 ## Prerequisites
 
@@ -62,5 +61,4 @@ docs/src/       book content (Markdown); SUMMARY.md is the table of contents
 docs/book.toml  mdBook configuration
 docs/gruvbox/   theme assets
 justfile        all tasks — run `just` to list them
-OPERATIONS.md   the suite-wide stand-up and verification runbook
 ```

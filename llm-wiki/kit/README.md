@@ -34,10 +34,6 @@ kit/
     author-glossary/
     research/
     lint-and-fix/
-  claude-desktop/
-    README.md          config snippet + current limits (MCP-only harness)
-  worked-example/
-    session.md         a real captured authoring session, gates and all
 ```
 
 There is no starter content, on purpose. Content follows the same
@@ -82,17 +78,13 @@ corpus starts empty; test data lives with tests, never in the kit.
    sharp lifecycle tools — space create/remove, `wiki_schema`,
    `wiki_config` — still prompt, because permission rules can't see
    arguments and those can delete or loosen things.
-5. Open Claude Code in the workspace and talk. The worked example shows
-   a full session.
+5. Open Claude Code in the workspace and talk.
 
 One appliance per `.mcp.json` entry; a workspace may wire several. Note
 each stdio entry spawns its own engine process per session — fine for
 one author, but concurrent sessions against one appliance belong on the
 HTTP transport (one server, many sessions).
 
-## Setup — Claude Desktop
-
-See [claude-desktop/README.md](claude-desktop/README.md). Content classes
-(`guide`, `glossary-entry`, `worked-example`) work over llm-wiki's MCP
-server; decision pages belong to adroit's MCP surface (rebuilding,
-taps #93).
+Any MCP-capable harness can wire the same servers (the engine speaks
+plain MCP over stdio or HTTP); the workspace's CLAUDE.md rules become
+that harness's instructions however it takes them.
