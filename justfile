@@ -63,7 +63,7 @@ versions:
 # test run stays hermetic. Builds what the tests spawn, then runs them.
 # Run the cross-product integration tests
 integration:
-    cargo build -p llm-wiki -p amaker-cli
+    cargo build -p llm-wiki -p amaker-cli -p adroit
     TAPS_INTEGRATION=1 cargo test -p taps-tests
 
 # A KB for developing tools against: registers ~/spaces/NAME in your
@@ -190,7 +190,7 @@ site: books
     <p><a href="portfolio/">Start with the portfolio book</a> — the reader-facing story.</p>
     <p><a href="getting-started/">New here? The Getting Started guide</a> — from a fresh machine to a first trip around the loop.</p>
     <ul>
-      <li>adroit — decision records (Prescribe; rebuilding, taps #93)</li>
+      <li>adroit — decision records (Prescribe; book returns with taps #93's docs pass)</li>
       <li><a href="assessments/">assessments</a> — amaker (Assess)</li>
       <li><a href="conduit/">conduit</a> — the Adopt engine</li>
       <li><a href="llm-wiki/">llm-wiki</a> — the knowledge-base engine</li>

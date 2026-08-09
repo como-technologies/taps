@@ -1,19 +1,10 @@
-//! adroit — decision records for the taps loop.
-//!
-//! Greenfield per taps #93: the KB is the state store, adroit is the only
-//! writer of `decision`/`plan` pages (ownership is a write boundary —
-//! anyone reads them through the engine), and judgment belongs to agents
-//! and humans driving the same thin verbs. The standalone-era product
-//! lives on at <https://github.com/como-technologies/adroit>.
+//! `adroit` binary entry point. The command surface lives in the `adroit`
+//! library crate so the lifecycle oracle and integration tests can drive it
+//! directly.
 
 use clap::Parser;
 
-/// Decision records for the taps loop.
-#[derive(Parser, Debug)]
-#[command(name = "adroit", version, about)]
-struct Cli {}
-
-fn main() {
-    Cli::parse();
-    eprintln!("adroit is being rebuilt as the loop's Prescribe tool — see taps issue #93");
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    adroit::run(adroit::Cli::parse()).await
 }

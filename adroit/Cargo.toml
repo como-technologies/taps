@@ -8,9 +8,31 @@ license = "Apache-2.0"
 repository.workspace = true
 authors.workspace = true
 
+[lib]
+name = "adroit"
+path = "src/lib.rs"
+
 [[bin]]
 name = "adroit"
 path = "src/main.rs"
 
 [dependencies]
-clap = { workspace = true, features = ["derive"] }
+# The suite's shared seams: `Status` and the `plan -o json` envelope live in
+# como-contract so conduit deserializes exactly what adroit serializes.
+como-contract = { workspace = true, features = ["schemars"] }
+como-kb-client = { path = "../kb-client" }
+
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+clap = { workspace = true }
+dotenvy = { workspace = true }
+rmcp = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml_ng = { workspace = true }
+strum = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true }
+ulid = { workspace = true }
