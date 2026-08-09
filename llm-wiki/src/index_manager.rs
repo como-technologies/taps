@@ -263,14 +263,19 @@ impl SpaceIndexManager {
         let start = std::time::Instant::now();
 
         let search_dir = self.index_path.join("search-index");
+        // Rebuild starts from nothing: recreate the directory. A schema
+        // change is the canonical reason to rebuild, and open_or_create
+        // alone *refuses* a mismatched existing index ("An index exists but
+        // the schema does not match") rather than replacing it.
+        if search_dir.exists() {
+            std::fs::remove_dir_all(&search_dir)?;
+        }
         std::fs::create_dir_all(&search_dir)?;
 
-        // Always open_or_create for rebuild (schema may have changed)
         let dir = MmapDirectory::open(&search_dir)
             .with_context(|| format!("failed to open index dir: {}", search_dir.display()))?;
         let index = Index::open_or_create(dir, is.schema.clone())?;
         let mut writer: IndexWriter = index.writer(50_000_000)?;
-        writer.delete_all_documents()?;
 
         let mut pages = 0usize;
         let mut sections = 0usize;

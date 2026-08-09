@@ -1060,3 +1060,40 @@ fn update_refreshes_reader_immediately() {
         "held reader must see new page after update() without calling open() again"
     );
 }
+
+#[test]
+fn rebuild_crosses_a_schema_change() {
+    // The engine's index schema evolves (a field reclassifies, a tokenizer
+    // changes) — the canonical reason to rebuild. Rebuild must replace the
+    // mismatched index, not refuse to open it ("An index exists but the
+    // schema does not match"), or every existing space bricks on upgrade.
+    let dir = tempfile::tempdir().unwrap();
+    let wiki_root = setup_repo(dir.path());
+    write_page(&wiki_root, "concepts/foo.md", &concept_page("Foo", "body"));
+
+    // First build under the default schema (en_stem).
+    let mgr = build_index(dir.path(), &wiki_root);
+    drop(mgr);
+
+    // The "new engine": same space, different compiled schema.
+    let (registry, schema) = space_builder::build_space_from_embedded("default");
+    let mgr = make_manager(dir.path());
+    let report = mgr
+        .rebuild(&wiki_root, dir.path(), &schema, &registry)
+        .expect("rebuild must survive a schema change");
+    assert_eq!(report.pages_indexed, 1);
+    mgr.open(&schema, None).unwrap();
+    let searcher = mgr.searcher().unwrap();
+    let results = search::search(
+        "Foo",
+        &search::SearchOptions::default(),
+        &searcher,
+        "test",
+        &schema,
+    )
+    .unwrap();
+    assert!(
+        results.results.iter().any(|r| r.title == "Foo"),
+        "rebuilt index answers queries under the new schema"
+    );
+}
