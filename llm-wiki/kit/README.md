@@ -34,7 +34,7 @@ kit/
     author-glossary/
     research/
     lint-and-fix/
-  starter/             decision seed for adroit (its curriculum; relocating to adroit's tree)
+  starter/             deliberately empty — why fresh spaces start blank
   claude-desktop/
     README.md          config snippet + current limits (MCP-only harness)
   worked-example/
