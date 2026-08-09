@@ -44,7 +44,7 @@ impl IndexSchema {
         // Collect and classify fields from all schemas
         let mut seen: HashSet<String> = HashSet::new();
         // Fixed fields are already added
-        for name in &["slug", "uri", "id", "body", "body_links"] {
+        for name in &["slug", "uri", "id", "body", "body_links", "type", "status"] {
             seen.insert(name.to_string());
         }
 
@@ -274,6 +274,14 @@ impl SchemaBuilder {
         self.add_keyword("id");
         self.add_text("body");
         self.add_keyword("body_links");
+        // `type` and `status` are the engine's own filter vocabulary: the
+        // list/search filters and the section handling all term-query them
+        // raw. Fixed keywords, so a schema declaring them as plain strings
+        // (base.json's `type`, or a registered tool-owned class) can't
+        // downgrade them to stemmed text — where a raw term query silently
+        // matches nothing ("decision" stems to "decis" under en_stem).
+        self.add_keyword("type");
+        self.add_keyword("status");
     }
 
     pub(crate) fn add_text(&mut self, name: &str) {
