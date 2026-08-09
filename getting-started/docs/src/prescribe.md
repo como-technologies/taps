@@ -15,22 +15,11 @@ terminal) *reads* the report like any other page and decides what's
 worth deciding. adroit just records the judgment and keeps the corpus
 honest.
 
-## Tell adroit where the KB is
-
-The same suite pair every tool reads, in a `.env` where adroit runs —
-your workspace, which makes the pair serve both your terminal and your
-session's tool:
-
-```sh
-KB_ADDR=$(incus list kb -c4 -f csv | cut -d" " -f1)
-cat > ~/kb-workspace/.env <<EOF
-KB_URL=http://$KB_ADDR:8080/mcp
-KB_WIKI=myproject
-EOF
-```
-
-No other configuration exists: adroit has no data directory and no
-filesystem mode. If the KB is down, adroit says so and does nothing.
+adroit already knows where the KB is — the suite pair you wrote once
+in Step 2 (`~/.config/taps/env`), read through the same discovery
+order as every taps tool. No other configuration exists: adroit has no
+data directory and no filesystem mode. If the KB is down, adroit says
+so and does nothing.
 
 ## Hand your session the tool
 
@@ -44,11 +33,7 @@ cd ~/kb-workspace
 python3 - <<'EOF'
 import json
 cfg = json.load(open(".mcp.json"))
-cfg["mcpServers"]["adroit"] = {
-    "type": "stdio",
-    "command": "bash",
-    "args": ["-lc", "cd ~/kb-workspace && exec adroit mcp"],
-}
+cfg["mcpServers"]["adroit"] = {"type": "stdio", "command": "adroit", "args": ["mcp"]}
 json.dump(cfg, open(".mcp.json", "w"), indent=2)
 s = json.load(open(".claude/settings.local.json"))
 s["permissions"]["allow"].append("mcp__adroit")
@@ -56,10 +41,9 @@ json.dump(s, open(".claude/settings.local.json", "w"), indent=2)
 EOF
 ```
 
-(The `cd` matters again: the server reads the `.env` you just wrote
-from where it runs. And a stdio server pins its binary for the life of
-a session — if you ever rebuild the suite mid-walk, reconnect `/mcp`
-or restart the session so the door serves the new tool.)
+(A stdio server pins its binary for the life of a session — if you
+ever rebuild the suite mid-walk, reconnect `/mcp` or restart the
+session so the door serves the new tool.)
 
 ## Seed the backlog from the report
 
@@ -90,7 +74,6 @@ Work the backlog until each record says what you mean. All the doors
 sit on the same store:
 
 ```sh
-cd ~/kb-workspace && set -a && . ./.env && set +a
 adroit list                 # the backlog, reference-sorted
 adroit show 1               # read before you sign
 adroit lint 1               # authoring-quality gate — mechanical, no AI

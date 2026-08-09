@@ -87,6 +87,28 @@ spaces later and they mount live when made through the tools; spaces
 made on the operator console need a `systemctl restart llm-wiki` to
 appear.
 
+## Tell every tool where the KB is — once
+
+Every taps tool that talks to a KB reads the same pair — `KB_URL` /
+`KB_WIKI` — through the same discovery order: the process environment
+first, then a `.env` in the tool's working directory, then this
+user-level file. Write it now, while the address is in front of you,
+and the rest of the guide (and every future tool) just inherits it:
+
+```sh
+KB_ADDR=$(incus list kb -c4 -f csv | cut -d' ' -f1)
+mkdir -p ~/.config/taps
+cat > ~/.config/taps/env <<EOF
+KB_URL=http://$KB_ADDR:8080/mcp
+KB_WIKI=myproject
+EOF
+```
+
+No tool ever touches a space's filesystem — the transport is the only
+door, and this file is only the address of it. Need one tool aimed
+somewhere else? A `.env` next to it, or a variable in its
+environment, outranks this file for that tool alone.
+
 ## Make your workspace
 
 Your sessions run in an **authoring workspace** — a thin directory

@@ -27,7 +27,6 @@ dependencies = [
  "clap",
  "como-contract",
  "como-kb-client",
- "dotenvy",
  "rmcp",
  "schemars 1.2.2",
  "serde",
@@ -1435,8 +1434,11 @@ name = "como-kb-client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "directories",
+ "dotenvy",
  "rmcp",
  "serde_json",
+ "tempfile",
  "tokio",
 ]
 
@@ -2713,6 +2715,15 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-streams 0.4.2",
  "web-sys",
+]
+
+[[package]]
+name = "directories"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16f5094c54661b38d03bd7e50df373292118db60b585c08a411c6d840017fe7d"
+dependencies = [
+ "dirs-sys",
 ]
 
 [[package]]

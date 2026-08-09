@@ -41,11 +41,12 @@ pub async fn publish_cmd(
     project_id: ProjectId,
     wiki_flag: Option<String>,
 ) -> Result<PublishReport> {
-    let Some(mut target) = KbTarget::from_env() else {
+    let Some(mut target) = KbTarget::discover() else {
         bail!(
             "no KB configured: set KB_URL to your appliance's MCP endpoint \
              (e.g. http://localhost:8080/mcp; `just kb-dev` serves one) and \
-             optionally KB_WIKI for the target space"
+             optionally KB_WIKI for the target space — in the environment, \
+             a .env here, or ~/.config/taps/env"
         );
     };
     if wiki_flag.is_some() {

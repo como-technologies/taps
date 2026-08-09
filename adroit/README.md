@@ -8,8 +8,10 @@ The shape of the world, in five rules:
 
 - The KB is the loop's state store; adroit is a thin set of verbs and
   gates over it, reached by `KB_URL`/`KB_WIKI` like every taps tool
-  (`just kb-dev` serves a local one). Config is that pair plus the
-  naming default (`ADROIT_NAMING` / `--naming`). Nothing else.
+  (`just kb-dev` serves a local one), resolved by the suite's one
+  discovery order — process env, cwd `.env`, `~/.config/taps/env`
+  (`como-kb-client`). Config is that pair plus the naming default
+  (`ADROIT_NAMING` / `--naming`). Nothing else.
 - adroit is the **only writer** of `decision` and `plan` pages
   (`schemas/`, registered on first contact, idempotently). Ownership is
   a **write** boundary — anyone reads decision pages through the

@@ -49,15 +49,17 @@ pub struct KbStore {
 }
 
 impl KbStore {
-    /// Connect via `KB_URL` / `KB_WIKI`. Fails visibly when no KB is
-    /// configured — the KB is the state store, there is nothing to fall
-    /// back to.
+    /// Connect via the suite pair (`KB_URL` / `KB_WIKI`), resolved through
+    /// the suite-wide discovery order (env, cwd `.env`, `~/.config/taps/env`).
+    /// Fails visibly when no KB is configured — the KB is the state store,
+    /// there is nothing to fall back to.
     pub async fn connect() -> Result<Self> {
-        let Some(target) = KbTarget::from_env() else {
+        let Some(target) = KbTarget::discover() else {
             bail!(
                 "no KB configured: set KB_URL to your appliance's MCP endpoint \
                  (e.g. http://localhost:8080/mcp; `just kb-dev` serves one) and \
-                 optionally KB_WIKI for the target space"
+                 optionally KB_WIKI for the target space — in the environment, \
+                 a .env here, or ~/.config/taps/env"
             );
         };
         Ok(Self {

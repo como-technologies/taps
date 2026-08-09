@@ -91,10 +91,6 @@ pub enum Command {
 /// Run the parsed CLI to completion. `lint` and `check` exit non-zero when
 /// they find errors — the CI-gate contract.
 pub async fn run(cli: Cli) -> anyhow::Result<()> {
-    // The suite pair comes from the environment; a .env in the working
-    // directory (e.g. a kb-workspace) is honored like every taps tool.
-    dotenvy::dotenv().ok();
-
     if let Command::Mcp = cli.command {
         return mcp::serve(cli.naming).await;
     }
