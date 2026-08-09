@@ -23,7 +23,7 @@ permissions:
 jobs:
   gate:
     # The whole suite gate, one job: fmt, clippy, the workspace test suite,
-    # the per-product invariant lanes (conduit tokio-free, adroit's core and
+    # the per-product invariant lanes (conduit tokio-free,
     # web feature layering, tuesday-core's wasm32 lane), and all the books.
     name: Suite gate
     if: github.event_name != 'schedule'

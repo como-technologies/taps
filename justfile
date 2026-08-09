@@ -142,13 +142,8 @@ lanes:
     # conduit is fully synchronous (conduit ADR-0001, poll-tick loop): its
     # dependency graph must stay tokio-free.
     bash -c "! cargo tree -p conduit -e normal | grep -qw tokio"
-    # adroit's feature layering: the bare core (no tui/ai/forge) builds,
-    # lints, and tests clean — it never pulls the TUI/async stacks.
-    cargo clippy -p adroit --no-default-features -- -D warnings
-    cargo test -q -p adroit --no-default-features
-    # adroit's web feature, Rust side (the Vue bundle build stays in
-    # adroit's own justfile: `just web-build`).
-    cargo clippy -p adroit --features web -- -D warnings
+    # adroit is greenfield (taps #93) — its lanes return as the new core
+    # earns them.
     # tuesday-core stays wasm32-compatible, no tokio (tuesday ADR-0002).
     rustup target add wasm32-unknown-unknown
     cargo check -q -p tuesday-core --target wasm32-unknown-unknown
@@ -160,7 +155,6 @@ lanes:
 # live in docs-theme/)
 # Build every book — the six products' plus the Getting Started guide
 books:
-    mdbook build adroit/docs
     mdbook build assessments/docs
     mdbook build conduit/docs
     mdbook build getting-started/docs
@@ -179,7 +173,6 @@ site: books
     # Clear contents but keep the directory itself: books-serve's
     # live-server watches this root, and deleting it would orphan the watch.
     mkdir -p target/site && rm -rf target/site/*
-    cp -r adroit/docs/book          target/site/adroit
     cp -r assessments/target/book   target/site/assessments
     cp -r conduit/docs/book         target/site/conduit
     cp -r getting-started/target/book target/site/getting-started
@@ -197,7 +190,7 @@ site: books
     <p><a href="portfolio/">Start with the portfolio book</a> — the reader-facing story.</p>
     <p><a href="getting-started/">New here? The Getting Started guide</a> — from a fresh machine to a first trip around the loop.</p>
     <ul>
-      <li><a href="adroit/">adroit</a> — decision records (Prescribe)</li>
+      <li>adroit — decision records (Prescribe; rebuilding, taps #93)</li>
       <li><a href="assessments/">assessments</a> — amaker (Assess)</li>
       <li><a href="conduit/">conduit</a> — the Adopt engine</li>
       <li><a href="llm-wiki/">llm-wiki</a> — the knowledge-base engine</li>
@@ -232,7 +225,7 @@ books-serve port="8000": _need-watch-tools site
     # build into docs/book from re-triggering.
     while inotifywait -qq -r -e modify,create,delete,move \
           --exclude '/docs/book/' \
-          adroit/docs assessments/docs conduit/docs getting-started/docs \
+          assessments/docs conduit/docs getting-started/docs \
           llm-wiki/docs portfolio/docs pulse/docs tuesday/docs docs-theme; do
         sleep 0.3       # coalesce editor save bursts
         echo "change detected — rebuilding site…"

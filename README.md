@@ -6,7 +6,7 @@ Adopt → Measure) — as one multi-crate Cargo workspace.
 
 | product | what it is |
 |---|---|
-| [`adroit`](adroit/) | Architecture Decision Record manager: CLI, TUI, MCP server, and web dashboard (Prescribe) |
+| [`adroit`](adroit/) | Decision records for the loop — the only writer of the KB's decision pages; rebuilding greenfield, taps #93 (Prescribe) |
 | [`assessments`](assessments/) | amaker — chat-driven assessment authoring, respondent forms, and analysis (Assess) |
 | [`conduit`](conduit/) | forge-neutral agentic development harness — the Adopt-stage engine |
 | [`llm-wiki`](llm-wiki/) | git-backed wiki engine with MCP/ACP servers — the suite's knowledge-base substrate |
