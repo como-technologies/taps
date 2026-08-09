@@ -154,7 +154,9 @@ impl AmakerServer {
     }
 }
 
-#[tool_handler]
+// rmcp 1.8's default router expression is `Self::tool_router()` (a fresh
+// router per call); point it at the one built at construction instead.
+#[tool_handler(router = self.tool_router)]
 impl ServerHandler for AmakerServer {
     fn get_info(&self) -> ServerInfo {
         ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
