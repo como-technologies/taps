@@ -34,12 +34,18 @@ kit/
     author-glossary/
     research/
     lint-and-fix/
-  starter/             deliberately empty — why fresh spaces start blank
   claude-desktop/
     README.md          config snippet + current limits (MCP-only harness)
   worked-example/
     session.md         a real captured authoring session, gates and all
 ```
+
+There is no starter content, on purpose. Content follows the same
+ownership boundary as schemas: each tool contributes its own
+documentation to a space when it integrates (taps #76), so a fresh
+space is a blank canvas until its tools teach it. Decision pages in
+particular belong to adroit (rebuilding greenfield, taps #93), whose
+corpus starts empty; test data lives with tests, never in the kit.
 
 ## Setup — Claude Code
 
@@ -88,19 +94,5 @@ HTTP transport (one server, many sessions).
 
 See [claude-desktop/README.md](claude-desktop/README.md). Content classes
 (`guide`, `glossary-entry`, `worked-example`) work over llm-wiki's MCP
-server; decisions work through adroit's guarded MCP write slice
-(`adroit mcp --allow-write`, its ADR-0021) — destructive-annotated tools
-the human approves per call.
-
-## Why ad-hoc corpus checks don't use `spaces create`
-
-Recorded here per portfolio#7 (wave 1): seeding a committed decision
-corpus into an ephemeral space for an `adroit check` hand-scaffolds a
-two-line `wiki.toml` instead of calling `llm-wiki spaces create`,
-deliberately — the corpus check is adroit's, and requiring an llm-wiki
-build buys no additional assertion there. Provisioning is exercised
-where it matters: this repo's own tests (`tests/spaces.rs`) cover the
-schema library, hooks, strictness, and weights on every run, and every
-kit session starts with a real `spaces create`. If a corpus check ever
-needs admission-hook coverage, that is the moment to revisit — not
-before.
+server; decision pages belong to adroit's MCP surface (rebuilding,
+taps #93).
