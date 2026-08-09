@@ -1,48 +1,146 @@
 # Step 4 — Prescribe
 
-> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
-> yet — commands and claims may change as the dogfood walk reaches it.
+An assessment that stays a scorecard changes nothing. This step turns
+Step 3's report into a backlog of **proposed decisions** in your space —
+decision records your team refines, debates, and accepts. The tool is
+[adroit](../portfolio/loop/prescribe.html), and it works the way every
+taps tool now does: the KB is the state store, reached over the
+appliance's transport. adroit owns two page classes, `decision` and
+`plan`; your space learns them the moment adroit first writes, and only
+adroit writes them.
 
-An assessment that stays a scorecard changes nothing. This step turns it
-into a backlog of **proposed decisions** in your knowledge base —
-Architecture Decision Records your team refines, debates, and accepts.
-The tool is [adroit](../portfolio/loop/prescribe.html).
+Prescribing is judgment. Nothing in this step parses the report or
+generates decisions from a template — a session (or you, at the
+terminal) *reads* the report like any other page and decides what's
+worth deciding. adroit just records the judgment and keeps the corpus
+honest.
 
-## Seed the backlog from the assessment
+## Tell adroit where the KB is
 
-Step 3 left the assessment and its report as typed pages in your space;
-this step's decisions start from what those pages say.
-
-> 🚧 **Unverified — and expected to change.** This page still describes
-> adroit's pre-appliance, filesystem-bound shape (`--dir` at a local
-> path). When the walk reaches this step, adroit becomes a transport
-> client of the appliance like every other tool, consuming the
-> assessment pages directly, and this page gets rewritten from the
-> walk. Read the commands below as the old shape, not a promise.
-
-## Refine the decisions
-
-Work the backlog however you prefer — all three surfaces sit on the same
-store:
+The same suite pair every tool reads, in a `.env` where adroit runs —
+your workspace, which makes the pair serve both your terminal and your
+session's tool:
 
 ```sh
-adroit --dir ~/myproject-kb                # the TUI: browse, triage, edit
-adroit show 1 --dir ~/myproject-kb        # or the CLI
-adroit lint 1 --dir ~/myproject-kb        # authoring-quality gate, no AI needed
+KB_ADDR=$(incus list kb -c4 -f csv | cut -d" " -f1)
+cat > ~/kb-workspace/.env <<EOF
+KB_URL=http://$KB_ADDR:8080/mcp
+KB_WIKI=myproject
+EOF
 ```
 
-From your harness (Step 2's kit), decisions route through adroit's
-guarded MCP surface — ask "what have we decided about testing?", draft a
-revision in conversation, and every write still lands behind the same
-gates.
+No other configuration exists: adroit has no data directory and no
+filesystem mode. If the KB is down, adroit says so and does nothing.
+
+## Hand your session the tool
+
+Like amaker in Step 3, the `adroit` binary serves its whole command
+surface over MCP (`adroit mcp`) — the agent drives the same verbs a
+terminal would, as typed tools. Add it beside `kb` and `amaker`, and
+extend the walk's pre-grant to trust it:
+
+```sh
+cd ~/kb-workspace
+python3 - <<'EOF'
+import json
+cfg = json.load(open(".mcp.json"))
+cfg["mcpServers"]["adroit"] = {
+    "type": "stdio",
+    "command": "bash",
+    "args": ["-lc", "cd ~/kb-workspace && exec adroit mcp"],
+}
+json.dump(cfg, open(".mcp.json", "w"), indent=2)
+s = json.load(open(".claude/settings.local.json"))
+s["permissions"]["allow"].append("mcp__adroit")
+json.dump(s, open(".claude/settings.local.json", "w"), indent=2)
+EOF
+```
+
+(The `cd` matters again: the server reads the `.env` you just wrote
+from where it runs. And a stdio server pins its binary for the life of
+a session — if you ever rebuild the suite mid-walk, reconnect `/mcp`
+or restart the session so the door serves the new tool.)
+
+## Seed the backlog from the report
+
+Paste this into your **workspace session**:
+
+```text
+Read the assessment report page in the knowledge base (list pages of
+type assessment-report, then read it). From its gaps, propose the few
+decisions worth making — quality over coverage. Draft each as a full
+decision record: context and problem statement, at least two considered
+options, a decision outcome, and honest negative consequences. Create
+each with the adroit tools, linking it to the report page with relates.
+Leave every decision proposed — accepting is my seat, not yours. Finish
+with adroit's list so I can see the backlog.
+```
+
+Watch the first `new` land: adroit registers its two schemas on first
+contact (`registered`, then `unchanged` ever after), allocates the
+reference (`ADR-0001` — max existing in the space + 1), and every page
+enters through the same admission gates as everything else. The
+`relates` link is a real graph edge from each decision back to the
+report — provenance the engine's lint keeps honest, not import
+metadata.
+
+## Refine — this part is you
+
+Work the backlog until each record says what you mean. All the doors
+sit on the same store:
+
+```sh
+cd ~/kb-workspace && set -a && . ./.env && set +a
+adroit list                 # the backlog, reference-sorted
+adroit show 1               # read before you sign
+adroit lint 1               # authoring-quality gate — mechanical, no AI
+adroit edit 1 --body-file revised.md   # replace a proposed body wholesale
+```
+
+Or stay in conversation — the session refines through the same `edit`
+tool, and every rewrite preserves what it doesn't own: frontmatter
+fields, foreign keys, anything another tool hung on the page. `edit`
+works on **proposed** decisions only; a decided record is history, and
+history gets superseded, not rewritten.
 
 ## Accept what you mean to do
 
 ```sh
-adroit set-status 1 accepted --dir ~/myproject-kb
-adroit check --dir ~/myproject-kb          # the corpus stays sound
+adroit set-status 1 accepted
+adroit check                # the corpus stays sound
 ```
 
+The lifecycle is deliberately narrow: a proposal is decided
+(`accepted` / `rejected`), an accepted decision can age out
+(`deprecated`), and replacement is one atomic verb —
+`adroit supersede <new> <old>` links both sides' frontmatter in a
+single stroke and lands as a single commit in your space's history.
+Terminal states don't come back: reopening a question is a *new*
+decision that `--relates` to the old one.
+
 Accepted decisions are the contract with the next stage: Step 5 reads
-**only** accepted ADRs. Everything still `proposed` waits, visible but
-inert.
+**only** accepted records. Everything still `proposed` waits, visible
+but inert.
+
+## Verify
+
+Ask your workspace session:
+
+```text
+What have we decided so far? Answer from accepted decisions only, and
+cite pages.
+```
+
+It searches and reads adroit's pages with the ordinary wiki tools — no
+adroit dependency; ownership is a *write* boundary. Then check the
+corpus and the vocabulary from the outside:
+
+```sh
+adroit check    # supersession integrity, duplicate refs/ids — exits non-zero on errors
+incus exec kb -- su - kb -c 'llm-wiki schema list --wiki myproject'
+```
+
+`decision` and `plan` now sit beside amaker's classes, each carrying
+`x-owner: adroit` — the space learned them at first contact. Your
+backlog is real, your acceptances are recorded, and the loop moves on:
+Step 5 turns accepted decisions into adopted change.
