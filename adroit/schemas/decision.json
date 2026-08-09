@@ -64,7 +64,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Ids/slugs of related decisions"
+      "description": "Ids/slugs of related pages \u2014 provenance edges: where this decision came from (a report, a gap, any page)"
     },
     "depends_on": {
       "type": "array",
@@ -148,10 +148,7 @@
     },
     "relates_to": {
       "relation": "relates-to",
-      "direction": "outgoing",
-      "target_types": [
-        "decision"
-      ]
+      "direction": "outgoing"
     },
     "depends_on": {
       "relation": "depends-on",
