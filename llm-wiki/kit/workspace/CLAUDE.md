@@ -40,6 +40,13 @@ no corpus here and no filesystem path to one.
   writing, `wiki_lint` before declaring done. A validation failure
   names its rule — fix the page, never the process. If you believe the
   schema is wrong, stop and tell the human; schemas change by decision.
+- **Product source and repos are outside this room.** When a tool or
+  door fails, report the exact call and the exact error, then stop —
+  don't cd into a product checkout to diagnose it. Debugging happens
+  where the products live (their repo, their gates, their running
+  services), none of which is visible from here; a failed door is a
+  finding to hand out of the room, like a page that doesn't match
+  reality.
 - **Answer from the space**: for "what do we know / what was decided"
   questions, search and read the KB (the research skill) and cite
   pages. "The space doesn't record this" is a valid answer; silent
