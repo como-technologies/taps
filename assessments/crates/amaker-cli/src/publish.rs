@@ -81,8 +81,8 @@ pub async fn publish_cmd(
     ] {
         let report = kb
             .call_json(
-                "wiki_schema",
-                serde_json::json!({"action": "register", "type": type_name, "schema": schema}),
+                "wiki_admin_schema_register",
+                serde_json::json!({"type": type_name, "schema": schema}),
             )
             .await?;
         schemas.push(format!(

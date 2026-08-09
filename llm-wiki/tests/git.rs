@@ -99,7 +99,7 @@ fn changed_wiki_files_detects_new_file() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
 
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(wiki.join("init.md"), "---\ntitle: Init\n---\n").unwrap();
     git::commit(dir.path(), "initial").unwrap();
@@ -115,7 +115,7 @@ fn changed_wiki_files_detects_modified_file() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
 
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(wiki.join("page.md"), "---\ntitle: Old\n---\n").unwrap();
     git::commit(dir.path(), "initial").unwrap();
@@ -135,7 +135,7 @@ fn changed_wiki_files_detects_deleted_file() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
 
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(wiki.join("page.md"), "---\ntitle: Gone\n---\n").unwrap();
     git::commit(dir.path(), "initial").unwrap();
@@ -155,7 +155,7 @@ fn changed_wiki_files_ignores_non_md() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
 
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(wiki.join("init.md"), "---\ntitle: Init\n---\n").unwrap();
     git::commit(dir.path(), "initial").unwrap();
@@ -171,7 +171,7 @@ fn changed_wiki_files_ignores_files_outside_wiki() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
 
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(wiki.join("init.md"), "---\ntitle: Init\n---\n").unwrap();
     git::commit(dir.path(), "initial").unwrap();
@@ -189,7 +189,7 @@ fn changed_since_commit_detects_gap() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
 
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(wiki.join("page-a.md"), "---\ntitle: A\n---\n").unwrap();
     let first = git::commit(dir.path(), "first").unwrap();
@@ -208,7 +208,7 @@ fn changed_since_commit_detects_gap() {
 fn collect_changed_files_detects_new_file() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(dir.path().join("README.md"), "# test\n").unwrap();
     git::commit(dir.path(), "init").unwrap();
@@ -223,7 +223,7 @@ fn collect_changed_files_detects_new_file() {
 fn collect_changed_files_empty_when_clean() {
     let dir = tempfile::tempdir().unwrap();
     git::init_repo(dir.path()).unwrap();
-    let wiki = dir.path().join("wiki");
+    let wiki = dir.path().join("content");
     fs::create_dir_all(&wiki).unwrap();
     fs::write(wiki.join("foo.md"), "---\ntitle: Foo\n---\n").unwrap();
     git::commit(dir.path(), "add foo").unwrap();

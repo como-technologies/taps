@@ -10,13 +10,13 @@ fn setup_wiki(dir: &Path, name: &str) -> (std::path::PathBuf, std::path::PathBuf
     let config_path = dir.join("state").join("config.toml");
     let wiki_path = dir.join(name);
 
-    llm_wiki::spaces::create(&wiki_path, name, None, false, true, &config_path, None).unwrap();
+    llm_wiki::registry::create(&wiki_path, name, None, false, true, &config_path, None).unwrap();
 
     // Write a page so the index has something
-    let wiki_root = wiki_path.join("wiki");
-    fs::create_dir_all(wiki_root.join("concepts")).unwrap();
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("concepts")).unwrap();
     fs::write(
-        wiki_root.join("concepts/moe.md"),
+        content_root.join("concepts/moe.md"),
         "---\ntitle: \"MoE\"\ntype: concept\nstatus: active\n---\n\nMixture of Experts.\n",
     )
     .unwrap();
@@ -36,7 +36,7 @@ fn engine_builds_from_config() {
     let engine = manager.state.read().unwrap();
 
     assert_eq!(engine.default_wiki_name(), "test");
-    assert!(engine.spaces.contains_key("test"));
+    assert!(engine.wikis.contains_key("test"));
 }
 
 #[test]
@@ -49,7 +49,7 @@ fn engine_builds_with_no_wikis() {
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
 
-    assert!(engine.spaces.is_empty());
+    assert!(engine.wikis.is_empty());
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn engine_builds_with_missing_config() {
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
 
-    assert!(engine.spaces.is_empty());
+    assert!(engine.wikis.is_empty());
 }
 
 #[test]
@@ -75,14 +75,14 @@ fn engine_mount_fails_loud_on_broken_schema() {
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
     assert!(
-        engine.space("test").is_err(),
+        engine.wiki("test").is_err(),
         "wiki with a broken schema must not mount"
     );
 
     // The error chain names the wiki and the broken schema file.
-    let err = match llm_wiki::space_builder::build_space(&wiki_path, "en_stem") {
+    let err = match llm_wiki::wiki_builder::build_wiki(&wiki_path, "en_stem") {
         Err(e) => e,
-        Ok(_) => panic!("build_space should fail on a broken schema"),
+        Ok(_) => panic!("build_wiki should fail on a broken schema"),
     };
     let chain = format!("{err:#}");
     assert!(
@@ -102,7 +102,7 @@ fn engine_mounts_wiki_without_schemas_dir() {
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
-    let space = engine.space("test").unwrap();
+    let space = engine.wiki("test").unwrap();
     assert!(space.type_registry.is_known("concept"));
 }
 
@@ -116,9 +116,9 @@ fn engine_space_returns_mounted_wiki() {
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
 
-    let space = engine.space("research").unwrap();
+    let space = engine.wiki("research").unwrap();
     assert_eq!(space.name, "research");
-    assert!(space.wiki_root.ends_with("wiki"));
+    assert!(space.content_root.ends_with("content"));
 }
 
 #[test]
@@ -129,7 +129,7 @@ fn engine_space_errors_on_unknown() {
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
 
-    assert!(engine.space("nonexistent").is_err());
+    assert!(engine.wiki("nonexistent").is_err());
 }
 
 #[test]
@@ -167,9 +167,9 @@ fn refresh_index_updates_index() {
     let manager = WikiEngine::build(&config_path).unwrap();
 
     // Write a new page after engine build
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
     fs::write(
-        wiki_root.join("concepts/new.md"),
+        content_root.join("concepts/new.md"),
         "---\ntitle: \"New\"\ntype: concept\nstatus: active\n---\n\nNew.\n",
     )
     .unwrap();
@@ -192,12 +192,12 @@ fn rebuild_index_works() {
 }
 
 #[test]
-fn engine_mounts_wiki_with_custom_wiki_root() {
+fn engine_mounts_wiki_with_custom_content_root() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("state").join("config.toml");
     let wiki_path = dir.path().join("skills-wiki");
 
-    llm_wiki::spaces::create(
+    llm_wiki::registry::create(
         &wiki_path,
         "skills",
         None,
@@ -208,10 +208,10 @@ fn engine_mounts_wiki_with_custom_wiki_root() {
     )
     .unwrap();
 
-    let wiki_root = wiki_path.join("skills");
-    fs::create_dir_all(wiki_root.join("bootstrap")).unwrap();
+    let content_root = wiki_path.join("skills");
+    fs::create_dir_all(content_root.join("bootstrap")).unwrap();
     fs::write(
-        wiki_root.join("bootstrap/SKILL.md"),
+        content_root.join("bootstrap/SKILL.md"),
         "---\ntitle: \"Bootstrap\"\ntype: page\nstatus: active\n---\n\nBootstrap skill.\n",
     )
     .unwrap();
@@ -219,35 +219,35 @@ fn engine_mounts_wiki_with_custom_wiki_root() {
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
-    let space = engine.space("skills").unwrap();
+    let space = engine.wiki("skills").unwrap();
 
-    let expected_wiki_root = wiki_path.canonicalize().unwrap().join("skills");
-    assert_eq!(space.wiki_root, expected_wiki_root);
+    let expected_content_root = wiki_path.canonicalize().unwrap().join("skills");
+    assert_eq!(space.content_root, expected_content_root);
 }
 
 #[test]
-fn engine_indexes_custom_wiki_root_fixture() {
+fn engine_indexes_custom_content_root_fixture() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("state").join("config.toml");
     let fixture_path = std::path::Path::new("tests/fixtures/wikis/alt-root");
 
-    llm_wiki::spaces::register_existing(fixture_path, "alt-root", None, None, &config_path)
+    llm_wiki::registry::register_existing(fixture_path, "alt-root", None, None, &config_path)
         .unwrap();
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine_guard = manager.state.read().unwrap();
-    let space = engine_guard.space("alt-root").unwrap();
+    let space = engine_guard.wiki("alt-root").unwrap();
 
-    assert!(space.wiki_root.ends_with("content"));
+    assert!(space.content_root.ends_with("content"));
 }
 
 #[test]
-fn content_read_works_with_custom_wiki_root() {
+fn content_read_works_with_custom_content_root() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("state").join("config.toml");
     let wiki_path = dir.path().join("skills-wiki");
 
-    llm_wiki::spaces::create(
+    llm_wiki::registry::create(
         &wiki_path,
         "skills",
         None,
@@ -258,10 +258,10 @@ fn content_read_works_with_custom_wiki_root() {
     )
     .unwrap();
 
-    let wiki_root = wiki_path.join("skills");
-    fs::create_dir_all(&wiki_root).unwrap();
+    let content_root = wiki_path.join("skills");
+    fs::create_dir_all(&content_root).unwrap();
     fs::write(
-        wiki_root.join("bootstrap.md"),
+        content_root.join("bootstrap.md"),
         "---\ntitle: \"Bootstrap\"\ntype: page\nstatus: active\n---\n\nContent.\n",
     )
     .unwrap();

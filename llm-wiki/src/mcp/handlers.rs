@@ -7,22 +7,22 @@ use crate::slug::{ReadTarget, resolve_read_target};
 use super::McpServer;
 use super::helpers::*;
 
-// ── Spaces ────────────────────────────────────────────────────────────────────
+// ── Admin ──────────────────────────────────────────────────────────────────────
 
-/// Handle `wiki_spaces_create` — create a new wiki repository and register it.
-pub fn handle_spaces_create(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
+/// Handle `wiki_admin_create` — create a new wiki repository and register it.
+pub fn handle_admin_create(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
     let path = arg_str_req(args, "path")?;
     let name = arg_str_req(args, "name")?;
     let description = arg_str(args, "description");
     let force = arg_bool(args, "force");
     let set_default = arg_bool(args, "set_default");
-    let wiki_root = arg_str(args, "wiki_root");
+    let content_root = arg_str(args, "content_root");
 
     let config_path = {
         let engine = server.engine();
         engine.config_path.clone()
     };
-    let report = ops::spaces_create(
+    let report = ops::admin_create(
         &std::path::PathBuf::from(&path),
         &name,
         description.as_deref(),
@@ -30,7 +30,7 @@ pub fn handle_spaces_create(server: &McpServer, args: &Map<String, Value>) -> To
         set_default,
         &config_path,
         Some(&server.manager),
-        wiki_root.as_deref(),
+        content_root.as_deref(),
     )
     .map_err(|e| format!("{e}"))?;
 
@@ -45,22 +45,22 @@ pub fn handle_spaces_create(server: &McpServer, args: &Map<String, Value>) -> To
     ok_text(json)
 }
 
-/// Handle `wiki_spaces_register` — register an existing wiki repository without creating files.
-pub fn handle_spaces_register(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
+/// Handle `wiki_admin_register` — register an existing wiki repository without creating files.
+pub fn handle_admin_register(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
     let path = arg_str_req(args, "path")?;
     let name = arg_str_req(args, "name")?;
     let description = arg_str(args, "description");
-    let wiki_root = arg_str(args, "wiki_root");
+    let content_root = arg_str(args, "content_root");
 
     let config_path = {
         let engine = server.engine();
         engine.config_path.clone()
     };
-    let report = ops::spaces_register(
+    let report = ops::admin_register(
         &std::path::PathBuf::from(&path),
         &name,
         description.as_deref(),
-        wiki_root.as_deref(),
+        content_root.as_deref(),
         &config_path,
         Some(&server.manager),
     )
@@ -75,30 +75,30 @@ pub fn handle_spaces_register(server: &McpServer, args: &Map<String, Value>) -> 
     ok_text(json)
 }
 
-/// Handle `wiki_spaces_list` — list registered wiki spaces.
-pub fn handle_spaces_list(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
+/// Handle `wiki_admin_list` — list registered wikis.
+pub fn handle_admin_list(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
     let engine = server.engine();
     let name = arg_str(args, "name");
-    let entries = ops::spaces_list(&engine.config, name.as_deref());
+    let entries = ops::admin_list(&engine.config, name.as_deref());
     let s = serde_json::to_string_pretty(&entries).map_err(|e| format!("{e}"))?;
     ok_text(s)
 }
 
-/// Handle `wiki_spaces_remove` — unregister (and optionally delete) a wiki space.
-pub fn handle_spaces_remove(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
+/// Handle `wiki_admin_remove` — unregister (and optionally delete) a wiki.
+pub fn handle_admin_remove(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
     let name = arg_str_req(args, "name")?;
     let delete = arg_bool(args, "delete");
     let config_path = {
         let engine = server.engine();
         engine.config_path.clone()
     };
-    ops::spaces_remove(&name, delete, &config_path, Some(&server.manager))
+    ops::admin_remove(&name, delete, &config_path, Some(&server.manager))
         .map_err(|e| format!("{e}"))?;
     ok_text(format!("Removed wiki \"{name}\""))
 }
 
-/// Handle `wiki_spaces_set_default` — set the default wiki space.
-pub fn handle_spaces_set_default(
+/// Handle `wiki_admin_set_default` — set the default wiki.
+pub fn handle_admin_set_default(
     server: &McpServer,
     args: &Map<String, Value>,
 ) -> ToolHandlerResult {
@@ -107,15 +107,15 @@ pub fn handle_spaces_set_default(
         let engine = server.engine();
         engine.config_path.clone()
     };
-    ops::spaces_set_default(&name, &config_path, Some(&server.manager))
+    ops::admin_set_default(&name, &config_path, Some(&server.manager))
         .map_err(|e| format!("{e}"))?;
     ok_text(format!("Default wiki set to \"{name}\""))
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-/// Handle `wiki_config` — get, set, or list configuration values.
-pub fn handle_config(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
+/// Handle `wiki_admin_config` — get, set, or list configuration values.
+pub fn handle_admin_config(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
     let action = arg_str_req(args, "action")?;
     let engine = server.engine();
     let config_path = &engine.config_path;
@@ -236,7 +236,7 @@ pub fn handle_content_new(server: &McpServer, args: &Map<String, Value>) -> Tool
         "uri":       result.uri,
         "slug":      result.slug,
         "path":      result.path,
-        "wiki_root": result.wiki_root,
+        "content_root": result.content_root,
         "bundle":    result.bundle,
     });
     if let Some(id) = result.id {
@@ -255,25 +255,25 @@ pub fn handle_resolve(server: &McpServer, args: &Map<String, Value>) -> ToolHand
     let (entry, slug) = engine
         .resolve_address(&uri, wiki_flag.as_deref())
         .map_err(|e| format!("{e}"))?;
-    let wiki_root = engine
-        .space(&entry.name)
-        .map(|s| s.wiki_root.clone())
-        .unwrap_or_else(|_| std::path::PathBuf::from(&entry.path).join("wiki"));
+    let content_root = engine
+        .wiki(&entry.name)
+        .map(|s| s.content_root.clone())
+        .unwrap_or_else(|_| std::path::PathBuf::from(&entry.path).join("content"));
 
-    let (path, exists, bundle) = match resolve_read_target(slug.as_str(), &wiki_root) {
+    let (path, exists, bundle) = match resolve_read_target(slug.as_str(), &content_root) {
         Ok(ReadTarget::Page(p)) => {
             let bundle = p.ends_with("index.md");
             (p, true, bundle)
         }
         _ => {
-            let p = wiki_root.join(format!("{}.md", slug.as_str()));
+            let p = content_root.join(format!("{}.md", slug.as_str()));
             (p, false, false)
         }
     };
 
-    let id = engine.space(&entry.name).ok().and_then(|space| {
-        let searcher = space.index_manager.searcher().ok()?;
-        crate::search::id_for_slug(&searcher, &space.index_schema, slug.as_str())
+    let id = engine.wiki(&entry.name).ok().and_then(|wiki| {
+        let searcher = wiki.index_manager.searcher().ok()?;
+        crate::search::id_for_slug(&searcher, &wiki.index_schema, slug.as_str())
             .ok()
             .flatten()
     });
@@ -281,7 +281,7 @@ pub fn handle_resolve(server: &McpServer, args: &Map<String, Value>) -> ToolHand
     let mut response = serde_json::json!({
         "slug":      slug.as_str(),
         "wiki":      entry.name,
-        "wiki_root": wiki_root,
+        "content_root": content_root,
         "path":      path,
         "exists":    exists,
         "bundle":    bundle,
@@ -393,9 +393,9 @@ pub fn handle_ingest(server: &McpServer, args: &Map<String, Value>) -> ToolHandl
                 .map_err(|e| format!("{e}"))?;
 
         let notify_uris = if !dry_run {
-            let space = engine.space(&wiki_name).map_err(|e| format!("{e}"))?;
-            let ingest_path = space.wiki_root.join(&path);
-            collect_page_uris(&ingest_path, &space.wiki_root, &wiki_name)
+            let wiki = engine.wiki(&wiki_name).map_err(|e| format!("{e}"))?;
+            let ingest_path = wiki.content_root.join(&path);
+            collect_page_uris(&ingest_path, &wiki.content_root, &wiki_name)
         } else {
             vec![]
         };
@@ -410,8 +410,11 @@ pub fn handle_ingest(server: &McpServer, args: &Map<String, Value>) -> ToolHandl
 
 // ── Index ─────────────────────────────────────────────────────────────────────
 
-/// Handle `wiki_index_rebuild` — rebuild the tantivy search index from scratch.
-pub fn handle_index_rebuild(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
+/// Handle `wiki_admin_index_rebuild` — rebuild the tantivy search index from scratch.
+pub fn handle_admin_index_rebuild(
+    server: &McpServer,
+    args: &Map<String, Value>,
+) -> ToolHandlerResult {
     let wiki_name = {
         let engine = server.engine();
         resolve_wiki_name(&engine, args)?
@@ -422,15 +425,15 @@ pub fn handle_index_rebuild(server: &McpServer, args: &Map<String, Value>) -> To
     // Non-fatal: refresh the graph snapshot after index rebuild.
     {
         let engine = server.engine();
-        if let Ok(space) = engine.space(&wiki_name) {
-            let current_gen = space.index_manager.generation();
-            if let Ok(searcher) = space.index_manager.searcher() {
-                let _ = space.graph_cache.rebuild(current_gen, || {
+        if let Ok(wiki) = engine.wiki(&wiki_name) {
+            let current_gen = wiki.index_manager.generation();
+            if let Ok(searcher) = wiki.index_manager.searcher() {
+                let _ = wiki.graph_cache.rebuild(current_gen, || {
                     crate::graph::build_graph(
                         &searcher,
-                        &space.index_schema,
+                        &wiki.index_schema,
                         &crate::graph::GraphFilter::default(),
-                        &space.type_registry,
+                        &wiki.type_registry,
                     )
                 });
             }
@@ -441,8 +444,11 @@ pub fn handle_index_rebuild(server: &McpServer, args: &Map<String, Value>) -> To
     ok_text(s)
 }
 
-/// Handle `wiki_index_status` — report health and staleness of the search index.
-pub fn handle_index_status(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
+/// Handle `wiki_admin_index_status` — report health and staleness of the search index.
+pub fn handle_admin_index_status(
+    server: &McpServer,
+    args: &Map<String, Value>,
+) -> ToolHandlerResult {
     let engine = server.engine();
     let wiki_name = resolve_wiki_name(&engine, args)?;
 
@@ -525,7 +531,8 @@ pub fn handle_suggest(server: &McpServer, args: &Map<String, Value>) -> ToolHand
     ok_text(s)
 }
 
-/// Handle `wiki_schema` — list, show, add, remove, or validate type schemas.
+/// Handle `wiki_schema` — read-only: list, show, or validate type schemas.
+/// Vocabulary changes go through the `wiki_admin_schema_*` tools.
 pub fn handle_schema(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
     let action = arg_str(args, "action").ok_or("action is required")?;
     let engine = server.engine();
@@ -553,81 +560,6 @@ pub fn handle_schema(server: &McpServer, args: &Map<String, Value>) -> ToolHandl
                 ok_text(content)
             }
         }
-        "register" => {
-            let type_name = arg_str(args, "type").ok_or("type is required for register")?;
-            let schema_content =
-                arg_str(args, "schema").ok_or("schema is required for register")?;
-            let body_template = arg_str(args, "body_template");
-            let report = ops::schema_register(
-                &engine,
-                &wiki_name,
-                &type_name,
-                &schema_content,
-                body_template.as_deref(),
-            )
-            .map_err(|e| format!("{e}"))?;
-            // A new type changes the space's type registry, and the mounted
-            // context is immutable — remount so this live process validates
-            // and indexes the new type from here on (a one-shot CLI process
-            // never needs this; a long-running serve always does).
-            let entry = engine
-                .config
-                .wikis
-                .iter()
-                .find(|w| w.name == wiki_name)
-                .cloned();
-            drop(engine);
-            if report.status == "registered"
-                && let Some(entry) = entry
-            {
-                server
-                    .manager
-                    .mount_wiki(&entry)
-                    .map_err(|e| format!("remount after register failed: {e}"))?;
-            }
-            let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
-            ok_text(s)
-        }
-        "add" => {
-            let type_name = arg_str(args, "type").ok_or("type is required for add")?;
-            let schema_path =
-                arg_str(args, "schema_path").ok_or("schema_path is required for add")?;
-            let msg = ops::schema_add(
-                &engine,
-                &wiki_name,
-                &type_name,
-                std::path::Path::new(&schema_path),
-            )
-            .map_err(|e| format!("{e}"))?;
-            ok_text(msg)
-        }
-        "remove" => {
-            let type_name = arg_str(args, "type").ok_or("type is required for remove")?;
-            let delete = args
-                .get("delete")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            let delete_pages = args
-                .get("delete_pages")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            let dry_run = args
-                .get("dry_run")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false);
-            drop(engine);
-            let report = ops::schema_remove(
-                &server.manager,
-                &wiki_name,
-                &type_name,
-                delete,
-                delete_pages,
-                dry_run,
-            )
-            .map_err(|e| format!("{e}"))?;
-            let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
-            ok_text(s)
-        }
         "validate" => {
             let type_name = arg_str(args, "type");
             let issues = ops::schema_validate(&engine, &wiki_name, type_name.as_deref())
@@ -640,6 +572,82 @@ pub fn handle_schema(server: &McpServer, args: &Map<String, Value>) -> ToolHandl
         }
         _ => Err(format!("unknown action: {action}")),
     }
+}
+
+/// Handle `wiki_admin_schema_register` — register a type schema idempotently.
+pub fn handle_admin_schema_register(
+    server: &McpServer,
+    args: &Map<String, Value>,
+) -> ToolHandlerResult {
+    let engine = server.engine();
+    let wiki_name = resolve_wiki_name(&engine, args)?;
+    let type_name = arg_str(args, "type").ok_or("type is required")?;
+    let schema_content = arg_str(args, "schema").ok_or("schema is required")?;
+    let body_template = arg_str(args, "body_template");
+    let report = ops::schema_register(
+        &engine,
+        &wiki_name,
+        &type_name,
+        &schema_content,
+        body_template.as_deref(),
+    )
+    .map_err(|e| format!("{e}"))?;
+    // A new type changes the wiki's type registry, and the mounted
+    // context is immutable — remount so this live process validates
+    // and indexes the new type from here on (a one-shot CLI process
+    // never needs this; a long-running serve always does).
+    let entry = engine
+        .config
+        .wikis
+        .iter()
+        .find(|w| w.name == wiki_name)
+        .cloned();
+    drop(engine);
+    if report.status == "registered"
+        && let Some(entry) = entry
+    {
+        server
+            .manager
+            .mount_wiki(&entry)
+            .map_err(|e| format!("remount after register failed: {e}"))?;
+    }
+    let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
+    ok_text(s)
+}
+
+/// Handle `wiki_admin_schema_remove` — unregister a type and remove its pages
+/// from the index.
+pub fn handle_admin_schema_remove(
+    server: &McpServer,
+    args: &Map<String, Value>,
+) -> ToolHandlerResult {
+    let engine = server.engine();
+    let wiki_name = resolve_wiki_name(&engine, args)?;
+    let type_name = arg_str(args, "type").ok_or("type is required")?;
+    let delete = args
+        .get("delete")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let delete_pages = args
+        .get("delete_pages")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let dry_run = args
+        .get("dry_run")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    drop(engine);
+    let report = ops::schema_remove(
+        &server.manager,
+        &wiki_name,
+        &type_name,
+        delete,
+        delete_pages,
+        dry_run,
+    )
+    .map_err(|e| format!("{e}"))?;
+    let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
+    ok_text(s)
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────

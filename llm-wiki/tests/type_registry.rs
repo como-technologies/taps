@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 
-use llm_wiki::type_registry::SpaceTypeRegistry;
+use llm_wiki::type_registry::WikiTypeRegistry;
 use serde_yaml::Value;
 
 fn fm(fields: &[(&str, &str)]) -> BTreeMap<String, Value> {
@@ -15,7 +15,7 @@ fn fm(fields: &[(&str, &str)]) -> BTreeMap<String, Value> {
 
 #[test]
 fn embedded_knows_all_15_types() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     for t in &[
         "default",
         "concept",
@@ -39,19 +39,19 @@ fn embedded_knows_all_15_types() {
 
 #[test]
 fn embedded_unknown_type() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     assert!(!reg.is_known("alien"));
 }
 
 #[test]
 fn embedded_list_types_returns_18() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     assert_eq!(reg.list_types().len(), 18);
 }
 
 #[test]
 fn embedded_skill_has_aliases() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let aliases = reg.aliases("skill").expect("skill should have aliases");
     assert_eq!(aliases["name"], "title");
     assert_eq!(aliases["description"], "summary");
@@ -60,21 +60,21 @@ fn embedded_skill_has_aliases() {
 
 #[test]
 fn embedded_concept_has_no_aliases() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let aliases = reg.aliases("concept").expect("concept should exist");
     assert!(aliases.is_empty());
 }
 
 #[test]
 fn embedded_schema_hash_is_stable() {
-    let r1 = SpaceTypeRegistry::from_embedded();
-    let r2 = SpaceTypeRegistry::from_embedded();
+    let r1 = WikiTypeRegistry::from_embedded();
+    let r2 = WikiTypeRegistry::from_embedded();
     assert_eq!(r1.schema_hash(), r2.schema_hash());
 }
 
 #[test]
 fn default_impl() {
-    let reg = SpaceTypeRegistry::default();
+    let reg = WikiTypeRegistry::default();
     assert!(reg.is_known("concept"));
 }
 
@@ -108,7 +108,7 @@ fn build_discovers_types_from_schemas_dir() {
     // Minimal wiki.toml
     fs::write(dir.path().join("wiki.toml"), "name = \"test\"\n").unwrap();
 
-    let reg = SpaceTypeRegistry::build(dir.path()).unwrap();
+    let reg = WikiTypeRegistry::build(dir.path()).unwrap();
     assert!(reg.is_known("my-type"));
 }
 
@@ -165,7 +165,7 @@ description = "Custom paper"
     )
     .unwrap();
 
-    let reg = SpaceTypeRegistry::build(dir.path()).unwrap();
+    let reg = WikiTypeRegistry::build(dir.path()).unwrap();
 
     // paper should now require custom_field (from schema B)
     let valid = fm(&[
@@ -184,7 +184,7 @@ fn build_falls_back_to_embedded_when_no_schemas_dir() {
     let dir = tempfile::tempdir().unwrap();
     fs::write(dir.path().join("wiki.toml"), "name = \"test\"\n").unwrap();
 
-    let reg = SpaceTypeRegistry::build(dir.path()).unwrap();
+    let reg = WikiTypeRegistry::build(dir.path()).unwrap();
     assert!(reg.is_known("concept"));
     assert_eq!(reg.list_types().len(), 18);
 }
@@ -193,7 +193,7 @@ fn build_falls_back_to_embedded_when_no_schemas_dir() {
 
 #[test]
 fn validate_valid_concept() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let warnings = reg
         .validate(
             &fm(&[
@@ -211,21 +211,21 @@ fn validate_valid_concept() {
 
 #[test]
 fn validate_missing_title_in_strict() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let result = reg.validate(&fm(&[("type", "concept")]), "strict");
     assert!(result.is_err());
 }
 
 #[test]
 fn validate_missing_type_warns() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let warnings = reg.validate(&fm(&[("title", "Test")]), "loose").unwrap();
     assert!(warnings.iter().any(|w| w.contains("type")));
 }
 
 #[test]
 fn validate_unknown_type_loose_warns() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let warnings = reg
         .validate(&fm(&[("title", "Test"), ("type", "alien")]), "loose")
         .unwrap();
@@ -234,7 +234,7 @@ fn validate_unknown_type_loose_warns() {
 
 #[test]
 fn validate_unknown_type_strict_errors() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let result = reg.validate(&fm(&[("title", "Test"), ("type", "alien")]), "strict");
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("unknown type"));
@@ -242,7 +242,7 @@ fn validate_unknown_type_strict_errors() {
 
 #[test]
 fn validate_base_type_accepts_minimal() {
-    let reg = SpaceTypeRegistry::from_embedded();
+    let reg = WikiTypeRegistry::from_embedded();
     let warnings = reg
         .validate(&fm(&[("title", "Test"), ("type", "page")]), "loose")
         .unwrap();
@@ -278,7 +278,7 @@ fn build_injects_embedded_default_when_no_base_json() {
     .unwrap();
     fs::write(dir.path().join("wiki.toml"), "name = \"test\"\n").unwrap();
 
-    let reg = SpaceTypeRegistry::build(dir.path()).unwrap();
+    let reg = WikiTypeRegistry::build(dir.path()).unwrap();
     assert!(
         reg.is_known("default"),
         "default type should be injected from embedded"
@@ -311,7 +311,7 @@ fn build_accepts_valid_custom_base() {
     .unwrap();
     fs::write(dir.path().join("wiki.toml"), "name = \"test\"\n").unwrap();
 
-    let reg = SpaceTypeRegistry::build(dir.path()).unwrap();
+    let reg = WikiTypeRegistry::build(dir.path()).unwrap();
     assert!(reg.is_known("default"));
 }
 
@@ -338,7 +338,7 @@ fn build_rejects_base_missing_title_requirement() {
     .unwrap();
     fs::write(dir.path().join("wiki.toml"), "name = \"test\"\n").unwrap();
 
-    let result = SpaceTypeRegistry::build(dir.path());
+    let result = WikiTypeRegistry::build(dir.path());
     assert!(result.is_err());
     let msg = result.unwrap_err().to_string();
     assert!(msg.contains("title"), "error should mention title: {msg}");
@@ -367,7 +367,7 @@ fn build_rejects_base_missing_type_requirement() {
     .unwrap();
     fs::write(dir.path().join("wiki.toml"), "name = \"test\"\n").unwrap();
 
-    let result = SpaceTypeRegistry::build(dir.path());
+    let result = WikiTypeRegistry::build(dir.path());
     assert!(result.is_err());
     let msg = result.unwrap_err().to_string();
     assert!(msg.contains("type"), "error should mention type: {msg}");
@@ -379,7 +379,7 @@ use llm_wiki::git;
 use llm_wiki::type_registry::compute_disk_hashes;
 
 fn setup_repo(dir: &std::path::Path) {
-    fs::create_dir_all(dir.join("wiki")).unwrap();
+    fs::create_dir_all(dir.join("content")).unwrap();
     fs::create_dir_all(dir.join("inbox")).unwrap();
     fs::create_dir_all(dir.join("evidence")).unwrap();
     git::init_repo(dir).unwrap();

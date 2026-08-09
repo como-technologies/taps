@@ -158,12 +158,12 @@ fn ingest_redact_false_leaves_body_unchanged() {
     use llm_wiki::config::ValidationConfig;
     use llm_wiki::git;
     use llm_wiki::ingest::{IngestOptions, ingest};
-    use llm_wiki::type_registry::SpaceTypeRegistry;
+    use llm_wiki::type_registry::WikiTypeRegistry;
     use std::path::Path;
 
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = dir.path().join("wiki");
-    std::fs::create_dir_all(&wiki_root).unwrap();
+    let content_root = dir.path().join("content");
+    std::fs::create_dir_all(&content_root).unwrap();
     git::init_repo(dir.path()).unwrap();
     std::fs::write(dir.path().join("README.md"), "# test\n").unwrap();
     git::commit(dir.path(), "init").unwrap();
@@ -171,8 +171,8 @@ fn ingest_redact_false_leaves_body_unchanged() {
     let secret = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
     let content =
         format!("---\ntitle: \"Test\"\ntype: concept\nstatus: active\n---\n\nSecret: {secret}\n");
-    std::fs::create_dir_all(wiki_root.join("concepts")).unwrap();
-    std::fs::write(wiki_root.join("concepts/test.md"), &content).unwrap();
+    std::fs::create_dir_all(content_root.join("concepts")).unwrap();
+    std::fs::write(content_root.join("concepts/test.md"), &content).unwrap();
 
     let opts = IngestOptions {
         redact: None, // no redaction
@@ -181,13 +181,13 @@ fn ingest_redact_false_leaves_body_unchanged() {
     ingest(
         Path::new("concepts/test.md"),
         &opts,
-        &wiki_root,
-        &SpaceTypeRegistry::from_embedded(),
+        &content_root,
+        &WikiTypeRegistry::from_embedded(),
         &ValidationConfig::default(),
     )
     .unwrap();
 
-    let after = std::fs::read_to_string(wiki_root.join("concepts/test.md")).unwrap();
+    let after = std::fs::read_to_string(content_root.join("concepts/test.md")).unwrap();
     assert!(
         after.contains(secret),
         "file should be unchanged without redact"

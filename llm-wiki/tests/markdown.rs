@@ -5,13 +5,13 @@ use llm_wiki::markdown::*;
 use llm_wiki::slug::Slug;
 
 fn setup_wiki(dir: &std::path::Path) -> std::path::PathBuf {
-    let wiki_root = dir.join("wiki");
-    fs::create_dir_all(&wiki_root).unwrap();
-    wiki_root
+    let content_root = dir.join("content");
+    fs::create_dir_all(&content_root).unwrap();
+    content_root
 }
 
-fn write_file(wiki_root: &std::path::Path, rel_path: &str, content: &str) {
-    let path = wiki_root.join(rel_path);
+fn write_file(content_root: &std::path::Path, rel_path: &str, content: &str) {
+    let path = content_root.join(rel_path);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }

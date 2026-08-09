@@ -18,9 +18,9 @@ impl Slug {
     ///
     /// - `concepts/moe.md` → `concepts/moe`
     /// - `concepts/moe/index.md` → `concepts/moe`
-    pub fn from_path(path: &Path, wiki_root: &Path) -> Result<Self> {
+    pub fn from_path(path: &Path, content_root: &Path) -> Result<Self> {
         let rel = path
-            .strip_prefix(wiki_root)
+            .strip_prefix(content_root)
             .map_err(|_| anyhow::anyhow!("path is not under wiki root"))?;
         let raw = if rel.file_name() == Some(std::ffi::OsStr::new("index.md")) {
             rel.parent()
@@ -35,14 +35,14 @@ impl Slug {
 
     /// Resolve this slug to a file path. Checks flat then bundle.
     ///
-    /// 1. `<wiki_root>/<slug>.md`
-    /// 2. `<wiki_root>/<slug>/index.md`
-    pub fn resolve(&self, wiki_root: &Path) -> Result<PathBuf> {
-        let flat = wiki_root.join(format!("{}.md", self.0));
+    /// 1. `<content_root>/<slug>.md`
+    /// 2. `<content_root>/<slug>/index.md`
+    pub fn resolve(&self, content_root: &Path) -> Result<PathBuf> {
+        let flat = content_root.join(format!("{}.md", self.0));
         if flat.is_file() {
             return Ok(flat);
         }
-        let bundle = wiki_root.join(&self.0).join("index.md");
+        let bundle = content_root.join(&self.0).join("index.md");
         if bundle.is_file() {
             return Ok(bundle);
         }
@@ -158,27 +158,27 @@ impl WikiUri {
         wiki_flag: Option<&str>,
         global: &crate::config::GlobalConfig,
     ) -> Result<(crate::config::WikiEntry, Slug)> {
-        use crate::spaces;
+        use crate::registry;
 
         if input.starts_with("wiki://") {
             let parsed = Self::parse(input)?;
             if let Some(ref name) = parsed.wiki {
-                if let Ok(entry) = spaces::resolve_name(name, global) {
+                if let Ok(entry) = registry::resolve_name(name, global) {
                     return Ok((entry, parsed.slug));
                 }
                 // Not a wiki name — treat as slug segment
                 let full_slug = format!("{name}/{}", parsed.slug);
                 let slug = Slug::try_from(full_slug.as_str())?;
                 let default = &global.global.default_wiki;
-                let entry = spaces::resolve_name(default, global)?;
+                let entry = registry::resolve_name(default, global)?;
                 return Ok((entry, slug));
             }
             let default = &global.global.default_wiki;
-            let entry = spaces::resolve_name(default, global)?;
+            let entry = registry::resolve_name(default, global)?;
             Ok((entry, parsed.slug))
         } else {
             let wiki_name = wiki_flag.unwrap_or(&global.global.default_wiki);
-            let entry = spaces::resolve_name(wiki_name, global)?;
+            let entry = registry::resolve_name(wiki_name, global)?;
             let slug = Slug::try_from(input)?;
             Ok((entry, slug))
         }
@@ -198,10 +198,10 @@ pub enum ReadTarget {
 ///
 /// 1. Try `slug.resolve()` → page
 /// 2. If the last segment has a non-.md extension, split into parent slug + filename → asset
-pub fn resolve_read_target(input: &str, wiki_root: &Path) -> Result<ReadTarget> {
+pub fn resolve_read_target(input: &str, content_root: &Path) -> Result<ReadTarget> {
     // Step 1: try as page (may fail if input has an extension)
     if let Ok(slug) = Slug::try_from(input)
-        && let Ok(path) = slug.resolve(wiki_root)
+        && let Ok(path) = slug.resolve(content_root)
     {
         return Ok(ReadTarget::Page(path));
     }
@@ -213,7 +213,7 @@ pub fn resolve_read_target(input: &str, wiki_root: &Path) -> Result<ReadTarget> 
             let ext = &filename[dot + 1..];
             if !ext.is_empty() && ext != "md" {
                 let parent_slug = &input[..pos];
-                let path = wiki_root.join(parent_slug).join(filename);
+                let path = content_root.join(parent_slug).join(filename);
                 if path.is_file() {
                     return Ok(ReadTarget::Asset(
                         parent_slug.to_string(),

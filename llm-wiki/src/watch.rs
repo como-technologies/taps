@@ -103,22 +103,22 @@ pub async fn run_watcher(
                     .state
                     .read()
                     .map_err(|_| anyhow::anyhow!("lock poisoned"))?;
-                for (wiki_name, space) in &state.spaces {
+                for (wiki_name, wiki) in &state.wikis {
                     let wiki_paths: Vec<&PathBuf> = paths
                         .iter()
-                        .filter(|p| p.starts_with(&space.wiki_root))
+                        .filter(|p| p.starts_with(&wiki.content_root))
                         .collect();
                     if wiki_paths.is_empty() {
                         continue;
                     }
                     let start = std::time::Instant::now();
-                    let last_commit = space.index_manager.last_commit();
-                    match space.index_manager.update(
-                        &space.wiki_root,
-                        &space.repo_root,
+                    let last_commit = wiki.index_manager.last_commit();
+                    match wiki.index_manager.update(
+                        &wiki.content_root,
+                        &wiki.repo_root,
                         last_commit.as_deref(),
-                        &space.index_schema,
-                        &space.type_registry,
+                        &wiki.index_schema,
+                        &wiki.type_registry,
                     ) {
                         Ok(report) => {
                             if report.updated > 0 || report.deleted > 0 {
@@ -191,11 +191,11 @@ fn start_notify_watcher(
 
     // Build a map of watched paths to wiki names
     let mut watch_dirs: Vec<(String, PathBuf, PathBuf)> = Vec::new();
-    for (name, space) in &state.spaces {
+    for (name, wiki) in &state.wikis {
         watch_dirs.push((
             name.clone(),
-            space.wiki_root.clone(),
-            space.repo_root.clone(),
+            wiki.content_root.clone(),
+            wiki.repo_root.clone(),
         ));
     }
     drop(state);
@@ -220,8 +220,8 @@ fn start_notify_watcher(
 
         for path in &event.paths {
             // Find which wiki this path belongs to
-            for (wiki_name, wiki_root, repo_root) in &watch_dirs_clone {
-                if path.starts_with(wiki_root) && is_wiki_md(path) {
+            for (wiki_name, content_root, repo_root) in &watch_dirs_clone {
+                if path.starts_with(content_root) && is_wiki_md(path) {
                     let _ = tx_clone.try_send((wiki_name.clone(), path.clone()));
                     break;
                 }
@@ -234,9 +234,9 @@ fn start_notify_watcher(
     })?;
 
     // Watch wiki/ and schemas/ for each mounted wiki
-    for (_, wiki_root, repo_root) in &watch_dirs {
-        if wiki_root.exists() {
-            watcher.watch(wiki_root, RecursiveMode::Recursive)?;
+    for (_, content_root, repo_root) in &watch_dirs {
+        if content_root.exists() {
+            watcher.watch(content_root, RecursiveMode::Recursive)?;
         }
         let schemas_dir = repo_root.join("schemas");
         if schemas_dir.exists() {

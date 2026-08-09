@@ -28,9 +28,9 @@ fn history_respects_limit() {
 
     // Make a second commit touching the same page
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
     fs::write(
-        wiki_root.join("concepts/moe.md"),
+        content_root.join("concepts/moe.md"),
         "---\ntitle: \"MoE\"\ntype: concept\nstatus: active\ntags: [ml, updated]\n---\n\nUpdated content.\n",
     )
     .unwrap();
@@ -50,9 +50,9 @@ fn history_excludes_unrelated_commits() {
 
     // Make a commit that only touches transformer, not moe
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
     fs::write(
-        wiki_root.join("concepts/transformer.md"),
+        content_root.join("concepts/transformer.md"),
         "---\ntitle: \"Transformer\"\ntype: concept\nstatus: active\n---\n\nUpdated transformer.\n",
     )
     .unwrap();
@@ -101,9 +101,9 @@ fn history_via_stable_id() {
     let config_path = setup_wiki(dir.path(), "test");
 
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
     fs::write(
-        wiki_root.join("concepts/tracked.md"),
+        content_root.join("concepts/tracked.md"),
         "---\ntitle: \"Tracked\"\nid: 01ARZ3NDEKTSV4RRFFQ69G5FAV\ntype: concept\nstatus: active\n---\n\nBody.\n",
     )
     .unwrap();
@@ -126,7 +126,7 @@ fn git_page_history_returns_entries() {
     let _ = config_path; // just to set up the wiki
 
     let repo_root = dir.path().join("test");
-    let rel_path = std::path::Path::new("wiki/concepts/moe.md");
+    let rel_path = std::path::Path::new("content/concepts/moe.md");
 
     let entries = git::page_history(&repo_root, rel_path, 10, false).unwrap();
     assert!(
@@ -141,15 +141,15 @@ fn git_page_history_returns_entries() {
 #[test]
 fn git_page_history_follow_tracks_rename() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_path = dir.path().join("wiki");
+    let wiki_path = dir.path().join("content");
     let config_path = dir.path().join("state").join("config.toml");
 
     // Create wiki with a flat page
-    llm_wiki::spaces::create(&wiki_path, "test", None, false, true, &config_path, None).unwrap();
-    let wiki_root = wiki_path.join("wiki");
-    fs::create_dir_all(wiki_root.join("concepts")).unwrap();
+    llm_wiki::registry::create(&wiki_path, "test", None, false, true, &config_path, None).unwrap();
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("concepts")).unwrap();
     fs::write(
-        wiki_root.join("concepts/old-name.md"),
+        content_root.join("concepts/old-name.md"),
         "---\ntitle: \"Old\"\ntype: concept\n---\n\nOriginal.\n",
     )
     .unwrap();
@@ -157,8 +157,8 @@ fn git_page_history_follow_tracks_rename() {
 
     // Rename the file
     fs::rename(
-        wiki_root.join("concepts/old-name.md"),
-        wiki_root.join("concepts/new-name.md"),
+        content_root.join("concepts/old-name.md"),
+        content_root.join("concepts/new-name.md"),
     )
     .unwrap();
     git::commit(&wiki_path, "rename to new-name").unwrap();
@@ -166,7 +166,7 @@ fn git_page_history_follow_tracks_rename() {
     // With follow, history should include the pre-rename commit
     let entries = git::page_history(
         &wiki_path,
-        std::path::Path::new("wiki/concepts/new-name.md"),
+        std::path::Path::new("content/concepts/new-name.md"),
         10,
         true,
     )
@@ -182,7 +182,7 @@ fn git_page_history_follow_tracks_rename() {
     // Without follow, history should only show the rename commit
     let entries_no_follow = git::page_history(
         &wiki_path,
-        std::path::Path::new("wiki/concepts/new-name.md"),
+        std::path::Path::new("content/concepts/new-name.md"),
         10,
         false,
     )

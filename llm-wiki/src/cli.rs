@@ -25,17 +25,11 @@ pub struct Cli {
 /// Top-level subcommands available from the `llm-wiki` CLI.
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Manage wiki spaces
-    Spaces {
-        /// The spaces subcommand.
+    /// Operate the machinery: wikis, schemas, config, index, logs
+    Admin {
+        /// The admin subcommand.
         #[command(subcommand)]
-        action: SpacesAction,
-    },
-    /// Read and write configuration
-    Config {
-        /// The config subcommand.
-        #[command(subcommand)]
-        action: ConfigAction,
+        action: AdminAction,
     },
     /// Content operations (read, write, new, commit)
     Content {
@@ -122,12 +116,6 @@ pub enum Commands {
         #[arg(long)]
         cross_wiki: bool,
     },
-    /// Manage the tantivy search index
-    Index {
-        /// The index subcommand.
-        #[command(subcommand)]
-        action: IndexAction,
-    },
     /// Git commit history for a page
     History {
         /// Slug or wiki:// URI
@@ -173,7 +161,7 @@ pub enum Commands {
         #[arg(long)]
         format: Option<String>,
     },
-    /// Inspect and manage type schemas
+    /// Inspect type schemas (read-only — vocabulary changes live under `admin schema`)
     Schema {
         /// The schema subcommand.
         #[command(subcommand)]
@@ -217,33 +205,14 @@ pub enum Commands {
         #[arg(long)]
         wiki: Option<String>,
     },
-    /// Inspect and manage server logs
-    Logs {
-        /// The logs subcommand.
-        #[command(subcommand)]
-        action: LogsAction,
-    },
 }
 
-/// Subcommands for `llm-wiki logs`.
+/// Subcommands for `llm-wiki admin` — operating the machinery, as opposed
+/// to working in a wiki. A knowledge base has one or more wikis; these
+/// verbs manage the registry, vocabulary, engine config, index, and logs.
 #[derive(Subcommand)]
-pub enum LogsAction {
-    /// Show recent log entries
-    Tail {
-        /// Number of lines to show (default: 50)
-        #[arg(long, default_value = "50")]
-        lines: usize,
-    },
-    /// List log files
-    List,
-    /// Delete all log files
-    Clear,
-}
-
-/// Subcommands for `llm-wiki spaces`.
-#[derive(Subcommand)]
-pub enum SpacesAction {
-    /// Create a new wiki repository
+pub enum AdminAction {
+    /// Create a new wiki repository and register it
     Create {
         /// Path to create the wiki at
         path: String,
@@ -253,15 +222,15 @@ pub enum SpacesAction {
         /// Optional one-line description
         #[arg(long)]
         description: Option<String>,
-        /// Update space entry if name differs from existing
+        /// Update the registry entry if the name differs from existing
         #[arg(long)]
         force: bool,
         /// Set as default wiki
         #[arg(long)]
         set_default: bool,
-        /// Content directory relative to repo root (default: "wiki")
+        /// Content directory relative to repo root (default: "content")
         #[arg(long)]
-        wiki_root: Option<String>,
+        content_root: Option<String>,
     },
     /// Register an existing wiki repository without creating files
     Register {
@@ -275,7 +244,7 @@ pub enum SpacesAction {
         description: Option<String>,
         /// Content directory relative to repo root (overrides wiki.toml)
         #[arg(long)]
-        wiki_root: Option<String>,
+        content_root: Option<String>,
     },
     /// List all registered wikis
     List {
@@ -298,9 +267,86 @@ pub enum SpacesAction {
         /// Wiki name to set as default
         name: String,
     },
+    /// Manage the type vocabulary (register, add, remove schemas)
+    Schema {
+        /// The schema subcommand.
+        #[command(subcommand)]
+        action: AdminSchemaAction,
+    },
+    /// Read and write engine configuration
+    Config {
+        /// The config subcommand.
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
+    /// Manage the tantivy search index
+    Index {
+        /// The index subcommand.
+        #[command(subcommand)]
+        action: IndexAction,
+    },
+    /// Inspect and manage server logs
+    Logs {
+        /// The logs subcommand.
+        #[command(subcommand)]
+        action: LogsAction,
+    },
 }
 
-/// Subcommands for `llm-wiki config`.
+/// Subcommands for `llm-wiki admin schema` — the write half of the schema
+/// surface. Reads (`list`, `show`, `validate`) live at `llm-wiki schema`.
+#[derive(Subcommand)]
+pub enum AdminSchemaAction {
+    /// Register a type schema (idempotent; never overwrites — identical
+    /// content is a no-op, different content is a named conflict)
+    Register {
+        /// Type name (must be declared in the schema's x-wiki-types)
+        name: String,
+        /// Path to the JSON Schema file to read
+        schema_path: String,
+        /// Path to an optional Markdown body template
+        #[arg(long)]
+        template: Option<String>,
+    },
+    /// Register a custom type
+    Add {
+        /// Type name
+        name: String,
+        /// Path to JSON Schema file
+        schema_path: String,
+    },
+    /// Unregister a type and remove its pages from the index
+    Remove {
+        /// Type name
+        name: String,
+        /// Also delete/modify the schema file
+        #[arg(long)]
+        delete: bool,
+        /// Also delete page .md files from disk
+        #[arg(long)]
+        delete_pages: bool,
+        /// Show what would be done without doing it
+        #[arg(long)]
+        dry_run: bool,
+    },
+}
+
+/// Subcommands for `llm-wiki admin logs`.
+#[derive(Subcommand)]
+pub enum LogsAction {
+    /// Show recent log entries
+    Tail {
+        /// Number of lines to show (default: 50)
+        #[arg(long, default_value = "50")]
+        lines: usize,
+    },
+    /// List log files
+    List,
+    /// Delete all log files
+    Clear,
+}
+
+/// Subcommands for `llm-wiki admin config`.
 #[derive(Subcommand)]
 pub enum ConfigAction {
     /// Print a config value
@@ -394,7 +440,7 @@ pub enum ContentAction {
     },
 }
 
-/// Subcommands for `llm-wiki index`.
+/// Subcommands for `llm-wiki admin index`.
 #[derive(Subcommand)]
 pub enum IndexAction {
     /// Rebuild the search index from committed Markdown
@@ -414,7 +460,8 @@ pub enum IndexAction {
     },
 }
 
-/// Subcommands for `llm-wiki schema`.
+/// Subcommands for `llm-wiki schema` — read-only. The write half
+/// (`register`, `add`, `remove`) lives at `llm-wiki admin schema`.
 #[derive(Subcommand)]
 pub enum SchemaAction {
     /// List all registered types
@@ -433,38 +480,6 @@ pub enum SchemaAction {
         /// Output format: text | json
         #[arg(long)]
         format: Option<String>,
-    },
-    /// Register a type schema (idempotent; never overwrites — identical
-    /// content is a no-op, different content is a named conflict)
-    Register {
-        /// Type name (must be declared in the schema's x-wiki-types)
-        name: String,
-        /// Path to the JSON Schema file to read
-        schema_path: String,
-        /// Path to an optional Markdown body template
-        #[arg(long)]
-        template: Option<String>,
-    },
-    /// Register a custom type
-    Add {
-        /// Type name
-        name: String,
-        /// Path to JSON Schema file
-        schema_path: String,
-    },
-    /// Unregister a type and remove its pages from the index
-    Remove {
-        /// Type name
-        name: String,
-        /// Also delete/modify the schema file
-        #[arg(long)]
-        delete: bool,
-        /// Also delete page .md files from disk
-        #[arg(long)]
-        delete_pages: bool,
-        /// Show what would be done without doing it
-        #[arg(long)]
-        dry_run: bool,
     },
     /// Validate schema files and index resolution
     Validate {

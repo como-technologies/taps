@@ -14,7 +14,7 @@ fn hot_reload_mount_wiki_makes_it_searchable() {
 
     // Create beta wiki structure first (before mounting)
     let beta_path = dir.path().join("beta");
-    llm_wiki::spaces::create(
+    llm_wiki::registry::create(
         &beta_path,
         "beta",
         Some("second wiki"),
@@ -26,7 +26,7 @@ fn hot_reload_mount_wiki_makes_it_searchable() {
     .unwrap();
 
     // Write a page into beta before hot-reload mount
-    let beta_wiki = beta_path.join("wiki");
+    let beta_wiki = beta_path.join("content");
     fs::create_dir_all(beta_wiki.join("concepts")).unwrap();
     fs::write(
         beta_wiki.join("concepts/rlhf.md"),
@@ -72,22 +72,22 @@ fn hot_reload_unmount_wiki_removes_from_search() {
 
     // Create beta
     let beta_path = dir.path().join("beta");
-    llm_wiki::spaces::create(&beta_path, "beta", None, false, false, &config_path, None).unwrap();
+    llm_wiki::registry::create(&beta_path, "beta", None, false, false, &config_path, None).unwrap();
 
     let manager = WikiEngine::build(&config_path).unwrap();
 
     // Verify beta is mounted
     {
         let engine = manager.state.read().unwrap();
-        assert!(engine.space("beta").is_ok());
+        assert!(engine.wiki("beta").is_ok());
     }
 
     // Unmount beta via ops
-    ops::spaces_remove("beta", false, &config_path, Some(&manager)).unwrap();
+    ops::admin_remove("beta", false, &config_path, Some(&manager)).unwrap();
 
     // Verify beta is no longer mounted
     let engine = manager.state.read().unwrap();
-    assert!(engine.space("beta").is_err());
+    assert!(engine.wiki("beta").is_err());
 }
 
 #[test]
@@ -111,12 +111,12 @@ fn hot_reload_set_default_updates_engine() {
     let config_path = setup_wiki(dir.path(), "alpha");
 
     let beta_path = dir.path().join("beta");
-    llm_wiki::spaces::create(&beta_path, "beta", None, false, false, &config_path, None).unwrap();
+    llm_wiki::registry::create(&beta_path, "beta", None, false, false, &config_path, None).unwrap();
 
     let manager = WikiEngine::build(&config_path).unwrap();
 
     // Set beta as default via ops
-    ops::spaces_set_default("beta", &config_path, Some(&manager)).unwrap();
+    ops::admin_set_default("beta", &config_path, Some(&manager)).unwrap();
 
     // Verify engine state updated
     let engine = manager.state.read().unwrap();
@@ -130,9 +130,9 @@ fn hot_reload_cross_wiki_search_reflects_new_wiki() {
 
     // Create beta with a page before building the engine
     let beta_path = dir.path().join("beta");
-    llm_wiki::spaces::create(&beta_path, "beta", None, false, false, &config_path, None).unwrap();
+    llm_wiki::registry::create(&beta_path, "beta", None, false, false, &config_path, None).unwrap();
 
-    let beta_wiki = beta_path.join("wiki");
+    let beta_wiki = beta_path.join("content");
     fs::create_dir_all(beta_wiki.join("concepts")).unwrap();
     fs::write(
         beta_wiki.join("concepts/diffusion.md"),
@@ -143,7 +143,7 @@ fn hot_reload_cross_wiki_search_reflects_new_wiki() {
 
     // Build engine with only alpha mounted
     // Remove beta from config so it's not mounted at startup
-    llm_wiki::spaces::remove("beta", false, &config_path).unwrap();
+    llm_wiki::registry::remove("beta", false, &config_path).unwrap();
     let manager = WikiEngine::build(&config_path).unwrap();
 
     // Re-register and hot-reload mount beta
@@ -153,7 +153,7 @@ fn hot_reload_cross_wiki_search_reflects_new_wiki() {
         description: None,
         remote: None,
     };
-    llm_wiki::spaces::register(entry.clone(), false, &config_path).unwrap();
+    llm_wiki::registry::register(entry.clone(), false, &config_path).unwrap();
     manager.mount_wiki(&entry).unwrap();
 
     // Cross-wiki search from alpha should find beta's page

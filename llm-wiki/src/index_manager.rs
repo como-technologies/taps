@@ -17,7 +17,7 @@ use crate::git;
 use crate::index_schema::IndexSchema;
 use crate::links;
 use crate::slug::Slug;
-use crate::type_registry::SpaceTypeRegistry;
+use crate::type_registry::WikiTypeRegistry;
 
 // ── Return types ──────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ pub struct IndexState {
     pub types: std::collections::HashMap<String, String>,
 }
 
-// ── SpaceIndexManager ─────────────────────────────────────────────────────────
+// ── WikiIndexManager ─────────────────────────────────────────────────────────
 
 struct IndexInner {
     tantivy_index: Option<Index>,
@@ -106,15 +106,15 @@ struct IndexInner {
     generation: AtomicU64,
 }
 
-/// Tantivy index lifecycle manager for a single wiki space.
-pub struct SpaceIndexManager {
+/// Tantivy index lifecycle manager for a single wiki.
+pub struct WikiIndexManager {
     wiki_name: String,
     index_path: PathBuf,
     inner: RwLock<IndexInner>,
 }
 
-impl SpaceIndexManager {
-    /// Create a new `SpaceIndexManager` for `wiki_name` with its index stored at `index_path`.
+impl WikiIndexManager {
+    /// Create a new `WikiIndexManager` for `wiki_name` with its index stored at `index_path`.
     pub fn new(wiki_name: impl Into<String>, index_path: impl Into<PathBuf>) -> Self {
         Self {
             wiki_name: wiki_name.into(),
@@ -149,11 +149,11 @@ impl SpaceIndexManager {
 
     /// Open the index from disk and hold the reader.
     /// Call after rebuild/staleness check. Recovery: if open fails and
-    /// wiki_root/repo_root/registry are provided, rebuild and retry.
+    /// content_root/repo_root/registry are provided, rebuild and retry.
     pub fn open(
         &self,
         is: &IndexSchema,
-        recovery: Option<(&Path, &Path, &SpaceTypeRegistry)>,
+        recovery: Option<(&Path, &Path, &WikiTypeRegistry)>,
     ) -> Result<()> {
         let search_dir = self.index_path.join("search-index");
 
@@ -165,7 +165,7 @@ impl SpaceIndexManager {
         let index = match try_open() {
             Ok(idx) => idx,
             Err(e) => {
-                if let Some((wiki_root, repo_root, registry)) = recovery {
+                if let Some((content_root, repo_root, registry)) = recovery {
                     tracing::warn!(
                         wiki = %self.wiki_name,
                         error = %e,
@@ -174,7 +174,7 @@ impl SpaceIndexManager {
                     if search_dir.exists() {
                         let _ = std::fs::remove_dir_all(&search_dir);
                     }
-                    self.rebuild(wiki_root, repo_root, is, registry)?;
+                    self.rebuild(content_root, repo_root, is, registry)?;
                     try_open().context("index still corrupt after rebuild")?
                 } else {
                     return Err(e);
@@ -252,13 +252,13 @@ impl SpaceIndexManager {
         }
     }
 
-    /// Rebuild the full index by walking all Markdown files under `wiki_root`.
+    /// Rebuild the full index by walking all Markdown files under `content_root`.
     pub fn rebuild(
         &self,
-        wiki_root: &Path,
+        content_root: &Path,
         repo_root: &Path,
         is: &IndexSchema,
-        registry: &SpaceTypeRegistry,
+        registry: &WikiTypeRegistry,
     ) -> Result<IndexReport> {
         let start = std::time::Instant::now();
 
@@ -283,7 +283,10 @@ impl SpaceIndexManager {
         let mut seen_ids: std::collections::HashMap<String, String> =
             std::collections::HashMap::new();
 
-        for entry in WalkDir::new(wiki_root).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(content_root)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let path = entry.path();
             if !path.is_file() || path.extension().and_then(|e| e.to_str()) != Some("md") {
                 continue;
@@ -298,7 +301,7 @@ impl SpaceIndexManager {
                 }
             };
 
-            let slug = match Slug::from_path(path, wiki_root) {
+            let slug = match Slug::from_path(path, content_root) {
                 Ok(s) => s,
                 Err(e) => {
                     tracing::warn!(path = %path.display(), error = %e, "skipping invalid path");
@@ -356,13 +359,13 @@ impl SpaceIndexManager {
     /// Incrementally update the index for files changed since `last_indexed_commit`.
     pub fn update(
         &self,
-        wiki_root: &Path,
+        content_root: &Path,
         repo_root: &Path,
         last_indexed_commit: Option<&str>,
         is: &IndexSchema,
-        registry: &SpaceTypeRegistry,
+        registry: &WikiTypeRegistry,
     ) -> Result<UpdateReport> {
-        let changes = git::collect_changed_files(repo_root, wiki_root, last_indexed_commit)?;
+        let changes = git::collect_changed_files(repo_root, content_root, last_indexed_commit)?;
         if changes.is_empty() {
             return Ok(UpdateReport::default());
         }
@@ -370,9 +373,9 @@ impl SpaceIndexManager {
         let mut writer = self.writer()?;
 
         let f_slug = is.field("slug");
-        let wiki_prefix = wiki_root
+        let wiki_prefix = content_root
             .strip_prefix(repo_root)
-            .unwrap_or(Path::new("wiki"));
+            .unwrap_or(Path::new("content"));
         let mut updated = 0;
         let mut deleted = 0;
 
@@ -404,7 +407,7 @@ impl SpaceIndexManager {
         self.reload_reader()?;
 
         // Advance the recorded baseline. Only rebuild() wrote state.toml
-        // before, so a space maintained by incremental updates reported
+        // before, so a wiki maintained by incremental updates reported
         // itself stale and page-less forever — and the next diff kept
         // starting from the last full build. Count through the writer's
         // index handle: unlike self.searcher(), it exists even when the
@@ -554,10 +557,10 @@ impl SpaceIndexManager {
     pub fn rebuild_types(
         &self,
         types: &[String],
-        wiki_root: &Path,
+        content_root: &Path,
         repo_root: &Path,
         is: &IndexSchema,
-        registry: &SpaceTypeRegistry,
+        registry: &WikiTypeRegistry,
     ) -> Result<IndexReport> {
         let start = std::time::Instant::now();
         let mut writer = self.writer()?;
@@ -573,7 +576,10 @@ impl SpaceIndexManager {
         let mut pages = 0usize;
         let mut skipped = 0usize;
 
-        for entry in WalkDir::new(wiki_root).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(content_root)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let path = entry.path();
             if !path.is_file() || path.extension().and_then(|e| e.to_str()) != Some("md") {
                 continue;
@@ -591,7 +597,7 @@ impl SpaceIndexManager {
             if !type_set.contains(page_type) {
                 continue;
             }
-            let slug = match Slug::from_path(path, wiki_root) {
+            let slug = match Slug::from_path(path, content_root) {
                 Ok(s) => s,
                 Err(e) => {
                     tracing::warn!(path = %path.display(), error = %e, "skipping invalid path");
@@ -635,7 +641,7 @@ impl SpaceIndexManager {
 
 fn index_page(
     is: &IndexSchema,
-    registry: &SpaceTypeRegistry,
+    registry: &WikiTypeRegistry,
     slug: &str,
     uri: &str,
     page: &frontmatter::ParsedPage,
@@ -706,7 +712,7 @@ fn index_page(
 ///    only if the canonical wasn't already present
 fn resolve_fields<'a>(
     page: &'a frontmatter::ParsedPage,
-    registry: &'a SpaceTypeRegistry,
+    registry: &'a WikiTypeRegistry,
 ) -> Vec<(String, &'a serde_yaml::Value)> {
     let page_type = page.page_type().unwrap_or("page");
     let empty = std::collections::HashMap::new();

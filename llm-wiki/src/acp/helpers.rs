@@ -84,7 +84,7 @@ pub fn session_cwd(manager: &WikiEngine) -> PathBuf {
     let engine = manager.state.read().expect("engine lock poisoned");
     let name = engine.default_wiki_name();
     engine
-        .space(name)
+        .wiki(name)
         .map(|s| s.repo_root.clone())
         .unwrap_or_else(|_| PathBuf::from("."))
 }

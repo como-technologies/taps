@@ -4,7 +4,8 @@ use anyhow::{Context as _, Result};
 use clap::Parser;
 
 use llm_wiki::cli::{
-    Cli, Commands, ConfigAction, ContentAction, IndexAction, LogsAction, SchemaAction, SpacesAction,
+    AdminAction, AdminSchemaAction, Cli, Commands, ConfigAction, ContentAction, IndexAction,
+    LogsAction, SchemaAction,
 };
 use llm_wiki::config;
 use llm_wiki::engine::WikiEngine;
@@ -29,17 +30,17 @@ fn main() -> Result<()> {
     let _log_guard = init_logging(&cli.command, &config_path);
 
     match cli.command {
-        // ── Spaces ────────────────────────────────────────────────────
-        Commands::Spaces { action } => match action {
-            SpacesAction::Create {
+        // ── Admin ─────────────────────────────────────────────────────
+        Commands::Admin { action } => match action {
+            AdminAction::Create {
                 path,
                 name,
                 description,
                 force,
                 set_default,
-                wiki_root,
+                content_root,
             } => {
-                let report = ops::spaces_create(
+                let report = ops::admin_create(
                     &PathBuf::from(&path),
                     &name,
                     description.as_deref(),
@@ -47,7 +48,7 @@ fn main() -> Result<()> {
                     set_default,
                     &config_path,
                     None,
-                    wiki_root.as_deref(),
+                    content_root.as_deref(),
                 )?;
                 if report.created {
                     println!("Created wiki \"{}\" at {}", report.name, report.path);
@@ -61,17 +62,17 @@ fn main() -> Result<()> {
                     println!("Initial commit: create: {}", report.name);
                 }
             }
-            SpacesAction::Register {
+            AdminAction::Register {
                 path,
                 name,
                 description,
-                wiki_root,
+                content_root,
             } => {
-                let report = ops::spaces_register(
+                let report = ops::admin_register(
                     &PathBuf::from(&path),
                     &name,
                     description.as_deref(),
-                    wiki_root.as_deref(),
+                    content_root.as_deref(),
                     &config_path,
                     None,
                 )?;
@@ -82,9 +83,9 @@ fn main() -> Result<()> {
                     println!("Wiki \"{}\" already registered", report.name);
                 }
             }
-            SpacesAction::List { name, format } => {
+            AdminAction::List { name, format } => {
                 let global = config::load_global(&config_path)?;
-                let entries = ops::spaces_list(&global, name.as_deref());
+                let entries = ops::admin_list(&global, name.as_deref());
                 if is_json(&format) {
                     println!("{}", serde_json::to_string_pretty(&entries)?);
                 } else if entries.is_empty() {
@@ -102,52 +103,25 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            SpacesAction::Remove { name, delete } => {
-                ops::spaces_remove(&name, delete, &config_path, None)?;
+            AdminAction::Remove { name, delete } => {
+                ops::admin_remove(&name, delete, &config_path, None)?;
                 println!("Removed wiki \"{name}\"");
                 if delete {
                     println!("Deleted wiki directory");
                 }
             }
-            SpacesAction::SetDefault { name } => {
-                ops::spaces_set_default(&name, &config_path, None)?;
+            AdminAction::SetDefault { name } => {
+                ops::admin_set_default(&name, &config_path, None)?;
                 println!("Default wiki set to \"{name}\"");
             }
-        },
-
-        // ── Config ────────────────────────────────────────────────────
-        Commands::Config { action } => match action {
-            ConfigAction::Get { key } => {
-                let val = ops::config_get(&config_path, &key)?;
-                println!("{val}");
+            AdminAction::Schema { action } => {
+                run_admin_schema(action, &config_path, cli.wiki.as_deref())?
             }
-            ConfigAction::Set {
-                key,
-                value,
-                global: is_global,
-                wiki: wiki_name,
-            } => {
-                let msg =
-                    ops::config_set(&config_path, &key, &value, is_global, wiki_name.as_deref())?;
-                println!("{msg}");
+            AdminAction::Config { action } => run_admin_config(action, &config_path)?,
+            AdminAction::Index { action } => {
+                run_admin_index(action, &config_path, cli.wiki.as_deref())?
             }
-            ConfigAction::List {
-                global: is_global,
-                wiki: _,
-                format,
-            } => {
-                if is_global {
-                    let s = ops::config_list_global(&config_path)?;
-                    println!("{s}");
-                } else {
-                    let resolved = ops::config_list_resolved(&config_path)?;
-                    if is_json(&format) {
-                        println!("{}", serde_json::to_string_pretty(&resolved)?);
-                    } else {
-                        println!("{}", toml::to_string_pretty(&resolved)?);
-                    }
-                }
-            }
+            AdminAction::Logs { action } => run_admin_logs(action, &config_path)?,
         },
 
         // ── Content ───────────────────────────────────────────────────
@@ -471,64 +445,6 @@ fn main() -> Result<()> {
             );
         }
 
-        // ── Index ─────────────────────────────────────────────────────
-        Commands::Index { action } => match action {
-            IndexAction::Rebuild { dry_run, format } => {
-                let manager = WikiEngine::build(&config_path)?;
-                let wiki_name = {
-                    let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
-                    engine.resolve_wiki_name(cli.wiki.as_deref()).to_string()
-                };
-
-                if dry_run {
-                    let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
-                    let space = engine.space(&wiki_name)?;
-                    let count = walkdir::WalkDir::new(&space.wiki_root)
-                        .into_iter()
-                        .filter_map(|e| e.ok())
-                        .filter(|e| {
-                            e.path().is_file()
-                                && e.path().extension().and_then(|x| x.to_str()) == Some("md")
-                        })
-                        .count();
-                    println!(
-                        "Would index {count} pages from {}",
-                        space.wiki_root.display()
-                    );
-                } else {
-                    let report = ops::index_rebuild(&manager, &wiki_name)?;
-                    if is_json(&format) {
-                        println!("{}", serde_json::to_string_pretty(&report)?);
-                    } else {
-                        println!(
-                            "Indexed {} pages in {}ms",
-                            report.pages_indexed, report.duration_ms
-                        );
-                    }
-                }
-            }
-            IndexAction::Status { format } => {
-                let manager = WikiEngine::build(&config_path)?;
-                let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
-                let wiki_name = engine.resolve_wiki_name(cli.wiki.as_deref());
-
-                let status = ops::index_status(&engine, wiki_name)?;
-
-                if is_json(&format) {
-                    println!("{}", serde_json::to_string_pretty(&status)?);
-                } else {
-                    println!("wiki:      {}", status.wiki);
-                    println!("path:      {}", status.path);
-                    println!("built:     {}", status.built.as_deref().unwrap_or("never"));
-                    println!("pages:     {}", status.pages);
-                    println!("sections:  {}", status.sections);
-                    println!("stale:     {}", if status.stale { "yes" } else { "no" });
-                    println!("openable:  {}", if status.openable { "yes" } else { "no" });
-                    println!("queryable: {}", if status.queryable { "yes" } else { "no" });
-                }
-            }
-        },
-
         // ── History ────────────────────────────────────────────────────
         Commands::History {
             slug,
@@ -556,7 +472,7 @@ fn main() -> Result<()> {
             }
         }
 
-        // ── Serve ─────────────────────────────────────────────────────
+        // ── Schema (read-only) ────────────────────────────────────────
         Commands::Schema { action } => {
             let manager = WikiEngine::build(&config_path)?;
             let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
@@ -584,62 +500,6 @@ fn main() -> Result<()> {
                     } else {
                         let content = ops::schema_show(&engine, &wiki_name, &name)?;
                         println!("{content}");
-                    }
-                }
-                SchemaAction::Register {
-                    name,
-                    schema_path,
-                    template,
-                } => {
-                    let schema_content = std::fs::read_to_string(&schema_path)
-                        .with_context(|| format!("failed to read {schema_path}"))?;
-                    let body_template = template
-                        .map(|p| {
-                            std::fs::read_to_string(&p)
-                                .with_context(|| format!("failed to read {p}"))
-                        })
-                        .transpose()?;
-                    let report = ops::schema_register(
-                        &engine,
-                        &wiki_name,
-                        &name,
-                        &schema_content,
-                        body_template.as_deref(),
-                    )?;
-                    println!("{}", serde_json::to_string_pretty(&report)?);
-                }
-                SchemaAction::Add { name, schema_path } => {
-                    let msg = ops::schema_add(&engine, &wiki_name, &name, Path::new(&schema_path))?;
-                    println!("{msg}");
-                }
-                SchemaAction::Remove {
-                    name,
-                    delete,
-                    delete_pages,
-                    dry_run,
-                } => {
-                    drop(engine);
-                    let report = ops::schema_remove(
-                        &manager,
-                        &wiki_name,
-                        &name,
-                        delete,
-                        delete_pages,
-                        dry_run,
-                    )?;
-                    if is_json(&None::<String>) {
-                        println!("{}", serde_json::to_string_pretty(&report)?);
-                    } else {
-                        if report.dry_run {
-                            println!("DRY RUN:");
-                        }
-                        println!("pages removed from index: {}", report.pages_removed);
-                        println!(
-                            "page files deleted from disk: {}",
-                            report.pages_deleted_from_disk
-                        );
-                        println!("wiki.toml updated: {}", report.wiki_toml_updated);
-                        println!("schema file deleted: {}", report.schema_file_deleted);
                     }
                 }
                 SchemaAction::Validate { name } => {
@@ -825,29 +685,187 @@ fn main() -> Result<()> {
             })?;
             let _ = wiki; // reserved for future single-wiki watch
         }
-
-        Commands::Logs { action } => match action {
-            LogsAction::Tail { lines } => {
-                let output = ops::logs_tail(&config_path, lines)?;
-                println!("{output}");
-            }
-            LogsAction::List => {
-                let files = ops::logs_list(&config_path)?;
-                if files.is_empty() {
-                    println!("no log files");
-                } else {
-                    for f in &files {
-                        println!("{f}");
-                    }
-                }
-            }
-            LogsAction::Clear => {
-                let removed = ops::logs_clear(&config_path)?;
-                println!("removed {removed} log file(s)");
-            }
-        },
     }
 
+    Ok(())
+}
+
+// ── Admin helpers ─────────────────────────────────────────────────────────────
+
+fn run_admin_schema(
+    action: AdminSchemaAction,
+    config_path: &Path,
+    wiki_flag: Option<&str>,
+) -> Result<()> {
+    let manager = WikiEngine::build(config_path)?;
+    let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
+    let wiki_name = engine.resolve_wiki_name(wiki_flag).to_string();
+
+    match action {
+        AdminSchemaAction::Register {
+            name,
+            schema_path,
+            template,
+        } => {
+            let schema_content = std::fs::read_to_string(&schema_path)
+                .with_context(|| format!("failed to read {schema_path}"))?;
+            let body_template = template
+                .map(|p| std::fs::read_to_string(&p).with_context(|| format!("failed to read {p}")))
+                .transpose()?;
+            let report = ops::schema_register(
+                &engine,
+                &wiki_name,
+                &name,
+                &schema_content,
+                body_template.as_deref(),
+            )?;
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
+        AdminSchemaAction::Add { name, schema_path } => {
+            let msg = ops::schema_add(&engine, &wiki_name, &name, Path::new(&schema_path))?;
+            println!("{msg}");
+        }
+        AdminSchemaAction::Remove {
+            name,
+            delete,
+            delete_pages,
+            dry_run,
+        } => {
+            drop(engine);
+            let report =
+                ops::schema_remove(&manager, &wiki_name, &name, delete, delete_pages, dry_run)?;
+            if report.dry_run {
+                println!("DRY RUN:");
+            }
+            println!("pages removed from index: {}", report.pages_removed);
+            println!(
+                "page files deleted from disk: {}",
+                report.pages_deleted_from_disk
+            );
+            println!("wiki.toml updated: {}", report.wiki_toml_updated);
+            println!("schema file deleted: {}", report.schema_file_deleted);
+        }
+    }
+    Ok(())
+}
+
+fn run_admin_config(action: ConfigAction, config_path: &Path) -> Result<()> {
+    match action {
+        ConfigAction::Get { key } => {
+            let val = ops::config_get(config_path, &key)?;
+            println!("{val}");
+        }
+        ConfigAction::Set {
+            key,
+            value,
+            global: is_global,
+            wiki: wiki_name,
+        } => {
+            let msg = ops::config_set(config_path, &key, &value, is_global, wiki_name.as_deref())?;
+            println!("{msg}");
+        }
+        ConfigAction::List {
+            global: is_global,
+            wiki: _,
+            format,
+        } => {
+            if is_global {
+                let s = ops::config_list_global(config_path)?;
+                println!("{s}");
+            } else {
+                let resolved = ops::config_list_resolved(config_path)?;
+                if is_json(&format) {
+                    println!("{}", serde_json::to_string_pretty(&resolved)?);
+                } else {
+                    println!("{}", toml::to_string_pretty(&resolved)?);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn run_admin_index(action: IndexAction, config_path: &Path, wiki_flag: Option<&str>) -> Result<()> {
+    match action {
+        IndexAction::Rebuild { dry_run, format } => {
+            let manager = WikiEngine::build(config_path)?;
+            let wiki_name = {
+                let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
+                engine.resolve_wiki_name(wiki_flag).to_string()
+            };
+
+            if dry_run {
+                let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
+                let wiki = engine.wiki(&wiki_name)?;
+                let count = walkdir::WalkDir::new(&wiki.content_root)
+                    .into_iter()
+                    .filter_map(|e| e.ok())
+                    .filter(|e| {
+                        e.path().is_file()
+                            && e.path().extension().and_then(|x| x.to_str()) == Some("md")
+                    })
+                    .count();
+                println!(
+                    "Would index {count} pages from {}",
+                    wiki.content_root.display()
+                );
+            } else {
+                let report = ops::index_rebuild(&manager, &wiki_name)?;
+                if is_json(&format) {
+                    println!("{}", serde_json::to_string_pretty(&report)?);
+                } else {
+                    println!(
+                        "Indexed {} pages in {}ms",
+                        report.pages_indexed, report.duration_ms
+                    );
+                }
+            }
+        }
+        IndexAction::Status { format } => {
+            let manager = WikiEngine::build(config_path)?;
+            let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
+            let wiki_name = engine.resolve_wiki_name(wiki_flag);
+
+            let status = ops::index_status(&engine, wiki_name)?;
+
+            if is_json(&format) {
+                println!("{}", serde_json::to_string_pretty(&status)?);
+            } else {
+                println!("wiki:      {}", status.wiki);
+                println!("path:      {}", status.path);
+                println!("built:     {}", status.built.as_deref().unwrap_or("never"));
+                println!("pages:     {}", status.pages);
+                println!("sections:  {}", status.sections);
+                println!("stale:     {}", if status.stale { "yes" } else { "no" });
+                println!("openable:  {}", if status.openable { "yes" } else { "no" });
+                println!("queryable: {}", if status.queryable { "yes" } else { "no" });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn run_admin_logs(action: LogsAction, config_path: &Path) -> Result<()> {
+    match action {
+        LogsAction::Tail { lines } => {
+            let output = ops::logs_tail(config_path, lines)?;
+            println!("{output}");
+        }
+        LogsAction::List => {
+            let files = ops::logs_list(config_path)?;
+            if files.is_empty() {
+                println!("no log files");
+            } else {
+                for f in &files {
+                    println!("{f}");
+                }
+            }
+        }
+        LogsAction::Clear => {
+            let removed = ops::logs_clear(config_path)?;
+            println!("removed {removed} log file(s)");
+        }
+    }
     Ok(())
 }
 

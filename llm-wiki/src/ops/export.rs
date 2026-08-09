@@ -110,13 +110,13 @@ const TOP_LEVEL_FIELDS: &[&str] = &[
 
 /// Export a wiki to a file in the requested format.
 pub fn export(engine: &EngineState, options: &ExportOptions) -> Result<ExportReport> {
-    let space = engine.space(&options.wiki)?;
-    let wiki_root = &space.wiki_root;
+    let wiki = engine.wiki(&options.wiki)?;
+    let content_root = &wiki.content_root;
 
-    let resolved_path = resolve_path(options.path.as_deref(), wiki_root);
+    let resolved_path = resolve_path(options.path.as_deref(), content_root);
 
-    let searcher = space.index_manager.searcher()?;
-    let is = &space.index_schema;
+    let searcher = wiki.index_manager.searcher()?;
+    let is = &wiki.index_schema;
 
     let pages = collect_pages(&searcher, is, &options.wiki, options.include_archived)?;
 
@@ -124,7 +124,7 @@ pub fn export(engine: &EngineState, options: &ExportOptions) -> Result<ExportRep
     let pages = if need_bodies {
         // Only the JSON format serializes PageEntry, so only it carries
         // the remaining frontmatter fields.
-        load_bodies(pages, wiki_root, options.format == ExportFormat::Json)?
+        load_bodies(pages, content_root, options.format == ExportFormat::Json)?
     } else {
         pages
     };
@@ -156,13 +156,13 @@ pub fn export(engine: &EngineState, options: &ExportOptions) -> Result<ExportRep
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-fn resolve_path(path: Option<&str>, wiki_root: &Path) -> PathBuf {
+fn resolve_path(path: Option<&str>, content_root: &Path) -> PathBuf {
     let p = path.unwrap_or("llms.txt");
     let pb = PathBuf::from(p);
     if pb.is_absolute() {
         pb
     } else {
-        wiki_root.join(pb)
+        content_root.join(pb)
     }
 }
 
@@ -269,11 +269,11 @@ fn collect_pages(
 
 fn load_bodies(
     mut pages: Vec<PageEntry>,
-    wiki_root: &Path,
+    content_root: &Path,
     with_frontmatter: bool,
 ) -> Result<Vec<PageEntry>> {
     for page in &mut pages {
-        let path = wiki_root.join(format!("{}.md", page.slug));
+        let path = content_root.join(format!("{}.md", page.slug));
         if path.exists() {
             let raw = std::fs::read_to_string(&path)
                 .with_context(|| format!("failed to read {}", path.display()))?;

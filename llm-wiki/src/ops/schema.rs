@@ -8,7 +8,7 @@ use crate::engine::{EngineState, WikiEngine};
 use crate::git;
 use crate::markdown;
 use crate::search;
-use crate::space_builder;
+use crate::wiki_builder;
 
 /// A registered page type with its schema location and description.
 #[derive(Debug, Serialize, Deserialize)]
@@ -23,15 +23,15 @@ pub struct SchemaTypeEntry {
 
 /// List all registered types in a wiki's type registry.
 pub fn schema_list(engine: &EngineState, wiki_name: &str) -> Result<Vec<SchemaTypeEntry>> {
-    let space = engine.space(wiki_name)?;
-    Ok(space
+    let wiki = engine.wiki(wiki_name)?;
+    Ok(wiki
         .type_registry
         .list_types()
         .into_iter()
         .map(|(name, desc)| SchemaTypeEntry {
             name: name.to_string(),
             description: desc.to_string(),
-            schema_path: space
+            schema_path: wiki
                 .type_registry
                 .schema_path(name)
                 .unwrap_or_default()
@@ -42,12 +42,12 @@ pub fn schema_list(engine: &EngineState, wiki_name: &str) -> Result<Vec<SchemaTy
 
 /// Return the raw JSON Schema content for a named type.
 pub fn schema_show(engine: &EngineState, wiki_name: &str, type_name: &str) -> Result<String> {
-    let space = engine.space(wiki_name)?;
-    let schema_path = space
+    let wiki = engine.wiki(wiki_name)?;
+    let schema_path = wiki
         .type_registry
         .schema_path(type_name)
         .ok_or_else(|| anyhow::anyhow!("type '{type_name}' is not registered"))?;
-    let full_path = space.repo_root.join(schema_path);
+    let full_path = wiki.repo_root.join(schema_path);
 
     if full_path.exists() {
         return std::fs::read_to_string(&full_path)
@@ -84,7 +84,7 @@ pub fn schema_add(
     type_name: &str,
     src_path: &Path,
 ) -> Result<String> {
-    let space = engine.space(wiki_name)?;
+    let wiki = engine.wiki(wiki_name)?;
 
     // Validate the schema file
     let content = std::fs::read_to_string(src_path)
@@ -101,7 +101,7 @@ pub fn schema_add(
     let filename = src_path
         .file_name()
         .ok_or_else(|| anyhow::anyhow!("invalid path"))?;
-    let schemas_dir = space.repo_root.join("schemas");
+    let schemas_dir = wiki.repo_root.join("schemas");
     std::fs::create_dir_all(&schemas_dir)
         .with_context(|| format!("failed to create {}", schemas_dir.display()))?;
     let dest = schemas_dir.join(filename);
@@ -119,7 +119,7 @@ pub fn schema_add(
 
     if !has_type {
         // Add wiki.toml override
-        let mut wiki_cfg = config::load_wiki(&space.repo_root)?;
+        let mut wiki_cfg = config::load_wiki(&wiki.repo_root)?;
         wiki_cfg.types.insert(
             type_name.to_string(),
             config::TypeEntry {
@@ -127,11 +127,11 @@ pub fn schema_add(
                 description: format!("Custom type: {type_name}"),
             },
         );
-        config::save_wiki(&wiki_cfg, &space.repo_root)?;
+        config::save_wiki(&wiki_cfg, &wiki.repo_root)?;
         msg.push_str(&format!(", added [types.{type_name}] to wiki.toml"));
     }
 
-    msg.push_str(&rebuild_space_index(engine, space));
+    msg.push_str(&rebuild_wiki_index(engine, wiki));
 
     Ok(msg)
 }
@@ -142,10 +142,10 @@ pub fn schema_add(
 /// exists but the schema does not match". Clear the stale index and rebuild
 /// it with the new registry + schema so subsequent commands work. Returns a
 /// human-readable outcome note.
-fn rebuild_space_index(engine: &EngineState, space: &crate::engine::SpaceContext) -> String {
-    match space_builder::build_space(&space.repo_root, &engine.config.index.tokenizer) {
+fn rebuild_wiki_index(engine: &EngineState, wiki: &crate::engine::WikiContext) -> String {
+    match wiki_builder::build_wiki(&wiki.repo_root, &engine.config.index.tokenizer) {
         Ok((new_registry, new_index_schema)) => {
-            let index_path = space.index_manager.index_path().to_path_buf();
+            let index_path = wiki.index_manager.index_path().to_path_buf();
             let search_dir = index_path.join("search-index");
             if search_dir.exists()
                 && let Err(e) = std::fs::remove_dir_all(&search_dir)
@@ -154,10 +154,10 @@ fn rebuild_space_index(engine: &EngineState, space: &crate::engine::SpaceContext
             }
             // Fresh manager: the mounted one still holds a reader opened on
             // the old schema, which must not be reused for the new index.
-            let manager = crate::index_manager::SpaceIndexManager::new(&space.name, &index_path);
+            let manager = crate::index_manager::WikiIndexManager::new(&wiki.name, &index_path);
             match manager.rebuild(
-                &space.wiki_root,
-                &space.repo_root,
+                &wiki.content_root,
+                &wiki.repo_root,
                 &new_index_schema,
                 &new_registry,
             ) {
@@ -195,7 +195,7 @@ pub fn schema_register(
     schema_content: &str,
     template: Option<&str>,
 ) -> Result<SchemaRegisterReport> {
-    let space = engine.space(wiki_name)?;
+    let wiki = engine.wiki(wiki_name)?;
 
     // The type name becomes a filename — keep it slug-shaped.
     if !type_name
@@ -228,14 +228,14 @@ pub fn schema_register(
         .map(str::to_string);
 
     // Idempotence / conflict: compare against the effective existing schema.
-    if space.type_registry.is_known(type_name) {
+    if wiki.type_registry.is_known(type_name) {
         let existing = schema_show(engine, wiki_name, type_name)?;
         let existing_value: serde_json::Value = serde_json::from_str(&existing)
             .with_context(|| format!("existing schema for '{type_name}' is not valid JSON"))?;
         let template_matches = match template {
             None => true,
             Some(t) => {
-                let tmpl_path = space
+                let tmpl_path = wiki
                     .repo_root
                     .join("schemas")
                     .join(format!("{type_name}.md"));
@@ -265,7 +265,7 @@ pub fn schema_register(
     }
 
     // New type: write schema (+ template), commit, rebuild.
-    let schemas_dir = space.repo_root.join("schemas");
+    let schemas_dir = wiki.repo_root.join("schemas");
     std::fs::create_dir_all(&schemas_dir)
         .with_context(|| format!("failed to create {}", schemas_dir.display()))?;
     let schema_path = schemas_dir.join(format!("{type_name}.json"));
@@ -280,14 +280,14 @@ pub fn schema_register(
     }
 
     let mut notes = Vec::new();
-    let resolved = space.resolved_config(&engine.config);
+    let resolved = wiki.resolved_config(&engine.config);
     if resolved.ingest.auto_commit {
         let path_refs: Vec<&Path> = committed_paths.iter().map(|p| p.as_path()).collect();
         let msg = format!(
             "schema register: {type_name} (owner: {})",
             owner.as_deref().unwrap_or("unowned")
         );
-        match git::commit_paths(&space.repo_root, &path_refs, &msg) {
+        match git::commit_paths(&wiki.repo_root, &path_refs, &msg) {
             Ok(hash) if !hash.is_empty() => notes.push(format!("committed {hash}")),
             Ok(_) => {}
             Err(e) => notes.push(format!("commit failed: {e}")),
@@ -295,7 +295,7 @@ pub fn schema_register(
     }
 
     notes.push(
-        rebuild_space_index(engine, space)
+        rebuild_wiki_index(engine, wiki)
             .trim_start_matches(", ")
             .to_string(),
     );
@@ -340,10 +340,10 @@ pub fn schema_remove(
         .state
         .read()
         .map_err(|_| anyhow::anyhow!("lock poisoned"))?;
-    let space = engine.space(wiki_name)?;
+    let wiki = engine.wiki(wiki_name)?;
 
     // Count pages of this type in the index
-    let searcher = space.index_manager.searcher()?;
+    let searcher = wiki.index_manager.searcher()?;
     let list_result = search::list(
         &search::ListOptions {
             r#type: Some(type_name.to_string()),
@@ -351,7 +351,7 @@ pub fn schema_remove(
         },
         &searcher,
         wiki_name,
-        &space.index_schema,
+        &wiki.index_schema,
     )?;
     let pages_to_remove = list_result.total;
 
@@ -359,7 +359,7 @@ pub fn schema_remove(
         return Ok(SchemaRemoveReport {
             pages_removed: pages_to_remove,
             pages_deleted_from_disk: if delete_pages { pages_to_remove } else { 0 },
-            wiki_toml_updated: space
+            wiki_toml_updated: wiki
                 .type_registry
                 .list_types()
                 .iter()
@@ -371,16 +371,15 @@ pub fn schema_remove(
 
     // Remove pages from index
     if pages_to_remove > 0 {
-        space
-            .index_manager
-            .delete_by_type(&space.index_schema, type_name)?;
+        wiki.index_manager
+            .delete_by_type(&wiki.index_schema, type_name)?;
     }
 
     // Delete page files from disk if requested
     let mut pages_deleted_from_disk = 0;
     if delete_pages && pages_to_remove > 0 {
         for page in &list_result.pages {
-            if markdown::delete_page(&page.slug, &space.wiki_root)? {
+            if markdown::delete_page(&page.slug, &wiki.content_root)? {
                 pages_deleted_from_disk += 1;
             }
         }
@@ -388,16 +387,16 @@ pub fn schema_remove(
 
     // Remove wiki.toml override if present
     let mut wiki_toml_updated = false;
-    let mut wiki_cfg = config::load_wiki(&space.repo_root)?;
+    let mut wiki_cfg = config::load_wiki(&wiki.repo_root)?;
     if wiki_cfg.types.remove(type_name).is_some() {
-        config::save_wiki(&wiki_cfg, &space.repo_root)?;
+        config::save_wiki(&wiki_cfg, &wiki.repo_root)?;
         wiki_toml_updated = true;
     }
 
     // Delete schema file if requested
     let mut schema_file_deleted = false;
-    if delete && let Some(schema_path) = space.type_registry.schema_path(type_name) {
-        let full_path = space.repo_root.join(schema_path);
+    if delete && let Some(schema_path) = wiki.type_registry.schema_path(type_name) {
+        let full_path = wiki.repo_root.join(schema_path);
         if full_path.exists() {
             // Check if other types use this schema
             let content = std::fs::read_to_string(&full_path).unwrap_or_default();
@@ -417,8 +416,8 @@ pub fn schema_remove(
     }
 
     // Auto-commit if configured and changes were made
-    let resolved = space.resolved_config(&engine.config);
-    let repo_root = space.repo_root.clone();
+    let resolved = wiki.resolved_config(&engine.config);
+    let repo_root = wiki.repo_root.clone();
     if resolved.ingest.auto_commit
         && (pages_deleted_from_disk > 0 || wiki_toml_updated || schema_file_deleted)
     {
@@ -444,23 +443,23 @@ pub fn schema_validate(
     wiki_name: &str,
     type_name: Option<&str>,
 ) -> Result<Vec<String>> {
-    let space = engine.space(wiki_name)?;
+    let wiki = engine.wiki(wiki_name)?;
     let mut issues = Vec::new();
 
     if let Some(name) = type_name {
         // Validate single type
-        if !space.type_registry.is_known(name) {
+        if !wiki.type_registry.is_known(name) {
             bail!("type '{name}' is not registered");
         }
-        let schema_path = space
+        let schema_path = wiki
             .type_registry
             .schema_path(name)
             .ok_or_else(|| anyhow::anyhow!("no schema path for type '{name}'"))?;
-        let full_path = space.repo_root.join(schema_path);
+        let full_path = wiki.repo_root.join(schema_path);
         validate_schema_file(&full_path, &mut issues);
     } else {
         // Validate all schemas
-        let schemas_dir = space.repo_root.join("schemas");
+        let schemas_dir = wiki.repo_root.join("schemas");
         if schemas_dir.is_dir() {
             let mut entries: Vec<_> = std::fs::read_dir(&schemas_dir)?
                 .filter_map(|e| e.ok())
@@ -474,7 +473,7 @@ pub fn schema_validate(
     }
 
     // Index resolution check
-    match space_builder::build_space(&space.repo_root, "en_stem") {
+    match wiki_builder::build_wiki(&wiki.repo_root, "en_stem") {
         Ok(_) => {}
         Err(e) => issues.push(format!("index resolution failed: {e}")),
     }

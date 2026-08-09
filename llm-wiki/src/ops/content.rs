@@ -72,9 +72,9 @@ pub fn backlinks_for(
     wiki_name: &str,
     target_slug: &str,
 ) -> Result<Vec<BacklinkRef>> {
-    let space = engine.space(wiki_name)?;
-    let searcher = space.index_manager.searcher()?;
-    let is = &space.index_schema;
+    let wiki = engine.wiki(wiki_name)?;
+    let searcher = wiki.index_manager.searcher()?;
+    let is = &wiki.index_schema;
 
     let mut refs = backlinks_query(&searcher, is, target_slug)?;
     if let Some(id) = crate::search::id_for_slug(&searcher, is, target_slug)? {
@@ -106,24 +106,24 @@ pub fn content_read(
     list_assets: bool,
 ) -> Result<ContentReadResult> {
     let (entry, slug) = engine.resolve_address(uri, wiki_flag)?;
-    let wiki_root = engine.space(&entry.name)?.wiki_root.clone();
+    let content_root = engine.wiki(&entry.name)?.content_root.clone();
 
     if list_assets {
-        let assets = markdown::list_assets(&slug, &wiki_root)?;
+        let assets = markdown::list_assets(&slug, &content_root)?;
         return Ok(ContentReadResult::Assets(assets));
     }
 
-    match resolve_read_target(slug.as_str(), &wiki_root)? {
+    match resolve_read_target(slug.as_str(), &content_root)? {
         ReadTarget::Page(_) => {
             let wiki_cfg = config::load_wiki(&PathBuf::from(&entry.path)).unwrap_or_default();
             let resolved = config::resolve(&engine.config, &wiki_cfg);
             let strip = no_frontmatter || resolved.read.no_frontmatter;
-            let content = markdown::read_page(&slug, &wiki_root, strip)?;
+            let content = markdown::read_page(&slug, &content_root, strip)?;
             Ok(ContentReadResult::Page(content))
         }
         ReadTarget::Asset(parent_slug, filename) => {
             let parent = Slug::try_from(parent_slug.as_str())?;
-            let bytes = markdown::read_asset(&parent, &filename, &wiki_root)?;
+            let bytes = markdown::read_asset(&parent, &filename, &content_root)?;
             match String::from_utf8(bytes) {
                 Ok(text) => Ok(ContentReadResult::Page(text)),
                 Err(_) => Ok(ContentReadResult::Binary),
@@ -148,8 +148,8 @@ pub fn content_write(
     content: &str,
 ) -> Result<WriteResult> {
     let (_entry, slug) = engine.resolve_address(uri, wiki_flag)?;
-    let wiki_root = engine.space(&_entry.name)?.wiki_root.clone();
-    let path = markdown::write_page(slug.as_str(), content, &wiki_root)?;
+    let content_root = engine.wiki(&_entry.name)?.content_root.clone();
+    let path = markdown::write_page(slug.as_str(), content, &content_root)?;
     Ok(WriteResult {
         bytes_written: content.len(),
         path,
@@ -168,7 +168,7 @@ pub struct ContentNewResult {
     /// Absolute filesystem path of the created file.
     pub path: PathBuf,
     /// Absolute path to the wiki root directory.
-    pub wiki_root: PathBuf,
+    pub content_root: PathBuf,
     /// True if the page was created as a bundle (folder + index.md).
     pub bundle: bool,
 }
@@ -187,7 +187,7 @@ pub fn content_new(
 ) -> Result<ContentNewResult> {
     let (entry, slug) = WikiUri::resolve(uri, wiki_flag, &engine.config)?;
     let repo_root = PathBuf::from(&entry.path);
-    let wiki_root = engine.space(&entry.name)?.wiki_root.clone();
+    let content_root = engine.wiki(&entry.name)?.content_root.clone();
 
     if section && id.is_some() {
         bail!("sections do not carry a page id");
@@ -201,12 +201,12 @@ pub fn content_new(
     let body_template = resolve_body_template(&repo_root, type_name);
 
     let path = if section {
-        markdown::create_section(&slug, &wiki_root, body_template.as_deref())?
+        markdown::create_section(&slug, &content_root, body_template.as_deref())?
     } else {
         markdown::create_page(
             &slug,
             bundle,
-            &wiki_root,
+            &content_root,
             name,
             type_,
             id,
@@ -219,7 +219,7 @@ pub fn content_new(
         slug: slug.as_str().to_string(),
         id,
         path,
-        wiki_root,
+        content_root,
         bundle,
     })
 }
@@ -261,7 +261,7 @@ pub fn content_commit(
     all: bool,
     message: Option<&str>,
 ) -> Result<CommitReport> {
-    let space = engine.space(wiki_name)?;
+    let wiki = engine.wiki(wiki_name)?;
 
     if slugs.is_empty() && !all {
         bail!("specify slugs or --all");
@@ -269,12 +269,12 @@ pub fn content_commit(
 
     let hash = if all {
         let msg = message.unwrap_or("commit: all");
-        git::commit(&space.repo_root, msg)?
+        git::commit(&wiki.repo_root, msg)?
     } else {
         let mut paths = Vec::new();
         for s in slugs {
             let slug = Slug::try_from(s.as_str())?;
-            let resolved = slug.resolve(&space.wiki_root)?;
+            let resolved = slug.resolve(&wiki.content_root)?;
             if resolved.file_name() == Some(std::ffi::OsStr::new("index.md")) {
                 let bundle_dir = resolved.parent().unwrap();
                 for entry in walkdir::WalkDir::new(bundle_dir)
@@ -292,7 +292,7 @@ pub fn content_commit(
         let path_refs: Vec<&Path> = paths.iter().map(|p| p.as_path()).collect();
         let default_msg = format!("commit: {}", slugs.join(", "));
         let msg = message.unwrap_or(&default_msg);
-        git::commit_paths(&space.repo_root, &path_refs, msg)?
+        git::commit_paths(&wiki.repo_root, &path_refs, msg)?
     };
 
     let mut report = CommitReport {
@@ -311,7 +311,7 @@ pub fn content_commit(
             report.index_deleted = r.deleted;
         }
         Err(e) => report.warnings.push(format!(
-            "committed but index update failed ({e}) — search is stale; run wiki_index_rebuild"
+            "committed but index update failed ({e}) — search is stale; run wiki_admin_index_rebuild"
         )),
     }
     Ok(report)

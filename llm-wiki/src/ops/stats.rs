@@ -30,7 +30,7 @@ pub struct IndexHealth {
     pub built: Option<String>,
 }
 
-/// Aggregate statistics for a single wiki space.
+/// Aggregate statistics for a single wiki.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WikiStats {
     /// Name of the wiki.
@@ -70,10 +70,10 @@ pub struct WikiStats {
 
 /// Compute aggregate stats for a wiki — page counts, graph metrics, staleness, and index health.
 pub fn stats(engine: &EngineState, wiki_name: &str) -> Result<WikiStats> {
-    let space = engine.space(wiki_name)?;
+    let wiki = engine.wiki(wiki_name)?;
 
     // Page counts + facets from list
-    let searcher = space.index_manager.searcher()?;
+    let searcher = wiki.index_manager.searcher()?;
     let list_result = search::list(
         &search::ListOptions {
             page_size: 1,
@@ -82,7 +82,7 @@ pub fn stats(engine: &EngineState, wiki_name: &str) -> Result<WikiStats> {
         },
         &searcher,
         wiki_name,
-        &space.index_schema,
+        &wiki.index_schema,
     )?;
 
     let pages = list_result.total;
@@ -92,30 +92,30 @@ pub fn stats(engine: &EngineState, wiki_name: &str) -> Result<WikiStats> {
 
     // Graph metrics
     let wiki_graph = get_or_build_graph(
-        &space.index_schema,
-        &space.type_registry,
-        &space.index_manager,
-        &space.graph_cache,
+        &wiki.index_schema,
+        &wiki.type_registry,
+        &wiki.index_manager,
+        &wiki.graph_cache,
         &searcher,
         &GraphFilter::default(),
     )?;
     let metrics = graph::compute_metrics(&wiki_graph);
-    let resolved = space.resolved_config(&engine.config);
+    let resolved = wiki.resolved_config(&engine.config);
     let communities = get_cached_community_stats(
-        &space.index_schema,
-        &space.type_registry,
-        &space.index_manager,
-        &space.graph_cache,
-        &space.community_cache,
+        &wiki.index_schema,
+        &wiki.type_registry,
+        &wiki.index_manager,
+        &wiki.graph_cache,
+        &wiki.community_cache,
         &searcher,
         resolved.graph.min_nodes_for_communities,
     )?;
 
     // Staleness buckets from last_updated field
-    let staleness = compute_staleness(&searcher, &space.index_schema)?;
+    let staleness = compute_staleness(&searcher, &wiki.index_schema)?;
 
     // Index health
-    let index_status = space.index_manager.status(&space.repo_root);
+    let index_status = wiki.index_manager.status(&wiki.repo_root);
     let index = IndexHealth {
         stale: index_status.as_ref().map(|s| s.stale).unwrap_or(true),
         built: index_status.ok().and_then(|s| s.built),

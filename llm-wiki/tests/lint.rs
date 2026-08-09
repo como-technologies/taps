@@ -4,63 +4,63 @@ use std::path::Path;
 use std::sync::Arc;
 
 use llm_wiki::config::GlobalConfig;
-use llm_wiki::engine::{EngineState, SpaceContext};
+use llm_wiki::engine::{EngineState, WikiContext};
 use llm_wiki::git;
-use llm_wiki::index_manager::SpaceIndexManager;
+use llm_wiki::index_manager::WikiIndexManager;
 use llm_wiki::index_schema::IndexSchema;
 use llm_wiki::ops::{LintFinding, Severity, run_lint};
-use llm_wiki::space_builder;
-use llm_wiki::type_registry::SpaceTypeRegistry;
+use llm_wiki::type_registry::WikiTypeRegistry;
+use llm_wiki::wiki_builder;
 
 fn schema() -> IndexSchema {
-    let (_registry, schema) = space_builder::build_space_from_embedded("en_stem");
+    let (_registry, schema) = wiki_builder::build_wiki_from_embedded("en_stem");
     schema
 }
 
-fn registry() -> SpaceTypeRegistry {
-    let (registry, _schema) = space_builder::build_space_from_embedded("en_stem");
+fn registry() -> WikiTypeRegistry {
+    let (registry, _schema) = wiki_builder::build_wiki_from_embedded("en_stem");
     registry
 }
 
 fn setup_repo(dir: &Path) -> std::path::PathBuf {
-    let wiki_root = dir.join("wiki");
-    fs::create_dir_all(&wiki_root).unwrap();
+    let content_root = dir.join("content");
+    fs::create_dir_all(&content_root).unwrap();
     fs::create_dir_all(dir.join("inbox")).unwrap();
     fs::create_dir_all(dir.join("evidence")).unwrap();
     git::init_repo(dir).unwrap();
     fs::write(dir.join("README.md"), "# test\n").unwrap();
     git::commit(dir, "init").unwrap();
-    wiki_root
+    content_root
 }
 
-fn write_page(wiki_root: &Path, rel_path: &str, content: &str) {
-    let path = wiki_root.join(rel_path);
+fn write_page(content_root: &Path, rel_path: &str, content: &str) {
+    let path = content_root.join(rel_path);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }
     fs::write(path, content).unwrap();
 }
 
-fn build_engine(dir: &Path, wiki_root: &Path) -> EngineState {
-    build_engine_with(dir, wiki_root, || (registry(), schema()))
+fn build_engine(dir: &Path, content_root: &Path) -> EngineState {
+    build_engine_with(dir, content_root, || (registry(), schema()))
 }
 
 fn build_engine_with(
     dir: &Path,
-    wiki_root: &Path,
-    build_space: impl Fn() -> (SpaceTypeRegistry, IndexSchema),
+    content_root: &Path,
+    build_wiki: impl Fn() -> (WikiTypeRegistry, IndexSchema),
 ) -> EngineState {
     let index_path = dir.join("index-store");
     git::commit(dir, "index pages").unwrap();
-    let (type_registry, index_schema) = build_space();
-    let mgr = SpaceIndexManager::new("test", &index_path);
-    mgr.rebuild(wiki_root, dir, &index_schema, &type_registry)
+    let (type_registry, index_schema) = build_wiki();
+    let mgr = WikiIndexManager::new("test", &index_path);
+    mgr.rebuild(content_root, dir, &index_schema, &type_registry)
         .unwrap();
     mgr.open(&index_schema, None).unwrap();
 
-    let space = Arc::new(SpaceContext {
+    let space = Arc::new(WikiContext {
         name: "test".to_string(),
-        wiki_root: wiki_root.to_path_buf(),
+        content_root: content_root.to_path_buf(),
         repo_root: dir.to_path_buf(),
         type_registry: Arc::new(type_registry),
         index_schema,
@@ -78,7 +78,7 @@ fn build_engine_with(
         config: GlobalConfig::default(),
         config_path: dir.join("config.toml"),
         state_dir: dir.to_path_buf(),
-        spaces,
+        wikis: spaces,
     }
 }
 
@@ -98,22 +98,22 @@ fn slugs_for_rule(findings: &[LintFinding], rule: &str) -> Vec<String> {
 #[test]
 fn orphan_detects_unlinked_page() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // linked.md links to orphan.md, so orphan.md has an incoming link
     // linked.md itself has no incoming link → it is the orphan
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/linked.md",
         "---\ntitle: \"Linked\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/orphan]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/orphan.md",
         "---\ntitle: \"Orphan\"\ntype: concept\nread_when: [\"x\"]\n---\n\nNo one links here.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("orphan"), None).unwrap();
     let slugs = slugs_for_rule(&report.findings, "orphan");
 
@@ -130,15 +130,15 @@ fn orphan_detects_unlinked_page() {
 #[test]
 fn orphan_ignores_section_pages() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/index.md",
         "---\ntitle: \"Concepts\"\ntype: section\n---\n\nSection root.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("orphan"), None).unwrap();
     let slugs = slugs_for_rule(&report.findings, "orphan");
 
@@ -155,7 +155,7 @@ fn orphan_ignores_section_pages() {
 #[test]
 fn orphan_credits_targets_of_custom_edge_fields() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // Register a custom `decision` type declaring `supersedes` via
     // x-graph-edges, on top of the default schemas.
@@ -187,18 +187,18 @@ fn orphan_credits_targets_of_custom_edge_fields() {
     // A declares a stable id; B supersedes A by that ULID. `supersedes` is
     // not one of the built-in edge fields — only the registry knows it.
     write_page(
-        &wiki_root,
+        &content_root,
         "decisions/a.md",
         "---\ntitle: \"A\"\ntype: decision\nid: 01ARZ3NDEKTSV4RRFFQ69G5FAV\n---\n\nOld decision.\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "decisions/b.md",
         "---\ntitle: \"B\"\ntype: decision\nsupersedes: 01ARZ3NDEKTSV4RRFFQ69G5FAV\n---\n\nNew decision.\n",
     );
 
-    let engine = build_engine_with(dir.path(), &wiki_root, || {
-        space_builder::build_space(dir.path(), "en_stem").unwrap()
+    let engine = build_engine_with(dir.path(), &content_root, || {
+        wiki_builder::build_wiki(dir.path(), "en_stem").unwrap()
     });
     let report = run_lint(&engine, "test", Some("orphan"), None).unwrap();
     let slugs = slugs_for_rule(&report.findings, "orphan");
@@ -219,15 +219,15 @@ fn orphan_credits_targets_of_custom_edge_fields() {
 #[test]
 fn broken_link_detects_missing_slug_in_body_links() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/alpha.md",
         "---\ntitle: \"Alpha\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/does-not-exist]] for details.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "broken-link");
 
@@ -244,20 +244,20 @@ fn broken_link_detects_missing_slug_in_body_links() {
 #[test]
 fn broken_link_clean_when_all_slugs_exist() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/alpha.md",
         "---\ntitle: \"Alpha\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/beta]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/beta.md",
         "---\ntitle: \"Beta\"\ntype: concept\nread_when: [\"x\"]\n---\n\nExists.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "broken-link");
 
@@ -270,17 +270,17 @@ fn broken_link_clean_when_all_slugs_exist() {
 #[test]
 fn broken_link_detects_missing_relates_to_target() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // relates_to is an x-graph-edges field: it credits its target against
     // the orphan rule, so a dangling one must fail broken-link too.
     write_page(
-        &wiki_root,
+        &content_root,
         "glossary/term.md",
         "---\ntitle: \"Term\"\ntype: glossary-entry\nstatus: active\nsummary: \"x\"\nlast_updated: 2026-01-01T00:00:00Z\nrelates_to:\n  - glossary/does-not-exist\n---\n\nBody.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "broken-link");
 
@@ -299,20 +299,20 @@ fn broken_link_detects_missing_relates_to_target() {
 #[test]
 fn broken_link_clean_when_relates_to_target_exists() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "glossary/term.md",
         "---\ntitle: \"Term\"\ntype: glossary-entry\nstatus: active\nsummary: \"x\"\nlast_updated: 2026-01-01T00:00:00Z\nrelates_to:\n  - glossary/other\n---\n\nBody.\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "glossary/other.md",
         "---\ntitle: \"Other\"\ntype: glossary-entry\nstatus: active\nsummary: \"x\"\nlast_updated: 2026-01-01T00:00:00Z\n---\n\nExists.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "broken-link");
 
@@ -327,15 +327,15 @@ fn broken_link_clean_when_relates_to_target_exists() {
 #[test]
 fn unknown_type_flags_unregistered_type() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "things/widget.md",
         "---\ntitle: \"Widget\"\ntype: widget\n---\n\nA widget.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("unknown-type"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "unknown-type");
 
@@ -347,15 +347,15 @@ fn unknown_type_flags_unregistered_type() {
 #[test]
 fn unknown_type_clean_for_known_types() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         "---\ntitle: \"MoE\"\ntype: concept\nread_when: [\"x\"]\n---\n\nContent.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("unknown-type"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "unknown-type");
 
@@ -370,15 +370,15 @@ fn unknown_type_clean_for_known_types() {
 #[test]
 fn stale_old_page_low_confidence_is_flagged() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/old.md",
         "---\ntitle: \"Old\"\ntype: concept\nread_when: [\"x\"]\nlast_updated: \"2020-01-01\"\nconfidence: 0.2\n---\n\nOld content.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("stale"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "stale");
 
@@ -390,16 +390,16 @@ fn stale_old_page_low_confidence_is_flagged() {
 #[test]
 fn stale_old_page_without_confidence_not_flagged() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // No confidence field at all: absence is neutral, not low.
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/no-confidence.md",
         "---\ntitle: \"No Confidence\"\ntype: concept\nread_when: [\"x\"]\nlast_updated: \"2020-01-01\"\n---\n\nOld but confidence-less content.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("stale"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "stale");
 
@@ -412,15 +412,15 @@ fn stale_old_page_without_confidence_not_flagged() {
 #[test]
 fn stale_old_page_explicit_low_confidence_is_flagged() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/shaky-old.md",
         "---\ntitle: \"Shaky Old\"\ntype: concept\nread_when: [\"x\"]\nlast_updated: \"2020-01-01\"\nconfidence: 0.1\n---\n\nSpeculative and old.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("stale"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "stale");
 
@@ -434,15 +434,15 @@ fn stale_old_page_explicit_low_confidence_is_flagged() {
 #[test]
 fn stale_old_page_high_confidence_not_flagged() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/trusted.md",
         "---\ntitle: \"Trusted\"\ntype: concept\nread_when: [\"x\"]\nlast_updated: \"2020-01-01\"\nconfidence: 0.9\n---\n\nWell-verified content.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("stale"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "stale");
 
@@ -455,18 +455,18 @@ fn stale_old_page_high_confidence_not_flagged() {
 #[test]
 fn stale_recent_page_not_flagged_regardless_of_confidence() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     let recent = chrono::Utc::now().format("%Y-%m-%d").to_string();
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/shaky.md",
         &format!(
             "---\ntitle: \"Shaky\"\ntype: concept\nread_when: [\"x\"]\nlast_updated: \"{recent}\"\nconfidence: 0.1\n---\n\nSpeculative.\n"
         ),
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("stale"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "stale");
 
@@ -482,15 +482,15 @@ fn stale_recent_page_not_flagged_regardless_of_confidence() {
 #[test]
 fn severity_filter_returns_only_errors() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/alpha.md",
         "---\ntitle: \"Alpha\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/missing]].\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", None, Some("error")).unwrap();
 
     for f in &report.findings {
@@ -507,28 +507,28 @@ fn severity_filter_returns_only_errors() {
 #[test]
 fn integration_known_bad_wiki() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // broken link
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/broken.md",
         "---\ntitle: \"Broken\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/ghost]].\n",
     );
     // unknown type
     write_page(
-        &wiki_root,
+        &content_root,
         "things/widget.md",
         "---\ntitle: \"Widget\"\ntype: widget\n---\n\nA widget.\n",
     );
     // clean page that links to broken.md (gives it an incoming link)
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/clean.md",
         "---\ntitle: \"Clean\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/broken]].\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", None, None).unwrap();
 
     let broken_link_slugs = slugs_for_rule(&report.findings, "broken-link");
@@ -547,16 +547,17 @@ fn integration_known_bad_wiki() {
 
 // ── broken-cross-wiki-link ────────────────────────────────────────────────────
 
-fn build_engine_with_name(dir: &Path, wiki_root: &Path, name: &str) -> EngineState {
+fn build_engine_with_name(dir: &Path, content_root: &Path, name: &str) -> EngineState {
     let index_path = dir.join("index-store");
     git::commit(dir, "index pages").unwrap();
-    let mgr = SpaceIndexManager::new(name, &index_path);
-    mgr.rebuild(wiki_root, dir, &schema(), &registry()).unwrap();
+    let mgr = WikiIndexManager::new(name, &index_path);
+    mgr.rebuild(content_root, dir, &schema(), &registry())
+        .unwrap();
     mgr.open(&schema(), None).unwrap();
 
-    let space = Arc::new(SpaceContext {
+    let space = Arc::new(WikiContext {
         name: name.to_string(),
-        wiki_root: wiki_root.to_path_buf(),
+        content_root: content_root.to_path_buf(),
         repo_root: dir.to_path_buf(),
         type_registry: Arc::new(registry()),
         index_schema: schema(),
@@ -574,21 +575,21 @@ fn build_engine_with_name(dir: &Path, wiki_root: &Path, name: &str) -> EngineSta
         config: GlobalConfig::default(),
         config_path: dir.join("config.toml"),
         state_dir: dir.to_path_buf(),
-        spaces,
+        wikis: spaces,
     }
 }
 
 #[test]
 fn broken_cross_wiki_link_to_unmounted_wiki_is_warning() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         "---\ntitle: \"A\"\ntype: concept\nread_when: [\"x\"]\nsources:\n  - wiki://unmounted/concepts/b\n---\n\nBody.\n",
     );
 
-    let engine = build_engine_with_name(dir.path(), &wiki_root, "mywiki");
+    let engine = build_engine_with_name(dir.path(), &content_root, "mywiki");
     let report = run_lint(&engine, "mywiki", Some("broken-cross-wiki-link"), None).unwrap();
 
     let cross_wiki_findings = slugs_for_rule(&report.findings, "broken-cross-wiki-link");
@@ -608,21 +609,21 @@ fn broken_cross_wiki_link_to_unmounted_wiki_is_warning() {
 #[test]
 fn broken_cross_wiki_link_to_mounted_wiki_no_finding() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         "---\ntitle: \"A\"\ntype: concept\nread_when: [\"x\"]\nsources:\n  - wiki://mywiki/concepts/local\n---\n\nBody.\n",
     );
     // Provide a second page so there's an incoming link to concepts/a
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/b.md",
         "---\ntitle: \"B\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/a]].\n",
     );
 
     // Engine named "mywiki" — the wiki:// link targets "mywiki" which IS mounted
-    let engine = build_engine_with_name(dir.path(), &wiki_root, "mywiki");
+    let engine = build_engine_with_name(dir.path(), &content_root, "mywiki");
     let report = run_lint(&engine, "mywiki", Some("broken-cross-wiki-link"), None).unwrap();
 
     let cross_wiki_findings = slugs_for_rule(&report.findings, "broken-cross-wiki-link");
@@ -637,26 +638,26 @@ fn broken_cross_wiki_link_to_mounted_wiki_no_finding() {
 #[test]
 fn articulation_point_rule_finds_connector_page() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // a → b → c: b is the only articulation point (removing it disconnects a from c)
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         "---\ntitle: \"A\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/b]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/b.md",
         "---\ntitle: \"B\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/c]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/c.md",
         "---\ntitle: \"C\"\ntype: concept\nread_when: [\"x\"]\n---\n\nLeaf.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("articulation-point"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "articulation-point");
 
@@ -689,26 +690,26 @@ fn articulation_point_rule_finds_connector_page() {
 #[test]
 fn bridge_rule_finds_load_bearing_link() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // a → b → c: both directed edges are bridges in the undirected view
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         "---\ntitle: \"A\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/b]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/b.md",
         "---\ntitle: \"B\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/c]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/c.md",
         "---\ntitle: \"C\"\ntype: concept\nread_when: [\"x\"]\n---\n\nLeaf.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("bridge"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "bridge");
 
@@ -741,27 +742,27 @@ fn bridge_rule_finds_load_bearing_link() {
 #[test]
 fn periphery_rule_finds_isolated_pages() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // a → b → c → a: strongly connected cycle, all nodes have equal eccentricity
     // so all are in the periphery (eccentricity = diameter)
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         "---\ntitle: \"A\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/b]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/b.md",
         "---\ntitle: \"B\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/c]].\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/c.md",
         "---\ntitle: \"C\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/a]].\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("periphery"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "periphery");
 
@@ -791,15 +792,15 @@ fn periphery_rule_finds_isolated_pages() {
 #[test]
 fn lint_finding_path_is_populated() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/orphan.md",
         "---\ntitle: \"Orphan\"\ntype: concept\nread_when: [\"x\"]\n---\n\nNo one links here.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("orphan"), None).unwrap();
 
     let findings = findings_for_rule(&report.findings, "orphan");
@@ -836,17 +837,21 @@ fn page_with_id(title: &str, id: &str) -> String {
 #[test]
 fn id_links_are_not_broken() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "decisions/a.md",
         &format!(
             "---\ntitle: \"A\"\ntype: concept\nstatus: active\nsuperseded_by: {LINT_ULID}\n---\n\nSee [[{LINT_ULID}]].\n"
         ),
     );
-    write_page(&wiki_root, "decisions/b.md", &page_with_id("B", LINT_ULID));
+    write_page(
+        &content_root,
+        "decisions/b.md",
+        &page_with_id("B", LINT_ULID),
+    );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
     assert_eq!(
         report.errors, 0,
@@ -858,14 +863,14 @@ fn id_links_are_not_broken() {
 #[test]
 fn unknown_id_link_is_broken() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "decisions/a.md",
         "---\ntitle: \"A\"\ntype: concept\nstatus: active\n---\n\nSee [[01BX5ZZKBKACTAV9WEVGEMMVRZ]].\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("broken-link"), None).unwrap();
     let broken = findings_for_rule(&report.findings, "broken-link");
     assert_eq!(broken.len(), 1, "unknown id must dangle");
@@ -875,11 +880,19 @@ fn unknown_id_link_is_broken() {
 #[test]
 fn duplicate_id_reported_on_every_participant() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "decisions/x.md", &page_with_id("X", LINT_ULID));
-    write_page(&wiki_root, "decisions/y.md", &page_with_id("Y", LINT_ULID));
+    let content_root = setup_repo(dir.path());
+    write_page(
+        &content_root,
+        "decisions/x.md",
+        &page_with_id("X", LINT_ULID),
+    );
+    write_page(
+        &content_root,
+        "decisions/y.md",
+        &page_with_id("Y", LINT_ULID),
+    );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("duplicate-id"), None).unwrap();
     let dups = findings_for_rule(&report.findings, "duplicate-id");
     assert_eq!(dups.len(), 2);
@@ -895,14 +908,14 @@ fn duplicate_id_reported_on_every_participant() {
 #[test]
 fn id_format_warns_on_malformed_id() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "decisions/bad.md",
         &page_with_id("Bad", "not-a-ulid"),
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("id-format"), None).unwrap();
     let findings = findings_for_rule(&report.findings, "id-format");
     assert_eq!(findings.len(), 1);
@@ -913,21 +926,21 @@ fn id_format_warns_on_malformed_id() {
 #[test]
 fn page_linked_only_by_id_is_not_an_orphan() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "decisions/linker.md",
         &format!(
             "---\ntitle: \"Linker\"\ntype: concept\nstatus: active\n---\n\nSee [[{LINT_ULID}]].\n"
         ),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "decisions/target.md",
         &page_with_id("Target", LINT_ULID),
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", Some("orphan"), None).unwrap();
     let orphans = slugs_for_rule(&report.findings, "orphan");
     assert!(
@@ -939,14 +952,14 @@ fn page_linked_only_by_id_is_not_an_orphan() {
 #[test]
 fn id_rules_silent_on_id_free_wiki() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/plain.md",
         "---\ntitle: \"Plain\"\ntype: concept\nstatus: active\n---\n\nBody.\n",
     );
 
-    let engine = build_engine(dir.path(), &wiki_root);
+    let engine = build_engine(dir.path(), &content_root);
     let report = run_lint(&engine, "test", None, None).unwrap();
     assert!(findings_for_rule(&report.findings, "duplicate-id").is_empty());
     assert!(findings_for_rule(&report.findings, "id-format").is_empty());

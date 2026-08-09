@@ -95,7 +95,7 @@ fn export_json_produces_valid_json_array() {
 // ── path resolution ───────────────────────────────────────────────────────────
 
 #[test]
-fn export_default_path_resolves_to_wiki_root() {
+fn export_default_path_resolves_to_content_root() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
     let manager = WikiEngine::build(&config_path).unwrap();
@@ -127,11 +127,11 @@ fn export_excludes_archived_by_default() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
 
     // Add an archived page
     fs::write(
-        wiki_root.join("concepts/archived-page.md"),
+        content_root.join("concepts/archived-page.md"),
         "---\ntitle: \"Archived\"\ntype: concept\nstatus: archived\n---\n\nOld content.\n",
     )
     .unwrap();
@@ -179,7 +179,7 @@ fn export_json_includes_custom_frontmatter_fields() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
 
     // Register a custom `decision` type declaring extra frontmatter fields
     std::fs::write(
@@ -207,7 +207,7 @@ fn export_json_includes_custom_frontmatter_fields() {
     .unwrap();
 
     std::fs::write(
-        wiki_root.join("concepts/adr-1.md"),
+        content_root.join("concepts/adr-1.md"),
         "---\ntitle: \"ADR 1\"\ntype: decision\nstatus: active\ncreated: 2026-07-19\nreference: DEC-001\ndeciders: [alice, bob]\npriority: 3\nsupersedes: 01ARZ3NDEKTSV4RRFFQ69G5FAV\n---\n\nDecision body.\n",
     )
     .unwrap();
@@ -267,9 +267,9 @@ fn export_json_omits_frontmatter_when_no_extra_fields() {
     // further required fields, unlike `concept` whose `read_when` would count
     // as an extra.
     let wiki_path = dir.path().join("test");
-    std::fs::create_dir_all(wiki_path.join("wiki").join("notes")).unwrap();
+    std::fs::create_dir_all(wiki_path.join("content").join("notes")).unwrap();
     std::fs::write(
-        wiki_path.join("wiki").join("notes").join("minimal.md"),
+        wiki_path.join("content").join("notes").join("minimal.md"),
         "---\ntitle: \"Minimal\"\ntype: doc\nstatus: active\n---\n\nBody.\n",
     )
     .unwrap();
@@ -312,9 +312,9 @@ fn export_json_omits_frontmatter_when_no_extra_fields() {
 fn export_json_includes_id_only_when_declared() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
-    let wiki_root = dir.path().join("test").join("wiki");
+    let content_root = dir.path().join("test").join("content");
     std::fs::write(
-        wiki_root.join("concepts/identified.md"),
+        content_root.join("concepts/identified.md"),
         "---\ntitle: \"Identified\"\nid: 01ARZ3NDEKTSV4RRFFQ69G5FAV\ntype: concept\nstatus: active\n---\n\nBody.\n",
     )
     .unwrap();

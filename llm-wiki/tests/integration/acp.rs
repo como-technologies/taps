@@ -250,7 +250,7 @@ fn session_list_returns_at_least_one() {
 #[test]
 fn acp_max_sessions_config_readable() {
     let env = WikiEnv::new();
-    let out = env.run_unchecked(&["config", "get", "serve.acp_max_sessions"]);
+    let out = env.run_unchecked(&["admin", "config", "get", "serve.acp_max_sessions"]);
     let code = out.status.code().unwrap();
     assert!(code == 0 || code == 1, "exited with {code}");
 }
@@ -259,7 +259,14 @@ fn acp_max_sessions_config_readable() {
 #[test]
 fn session_cap_enforced() {
     let env = WikiEnv::new();
-    env.run(&["config", "set", "serve.acp_max_sessions", "1", "--global"]);
+    env.run(&[
+        "admin",
+        "config",
+        "set",
+        "serve.acp_max_sessions",
+        "1",
+        "--global",
+    ]);
     let mut acp = AcpClient::connect(&env);
     acp.initialize();
     acp.new_session(env.tmp(), None);

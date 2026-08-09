@@ -125,7 +125,7 @@ impl McpClient {
 
     /// Rebuild the search index for a wiki via the MCP tool.
     fn rebuild(&mut self, wiki: &str) {
-        self.call("wiki_index_rebuild", json!({"wiki": wiki}));
+        self.call("wiki_admin_index_rebuild", json!({"wiki": wiki}));
     }
 }
 
@@ -370,7 +370,7 @@ fn graph_cross_wiki() {
 #[test]
 fn index_rebuild_returns_pages_indexed() {
     let (_env, mut mcp) = mcp_env();
-    let data = mcp.call_json("wiki_index_rebuild", json!({"wiki": SPACE_NAME}));
+    let data = mcp.call_json("wiki_admin_index_rebuild", json!({"wiki": SPACE_NAME}));
     assert!(data["pages_indexed"].as_u64().unwrap() > 0);
 }
 
@@ -378,7 +378,7 @@ fn index_rebuild_returns_pages_indexed() {
 fn index_status_after_rebuild() {
     let (_env, mut mcp) = mcp_env();
     mcp.rebuild(SPACE_NAME);
-    let data = mcp.call_json("wiki_index_status", json!({"wiki": SPACE_NAME}));
+    let data = mcp.call_json("wiki_admin_index_status", json!({"wiki": SPACE_NAME}));
     assert!(data["built"].is_string());
     assert_eq!(data["queryable"], true);
 }
@@ -748,7 +748,7 @@ fn list_json_type_filter_all_concepts() {
 #[test]
 fn spaces_list_returns_research() {
     let (_env, mut mcp) = mcp_env();
-    let text = mcp.call("wiki_spaces_list", json!({}));
+    let text = mcp.call("wiki_admin_list", json!({}));
     assert!(text.contains(SPACE_NAME));
     let data: Value = serde_json::from_str(&text).unwrap();
     assert!(
@@ -762,7 +762,7 @@ fn spaces_list_returns_research() {
 #[test]
 fn spaces_set_default_research() {
     let (_env, mut mcp) = mcp_env();
-    let text = mcp.call("wiki_spaces_set_default", json!({"name": SPACE_NAME}));
+    let text = mcp.call("wiki_admin_set_default", json!({"name": SPACE_NAME}));
     assert!(text.contains(SPACE_NAME));
 }
 

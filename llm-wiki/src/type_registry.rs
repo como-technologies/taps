@@ -35,22 +35,22 @@ pub struct EdgeDecl {
 
 /// Per-wiki type registry — discovers types from `schemas/*.json` via
 /// `x-wiki-types`, with optional `[types.*]` overrides from `wiki.toml`.
-pub struct SpaceTypeRegistry {
+pub struct WikiTypeRegistry {
     types: HashMap<String, RegisteredType>,
     schema_hash: String,
     type_hashes: HashMap<String, String>,
 }
 
-impl std::fmt::Debug for SpaceTypeRegistry {
+impl std::fmt::Debug for WikiTypeRegistry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SpaceTypeRegistry")
+        f.debug_struct("WikiTypeRegistry")
             .field("types", &self.types.keys().collect::<Vec<_>>())
             .field("schema_hash", &self.schema_hash)
             .finish()
     }
 }
 
-impl SpaceTypeRegistry {
+impl WikiTypeRegistry {
     /// Build from a wiki repository root. Scans `schemas/*.json`, merges
     /// `wiki.toml` overrides.
     pub fn build(repo_root: &Path) -> Result<Self> {
@@ -106,7 +106,7 @@ impl SpaceTypeRegistry {
         }
     }
 
-    /// Build from pre-constructed parts (used by space_builder).
+    /// Build from pre-constructed parts (used by wiki_builder).
     pub(crate) fn from_parts(
         types: HashMap<String, RegisteredType>,
         schema_hash: String,
@@ -240,7 +240,7 @@ impl SpaceTypeRegistry {
     }
 }
 
-impl Default for SpaceTypeRegistry {
+impl Default for WikiTypeRegistry {
     fn default() -> Self {
         Self::from_embedded()
     }

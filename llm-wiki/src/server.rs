@@ -123,7 +123,7 @@ pub async fn serve(
 
     let (wiki_count, serve_cfg, http_enabled, resolved_port) = {
         let engine = manager.state.read().map_err(|_| anyhow::anyhow!("lock"))?;
-        let count = engine.spaces.len();
+        let count = engine.wikis.len();
         let cfg = engine.config.serve.clone();
         // Bare --http enables the transport on the config port; an
         // explicit port overrides it.

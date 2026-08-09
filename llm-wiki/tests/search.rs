@@ -3,35 +3,35 @@ use std::path::Path;
 
 use llm_wiki::config::SearchConfig;
 use llm_wiki::git;
-use llm_wiki::index_manager::SpaceIndexManager;
+use llm_wiki::index_manager::WikiIndexManager;
 use llm_wiki::index_schema::IndexSchema;
 use llm_wiki::search::*;
-use llm_wiki::space_builder;
-use llm_wiki::type_registry::SpaceTypeRegistry;
+use llm_wiki::type_registry::WikiTypeRegistry;
+use llm_wiki::wiki_builder;
 
 fn schema() -> IndexSchema {
-    let (_registry, schema) = space_builder::build_space_from_embedded("en_stem");
+    let (_registry, schema) = wiki_builder::build_wiki_from_embedded("en_stem");
     schema
 }
 
-fn registry() -> SpaceTypeRegistry {
-    let (registry, _schema) = space_builder::build_space_from_embedded("en_stem");
+fn registry() -> WikiTypeRegistry {
+    let (registry, _schema) = wiki_builder::build_wiki_from_embedded("en_stem");
     registry
 }
 
 fn setup_repo(dir: &Path) -> std::path::PathBuf {
-    let wiki_root = dir.join("wiki");
-    fs::create_dir_all(&wiki_root).unwrap();
+    let content_root = dir.join("content");
+    fs::create_dir_all(&content_root).unwrap();
     fs::create_dir_all(dir.join("inbox")).unwrap();
     fs::create_dir_all(dir.join("evidence")).unwrap();
     git::init_repo(dir).unwrap();
     fs::write(dir.join("README.md"), "# test\n").unwrap();
     git::commit(dir, "init").unwrap();
-    wiki_root
+    content_root
 }
 
-fn write_page(wiki_root: &Path, rel_path: &str, content: &str) {
-    let path = wiki_root.join(rel_path);
+fn write_page(content_root: &Path, rel_path: &str, content: &str) {
+    let path = content_root.join(rel_path);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }
@@ -58,11 +58,12 @@ fn section_page(title: &str) -> String {
     format!("---\ntitle: \"{title}\"\nstatus: active\ntype: section\n---\n\n")
 }
 
-fn build_index(dir: &Path, wiki_root: &Path) -> SpaceIndexManager {
+fn build_index(dir: &Path, content_root: &Path) -> WikiIndexManager {
     let index_path = dir.join("index-store");
     git::commit(dir, "index pages").unwrap();
-    let mgr = SpaceIndexManager::new("test", &index_path);
-    mgr.rebuild(wiki_root, dir, &schema(), &registry()).unwrap();
+    let mgr = WikiIndexManager::new("test", &index_path);
+    mgr.rebuild(content_root, dir, &schema(), &registry())
+        .unwrap();
     mgr.open(&schema(), None).unwrap();
     mgr
 }
@@ -72,24 +73,24 @@ fn build_index(dir: &Path, wiki_root: &Path) -> SpaceIndexManager {
 #[test]
 fn search_returns_ranked_results() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &concept_page("Mixture of Experts", "MoE scaling"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "sources/switch.md",
         &paper_page("Switch Transformer", "MoE layers"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/attention.md",
         &concept_page("Attention", "Self-attention"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let results = search(
         "MoE scaling",
@@ -109,19 +110,19 @@ fn search_returns_ranked_results() {
 #[test]
 fn search_type_filter() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &concept_page("MoE", "MoE scaling"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "sources/switch.md",
         &paper_page("Switch", "MoE scaling paper"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let opts = SearchOptions {
         r#type: Some("paper".into()),
@@ -138,15 +139,19 @@ fn search_type_filter() {
 #[test]
 fn search_excludes_sections_by_default() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "concepts/index.md", &section_page("Concepts"));
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
+        "concepts/index.md",
+        &section_page("Concepts"),
+    );
+    write_page(
+        &content_root,
         "concepts/foo.md",
         &concept_page("Foo Concepts", "about concepts"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let results = search(
         "Concepts",
@@ -165,10 +170,14 @@ fn search_excludes_sections_by_default() {
 #[test]
 fn search_no_excerpt() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "concepts/foo.md", &concept_page("Foo", "body"));
+    let content_root = setup_repo(dir.path());
+    write_page(
+        &content_root,
+        "concepts/foo.md",
+        &concept_page("Foo", "body"),
+    );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let opts = SearchOptions {
         no_excerpt: true,
@@ -185,11 +194,19 @@ fn search_no_excerpt() {
 #[test]
 fn list_returns_sorted_by_slug() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "concepts/zebra.md", &concept_page("Zebra", "z"));
-    write_page(&wiki_root, "concepts/alpha.md", &concept_page("Alpha", "a"));
+    let content_root = setup_repo(dir.path());
+    write_page(
+        &content_root,
+        "concepts/zebra.md",
+        &concept_page("Zebra", "z"),
+    );
+    write_page(
+        &content_root,
+        "concepts/alpha.md",
+        &concept_page("Alpha", "a"),
+    );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let result = list(
         &ListOptions::default(),
@@ -207,11 +224,11 @@ fn list_returns_sorted_by_slug() {
 #[test]
 fn list_type_filter() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "concepts/foo.md", &concept_page("Foo", "f"));
-    write_page(&wiki_root, "sources/bar.md", &paper_page("Bar", "b"));
+    let content_root = setup_repo(dir.path());
+    write_page(&content_root, "concepts/foo.md", &concept_page("Foo", "f"));
+    write_page(&content_root, "sources/bar.md", &paper_page("Bar", "b"));
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let opts = ListOptions {
         r#type: Some("concept".into()),
@@ -226,15 +243,15 @@ fn list_type_filter() {
 #[test]
 fn list_status_filter() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/active.md",
         &concept_page("Active", "a"),
     );
-    write_page(&wiki_root, "concepts/wip.md", &draft_page("WIP"));
+    write_page(&content_root, "concepts/wip.md", &draft_page("WIP"));
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let opts = ListOptions {
         status: Some("draft".into()),
@@ -249,16 +266,16 @@ fn list_status_filter() {
 #[test]
 fn list_pagination() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     for i in 0..5 {
         write_page(
-            &wiki_root,
+            &content_root,
             &format!("concepts/page-{i:02}.md"),
             &concept_page(&format!("Page {i}"), "body"),
         );
     }
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
 
     let result = list(
@@ -332,15 +349,15 @@ fn search_all_merges_wikis() {
 #[test]
 fn search_all_respects_top_k() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     for i in 0..5 {
         write_page(
-            &wiki_root,
+            &content_root,
             &format!("concepts/topic-{i}.md"),
             &concept_page(&format!("Topic {i}"), "shared keyword body"),
         );
     }
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
 
     let opts = SearchOptions {
@@ -355,9 +372,13 @@ fn search_all_respects_top_k() {
 #[test]
 fn search_all_skips_missing_index() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "concepts/foo.md", &concept_page("Foo", "body"));
-    let mgr = build_index(dir.path(), &wiki_root);
+    let content_root = setup_repo(dir.path());
+    write_page(
+        &content_root,
+        "concepts/foo.md",
+        &concept_page("Foo", "body"),
+    );
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
 
     // search_all with only the good wiki — bad wiki can't produce a Searcher
@@ -383,24 +404,24 @@ fn confidence_page(slug_name: &str, conf: f64) -> String {
 #[test]
 fn search_ranking_active_above_draft_above_archived() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/archived.md",
         &status_page("Archived", "archived"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/draft.md",
         &status_page("Draft", "draft"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/active.md",
         &status_page("Active", "active"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let results = search(
         "identical ranking body",
@@ -426,15 +447,19 @@ fn search_ranking_active_above_draft_above_archived() {
 #[test]
 fn search_ranking_high_confidence_above_low() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "concepts/low.md", &confidence_page("Low", 0.2));
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
+        "concepts/low.md",
+        &confidence_page("Low", 0.2),
+    );
+    write_page(
+        &content_root,
         "concepts/high.md",
         &confidence_page("High", 0.9),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let results = search(
         "identical ranking body",
@@ -455,19 +480,19 @@ fn search_absent_confidence_is_neutral() {
     // A page with no confidence field must NOT be down-ranked: it scores
     // the same as an equal-relevance page with explicit confidence 1.0.
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/no-confidence.md",
         "---\ntitle: \"No Confidence\"\nstatus: active\ntype: concept\n---\n\nidentical ranking body text for testing\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/full-confidence.md",
         &confidence_page("Full", 1.0),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let results = search(
         "identical ranking body",
@@ -508,20 +533,20 @@ fn search_absent_confidence_is_neutral() {
 #[test]
 fn search_ranking_archived_high_confidence_below_active_medium() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     // archived + 1.0 = 0.3 × 1.0 = 0.3 < active + 0.5 = 1.0 × 0.5 = 0.5
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/archived-high.md",
         "---\ntitle: \"Archived High\"\nstatus: archived\ntype: concept\nconfidence: 1.0\n---\n\nidentical ranking body text for testing\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/active-mid.md",
         "---\ntitle: \"Active Mid\"\nstatus: active\ntype: concept\nconfidence: 0.5\n---\n\nidentical ranking body text for testing\n",
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let results = search(
         "identical ranking body",
@@ -539,19 +564,19 @@ fn search_ranking_archived_high_confidence_below_active_medium() {
 #[test]
 fn search_ranking_custom_config_zero_archived() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/archived.md",
         &status_page("Archived", "archived"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/active.md",
         &status_page("Active", "active"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let mut custom_status = llm_wiki::config::SearchConfig::default();
     custom_status.status.insert("archived".into(), 0.0);
@@ -582,19 +607,19 @@ fn search_ranking_custom_config_zero_archived() {
 fn search_ranking_custom_status_mapped() {
     // active × 1.0 × 0.5 = 0.5  >  stub × 0.6 × 0.5 = 0.3
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/stub-page.md",
         "---\ntitle: \"Stub\"\nstatus: stub\ntype: concept\nconfidence: 0.5\n---\n\nidentical ranking body text for testing\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/active-page.md",
         "---\ntitle: \"Active\"\nstatus: active\ntype: concept\nconfidence: 0.5\n---\n\nidentical ranking body text for testing\n",
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let mut custom_sc = SearchConfig::default();
     custom_sc.status.insert("stub".into(), 0.6);
@@ -633,19 +658,19 @@ fn search_ranking_custom_status_falls_back_to_unknown() {
     // a page with no status also uses unknown (×0.9)
     // both should produce the same multiplier and thus equal scores
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/has-stub.md",
         "---\ntitle: \"Has Stub\"\nstatus: stub\ntype: concept\nconfidence: 0.5\n---\n\nidentical ranking body text for testing\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/no-status.md",
         "---\ntitle: \"No Status\"\ntype: concept\nconfidence: 0.5\n---\n\nidentical ranking body text for testing\n",
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     // default config: no "stub" entry — falls back to "unknown" = 0.9
     let results = search(

@@ -17,7 +17,7 @@ use crate::engine::EngineState;
 use crate::graph::{GraphFilter, WikiGraph, get_or_build_graph};
 use crate::index_schema::IndexSchema;
 use crate::slug::Slug;
-use crate::type_registry::SpaceTypeRegistry;
+use crate::type_registry::WikiTypeRegistry;
 
 /// Severity level of a lint finding.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -96,42 +96,47 @@ pub fn run_lint(
         Some(s) => s.split(',').map(str::trim).collect(),
     };
 
-    let space = engine.space(wiki_name)?;
-    let searcher = space.index_manager.searcher()?;
-    let is = &space.index_schema;
-    let resolved = space.resolved_config(&engine.config);
+    let wiki = engine.wiki(wiki_name)?;
+    let searcher = wiki.index_manager.searcher()?;
+    let is = &wiki.index_schema;
+    let resolved = wiki.resolved_config(&engine.config);
     let lint_cfg = &resolved.lint;
-    let wiki_root = &space.wiki_root;
+    let content_root = &wiki.content_root;
 
     let mut findings: Vec<LintFinding> = Vec::new();
 
     if active_rules.contains("orphan") {
-        findings.extend(rule_orphan(&searcher, is, wiki_root, &space.type_registry)?);
+        findings.extend(rule_orphan(
+            &searcher,
+            is,
+            content_root,
+            &wiki.type_registry,
+        )?);
     }
     if active_rules.contains("broken-link") || active_rules.contains("broken-cross-wiki-link") {
-        let mounted: HashSet<String> = engine.spaces.keys().cloned().collect();
+        let mounted: HashSet<String> = engine.wikis.keys().cloned().collect();
         findings.extend(rule_broken_link(
             &searcher,
             is,
-            wiki_root,
+            content_root,
             active_rules.contains("broken-cross-wiki-link"),
             &mounted,
-            &space.type_registry,
+            &wiki.type_registry,
         )?);
     }
     if active_rules.contains("missing-fields") {
         findings.extend(rule_missing_fields(
             &searcher,
             is,
-            wiki_root,
-            &space.type_registry,
+            content_root,
+            &wiki.type_registry,
         )?);
     }
     if active_rules.contains("stale") {
         findings.extend(rule_stale(
             &searcher,
             is,
-            wiki_root,
+            content_root,
             lint_cfg.stale_days,
             lint_cfg.stale_confidence_threshold,
         )?);
@@ -140,15 +145,15 @@ pub fn run_lint(
         findings.extend(rule_unknown_type(
             &searcher,
             is,
-            wiki_root,
-            &space.type_registry,
+            content_root,
+            &wiki.type_registry,
         )?);
     }
     if active_rules.contains("duplicate-id") {
-        findings.extend(rule_duplicate_id(&searcher, is, wiki_root)?);
+        findings.extend(rule_duplicate_id(&searcher, is, content_root)?);
     }
     if active_rules.contains("id-format") {
-        findings.extend(rule_id_format(&searcher, is, wiki_root)?);
+        findings.extend(rule_id_format(&searcher, is, content_root)?);
     }
 
     let needs_graph = active_rules.contains("articulation-point")
@@ -157,23 +162,23 @@ pub fn run_lint(
 
     if needs_graph {
         let wiki_graph = get_or_build_graph(
-            &space.index_schema,
-            &space.type_registry,
-            &space.index_manager,
-            &space.graph_cache,
+            &wiki.index_schema,
+            &wiki.type_registry,
+            &wiki.index_manager,
+            &wiki.graph_cache,
             &searcher,
             &GraphFilter::default(),
         )?;
         if active_rules.contains("articulation-point") {
-            findings.extend(rule_articulation_point(&wiki_graph, wiki_root));
+            findings.extend(rule_articulation_point(&wiki_graph, content_root));
         }
         if active_rules.contains("bridge") {
-            findings.extend(rule_bridge(&wiki_graph, wiki_root));
+            findings.extend(rule_bridge(&wiki_graph, content_root));
         }
         if active_rules.contains("periphery") {
             findings.extend(rule_periphery(
                 &wiki_graph,
-                wiki_root,
+                content_root,
                 resolved.graph.max_nodes_for_diameter,
             ));
         }
@@ -208,11 +213,11 @@ pub fn run_lint(
 
 /// Resolve a slug to its filesystem path string. Probes flat then bundle;
 /// falls back to the would-be flat path if the file doesn't exist yet.
-fn slug_path(slug: &str, wiki_root: &Path) -> String {
+fn slug_path(slug: &str, content_root: &Path) -> String {
     Slug::try_from(slug)
         .ok()
-        .and_then(|s| s.resolve(wiki_root).ok())
-        .unwrap_or_else(|| wiki_root.join(format!("{slug}.md")))
+        .and_then(|s| s.resolve(content_root).ok())
+        .unwrap_or_else(|| content_root.join(format!("{slug}.md")))
         .to_string_lossy()
         .into_owned()
 }
@@ -222,8 +227,8 @@ fn slug_path(slug: &str, wiki_root: &Path) -> String {
 fn rule_orphan(
     searcher: &tantivy::Searcher,
     is: &IndexSchema,
-    wiki_root: &Path,
-    registry: &SpaceTypeRegistry,
+    content_root: &Path,
+    registry: &WikiTypeRegistry,
 ) -> Result<Vec<LintFinding>> {
     let f_slug = is.field("slug");
     let f_type = is.field("type");
@@ -318,7 +323,7 @@ fn rule_orphan(
 
         if !all_linked.contains(&slug) {
             findings.push(LintFinding {
-                path: slug_path(&slug, wiki_root),
+                path: slug_path(&slug, content_root),
                 slug,
                 rule: "orphan",
                 severity: Severity::Warning,
@@ -358,10 +363,10 @@ fn target_exists(searcher: &tantivy::Searcher, is: &IndexSchema, target: &str) -
 fn rule_broken_link(
     searcher: &tantivy::Searcher,
     is: &IndexSchema,
-    wiki_root: &Path,
+    content_root: &Path,
     check_cross_wiki: bool,
     mounted_wiki_names: &HashSet<String>,
-    registry: &SpaceTypeRegistry,
+    registry: &WikiTypeRegistry,
 ) -> Result<Vec<LintFinding>> {
     let f_slug = is.field("slug");
     // The same field set the orphan rule credits: built-in link fields
@@ -411,7 +416,7 @@ fn rule_broken_link(
                         && !mounted_wiki_names.contains(wiki_name)
                     {
                         findings.push(LintFinding {
-                            path: slug_path(&slug, wiki_root),
+                            path: slug_path(&slug, content_root),
                             slug: slug.clone(),
                             rule: "broken-cross-wiki-link",
                             severity: Severity::Warning,
@@ -422,7 +427,7 @@ fn rule_broken_link(
                 }
                 if !target_exists(searcher, is, target)? {
                     findings.push(LintFinding {
-                        path: slug_path(&slug, wiki_root),
+                        path: slug_path(&slug, content_root),
                         slug: slug.clone(),
                         rule: "broken-link",
                         severity: Severity::Error,
@@ -441,7 +446,7 @@ fn rule_broken_link(
 fn rule_duplicate_id(
     searcher: &tantivy::Searcher,
     is: &IndexSchema,
-    wiki_root: &Path,
+    content_root: &Path,
 ) -> Result<Vec<LintFinding>> {
     let f_slug = is.field("slug");
     let f_id = is.field("id");
@@ -476,7 +481,7 @@ fn rule_duplicate_id(
                 .map(|s| s.as_str())
                 .collect();
             findings.push(LintFinding {
-                path: slug_path(slug, wiki_root),
+                path: slug_path(slug, content_root),
                 slug: slug.clone(),
                 rule: "duplicate-id",
                 severity: Severity::Error,
@@ -493,7 +498,7 @@ fn rule_duplicate_id(
 fn rule_id_format(
     searcher: &tantivy::Searcher,
     is: &IndexSchema,
-    wiki_root: &Path,
+    content_root: &Path,
 ) -> Result<Vec<LintFinding>> {
     let f_slug = is.field("slug");
     let f_id = is.field("id");
@@ -511,7 +516,7 @@ fn rule_id_format(
         };
         if Ulid::from_string(raw_id).is_err() {
             findings.push(LintFinding {
-                path: slug_path(slug, wiki_root),
+                path: slug_path(slug, content_root),
                 slug: slug.to_string(),
                 rule: "id-format",
                 severity: Severity::Warning,
@@ -530,8 +535,8 @@ fn rule_id_format(
 fn rule_missing_fields(
     searcher: &tantivy::Searcher,
     is: &IndexSchema,
-    wiki_root: &Path,
-    registry: &crate::type_registry::SpaceTypeRegistry,
+    content_root: &Path,
+    registry: &crate::type_registry::WikiTypeRegistry,
 ) -> Result<Vec<LintFinding>> {
     let f_slug = is.field("slug");
     let f_type = is.field("type");
@@ -571,7 +576,7 @@ fn rule_missing_fields(
             };
             if !present {
                 findings.push(LintFinding {
-                    path: slug_path(&slug, wiki_root),
+                    path: slug_path(&slug, content_root),
                     slug: slug.clone(),
                     rule: "missing-fields",
                     severity: Severity::Error,
@@ -589,7 +594,7 @@ fn rule_missing_fields(
 fn rule_stale(
     searcher: &tantivy::Searcher,
     is: &IndexSchema,
-    wiki_root: &Path,
+    content_root: &Path,
     stale_days: u32,
     stale_confidence_threshold: f32,
 ) -> Result<Vec<LintFinding>> {
@@ -654,7 +659,7 @@ fn rule_stale(
                 format!("last updated {date_str}")
             };
             findings.push(LintFinding {
-                path: slug_path(&slug, wiki_root),
+                path: slug_path(&slug, content_root),
                 slug,
                 rule: "stale",
                 severity: Severity::Warning,
@@ -705,8 +710,8 @@ fn build_undirected(
 fn rule_unknown_type(
     searcher: &tantivy::Searcher,
     is: &IndexSchema,
-    wiki_root: &Path,
-    registry: &crate::type_registry::SpaceTypeRegistry,
+    content_root: &Path,
+    registry: &crate::type_registry::WikiTypeRegistry,
 ) -> Result<Vec<LintFinding>> {
     let f_slug = is.field("slug");
     let f_type = is.field("type");
@@ -731,7 +736,7 @@ fn rule_unknown_type(
         }
         if !registry.is_known(page_type) {
             findings.push(LintFinding {
-                path: slug_path(&slug, wiki_root),
+                path: slug_path(&slug, content_root),
                 slug,
                 rule: "unknown-type",
                 severity: Severity::Error,
@@ -745,7 +750,7 @@ fn rule_unknown_type(
 
 // ── Rule: articulation-point ──────────────────────────────────────────────────
 
-fn rule_articulation_point(wiki_graph: &Arc<WikiGraph>, wiki_root: &Path) -> Vec<LintFinding> {
+fn rule_articulation_point(wiki_graph: &Arc<WikiGraph>, content_root: &Path) -> Vec<LintFinding> {
     let (ug, reverse_map) = build_undirected(wiki_graph);
     let aps = petgraph_live::connect::articulation_points(&ug);
     aps.iter()
@@ -753,7 +758,7 @@ fn rule_articulation_point(wiki_graph: &Arc<WikiGraph>, wiki_root: &Path) -> Vec
         .map(|&orig_idx| {
             let slug = wiki_graph[orig_idx].slug.clone();
             LintFinding {
-                path: slug_path(&slug, wiki_root),
+                path: slug_path(&slug, content_root),
                 slug,
                 rule: "articulation-point",
                 severity: Severity::Warning,
@@ -767,7 +772,7 @@ fn rule_articulation_point(wiki_graph: &Arc<WikiGraph>, wiki_root: &Path) -> Vec
 
 // ── Rule: bridge ──────────────────────────────────────────────────────────────
 
-fn rule_bridge(wiki_graph: &Arc<WikiGraph>, wiki_root: &Path) -> Vec<LintFinding> {
+fn rule_bridge(wiki_graph: &Arc<WikiGraph>, content_root: &Path) -> Vec<LintFinding> {
     let (ug, reverse_map) = build_undirected(wiki_graph);
     let bridges = petgraph_live::connect::find_bridges(&ug);
     bridges
@@ -781,7 +786,7 @@ fn rule_bridge(wiki_graph: &Arc<WikiGraph>, wiki_root: &Path) -> Vec<LintFinding
             let slug_a = wiki_graph[a].slug.clone();
             let slug_b = wiki_graph[b].slug.clone();
             LintFinding {
-                path: slug_path(&slug_a, wiki_root),
+                path: slug_path(&slug_a, content_root),
                 slug: slug_a.clone(),
                 rule: "bridge",
                 severity: Severity::Warning,
@@ -797,7 +802,7 @@ fn rule_bridge(wiki_graph: &Arc<WikiGraph>, wiki_root: &Path) -> Vec<LintFinding
 
 fn rule_periphery(
     wiki_graph: &Arc<WikiGraph>,
-    wiki_root: &Path,
+    content_root: &Path,
     max_nodes: usize,
 ) -> Vec<LintFinding> {
     let local_count = wiki_graph
@@ -814,7 +819,7 @@ fn rule_periphery(
         .map(|&idx| {
             let slug = wiki_graph[idx].slug.clone();
             LintFinding {
-                path: slug_path(&slug, wiki_root),
+                path: slug_path(&slug, content_root),
                 slug,
                 rule: "periphery",
                 severity: Severity::Warning,

@@ -81,8 +81,8 @@ impl PageStore for KbStore {
             let report = self
                 .kb
                 .call_json(
-                    "wiki_schema",
-                    json!({"action": "register", "type": type_name, "schema": schema}),
+                    "wiki_admin_schema_register",
+                    json!({"type": type_name, "schema": schema}),
                 )
                 .await?;
             out.push(format!(

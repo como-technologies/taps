@@ -10,7 +10,7 @@ use crate::config::{RedactConfig, ValidationConfig};
 use crate::frontmatter;
 use crate::git;
 use crate::ops::redact::{RedactionMatch, RedactionReport, redact_body};
-use crate::type_registry::SpaceTypeRegistry;
+use crate::type_registry::WikiTypeRegistry;
 
 /// Normalize line endings: CRLF → LF, lone CR → LF.
 pub fn normalize_line_endings(input: &str) -> String {
@@ -60,18 +60,18 @@ pub struct IngestReport {
 pub fn ingest(
     path: &Path,
     options: &IngestOptions,
-    wiki_root: &Path,
-    registry: &SpaceTypeRegistry,
+    content_root: &Path,
+    registry: &WikiTypeRegistry,
     validation: &ValidationConfig,
 ) -> Result<IngestReport> {
-    let repo_root = wiki_root
+    let repo_root = content_root
         .parent()
-        .ok_or_else(|| anyhow::anyhow!("wiki_root has no parent"))?;
+        .ok_or_else(|| anyhow::anyhow!("content_root has no parent"))?;
 
     let full_path = if path.is_absolute() {
         path.to_path_buf()
     } else {
-        wiki_root.join(path)
+        content_root.join(path)
     };
 
     if !full_path.exists() {
@@ -80,7 +80,7 @@ pub fn ingest(
 
     // Reject path traversal
     let canonical = full_path.canonicalize()?;
-    let canonical_root = wiki_root.canonicalize()?;
+    let canonical_root = content_root.canonicalize()?;
     if !canonical.starts_with(&canonical_root) {
         bail!("path is outside wiki root");
     }
@@ -88,13 +88,13 @@ pub fn ingest(
     let mut report = IngestReport::default();
 
     if full_path.is_file() {
-        let skip = should_skip(&full_path, wiki_root, &options.changed_paths);
+        let skip = should_skip(&full_path, content_root, &options.changed_paths);
         if skip {
             report.unchanged_count += 1;
         } else {
             validate_file(
                 &full_path,
-                wiki_root,
+                content_root,
                 registry,
                 validation,
                 options.redact.as_ref(),
@@ -106,12 +106,12 @@ pub fn ingest(
             let p = entry.path();
             if p.is_file() {
                 if p.extension().and_then(|e| e.to_str()) == Some("md") {
-                    if should_skip(p, wiki_root, &options.changed_paths) {
+                    if should_skip(p, content_root, &options.changed_paths) {
                         report.unchanged_count += 1;
                     } else {
                         validate_file(
                             p,
-                            wiki_root,
+                            content_root,
                             registry,
                             validation,
                             options.redact.as_ref(),
@@ -139,18 +139,18 @@ pub fn ingest(
     Ok(report)
 }
 
-fn should_skip(abs_path: &Path, wiki_root: &Path, changed: &Option<HashSet<PathBuf>>) -> bool {
+fn should_skip(abs_path: &Path, content_root: &Path, changed: &Option<HashSet<PathBuf>>) -> bool {
     let Some(set) = changed else { return false };
     if set.is_empty() {
         return false;
     }
-    let rel = abs_path.strip_prefix(wiki_root).unwrap_or(abs_path);
+    let rel = abs_path.strip_prefix(content_root).unwrap_or(abs_path);
     !set.contains(rel)
 }
 
-fn slug_from_path(abs_path: &Path, wiki_root: &Path) -> String {
+fn slug_from_path(abs_path: &Path, content_root: &Path) -> String {
     abs_path
-        .strip_prefix(wiki_root)
+        .strip_prefix(content_root)
         .unwrap_or(abs_path)
         .with_extension("")
         .to_string_lossy()
@@ -159,8 +159,8 @@ fn slug_from_path(abs_path: &Path, wiki_root: &Path) -> String {
 
 fn validate_file(
     path: &Path,
-    wiki_root: &Path,
-    registry: &SpaceTypeRegistry,
+    content_root: &Path,
+    registry: &WikiTypeRegistry,
     validation: &ValidationConfig,
     redact_cfg: Option<&RedactConfig>,
     report: &mut IngestReport,
@@ -189,7 +189,7 @@ fn validate_file(
             let body = &content[body_start..];
             let (redacted_body, matches) = redact_body(body, cfg);
             if !matches.is_empty() {
-                let slug = slug_from_path(path, wiki_root);
+                let slug = slug_from_path(path, content_root);
                 // Adjust line numbers by frontmatter line count
                 let fm_lines = front.lines().count();
                 let adjusted: Vec<RedactionMatch> = matches
@@ -210,7 +210,7 @@ fn validate_file(
             // No frontmatter — redact the whole file
             let (redacted, matches) = redact_body(&content, cfg);
             if !matches.is_empty() {
-                let slug = slug_from_path(path, wiki_root);
+                let slug = slug_from_path(path, content_root);
                 report.redacted.push(RedactionReport { slug, matches });
                 std::fs::write(path, &redacted)?;
                 content = normalize_line_endings(&redacted);

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use llm_wiki::config::*;
-use llm_wiki::spaces;
+use llm_wiki::registry;
 
 fn config_path(dir: &Path) -> std::path::PathBuf {
     dir.join("dot-wiki").join("config.toml")
@@ -24,7 +24,7 @@ fn create_builds_wiki_structure() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    let report = spaces::create(
+    let report = registry::create(
         &wiki_path,
         "research",
         Some("test wiki"),
@@ -38,7 +38,7 @@ fn create_builds_wiki_structure() {
     assert!(report.created);
     assert!(report.registered);
     assert!(report.committed);
-    assert!(wiki_path.join("wiki").is_dir());
+    assert!(wiki_path.join("content").is_dir());
     assert!(wiki_path.join("inbox").is_dir());
     assert!(wiki_path.join("evidence").is_dir());
     assert!(
@@ -59,7 +59,7 @@ fn create_registers_in_global_config() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(
+    registry::create(
         &wiki_path,
         "research",
         Some("ML wiki"),
@@ -82,7 +82,7 @@ fn create_set_default() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, true, &cfg, None).unwrap();
+    registry::create(&wiki_path, "research", None, false, true, &cfg, None).unwrap();
 
     let global = load_global(&cfg).unwrap();
     assert_eq!(global.global.default_wiki, "research");
@@ -94,7 +94,7 @@ fn create_creates_logs_directory() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
 
     let logs_dir = cfg.parent().unwrap().join("logs");
     assert!(logs_dir.is_dir());
@@ -106,8 +106,8 @@ fn create_rerun_same_name_skips() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
-    let report = spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    let report = registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
 
     assert!(!report.created);
     assert!(!report.registered);
@@ -120,8 +120,8 @@ fn create_rerun_different_name_errors_without_force() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
-    let result = spaces::create(&wiki_path, "research-v2", None, false, false, &cfg, None);
+    registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    let result = registry::create(&wiki_path, "research-v2", None, false, false, &cfg, None);
 
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("--force"));
@@ -133,8 +133,9 @@ fn create_force_allows_rename() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
-    let report = spaces::create(&wiki_path, "research-v2", None, true, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    let report =
+        registry::create(&wiki_path, "research-v2", None, true, false, &cfg, None).unwrap();
 
     assert!(report.registered);
     let global = load_global(&cfg).unwrap();
@@ -149,7 +150,7 @@ fn register_appends_entry() {
     let cfg = dir.path().join("config.toml");
     std::fs::write(&cfg, "[global]\ndefault_wiki = \"\"\n").unwrap();
 
-    spaces::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
+    registry::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
 
     let config = load_global(&cfg).unwrap();
     assert_eq!(config.wikis.len(), 1);
@@ -162,8 +163,8 @@ fn register_force_updates_existing() {
     let cfg = dir.path().join("config.toml");
     std::fs::write(&cfg, "[global]\ndefault_wiki = \"\"\n").unwrap();
 
-    spaces::register(make_entry("test", "/tmp/test1"), false, &cfg).unwrap();
-    spaces::register(make_entry("test", "/tmp/test2"), true, &cfg).unwrap();
+    registry::register(make_entry("test", "/tmp/test1"), false, &cfg).unwrap();
+    registry::register(make_entry("test", "/tmp/test2"), true, &cfg).unwrap();
 
     let config = load_global(&cfg).unwrap();
     assert_eq!(config.wikis.len(), 1);
@@ -176,8 +177,8 @@ fn register_errors_on_duplicate_without_force() {
     let cfg = dir.path().join("config.toml");
     std::fs::write(&cfg, "[global]\ndefault_wiki = \"\"\n").unwrap();
 
-    spaces::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
-    assert!(spaces::register(make_entry("test", "/tmp/test"), false, &cfg).is_err());
+    registry::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
+    assert!(registry::register(make_entry("test", "/tmp/test"), false, &cfg).is_err());
 }
 
 // ── remove ────────────────────────────────────────────────────────────────────
@@ -188,8 +189,8 @@ fn remove_removes_entry() {
     let cfg = dir.path().join("config.toml");
     std::fs::write(&cfg, "[global]\ndefault_wiki = \"\"\n").unwrap();
 
-    spaces::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
-    spaces::remove("test", false, &cfg).unwrap();
+    registry::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
+    registry::remove("test", false, &cfg).unwrap();
 
     let config = load_global(&cfg).unwrap();
     assert!(config.wikis.is_empty());
@@ -210,8 +211,8 @@ fn remove_with_delete_removes_directory() {
         description: None,
         remote: None,
     };
-    spaces::register(entry, false, &cfg).unwrap();
-    spaces::remove("test", true, &cfg).unwrap();
+    registry::register(entry, false, &cfg).unwrap();
+    registry::remove("test", true, &cfg).unwrap();
 
     assert!(!wiki_dir.exists());
 }
@@ -226,7 +227,7 @@ fn remove_errors_when_wiki_is_default() {
     )
     .unwrap();
 
-    let result = spaces::remove("test", false, &cfg);
+    let result = registry::remove("test", false, &cfg);
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("default wiki"));
 }
@@ -239,8 +240,8 @@ fn set_default_wiki_sets_default() {
     let cfg = dir.path().join("config.toml");
     std::fs::write(&cfg, "[global]\ndefault_wiki = \"\"\n").unwrap();
 
-    spaces::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
-    spaces::set_default_wiki("test", &cfg).unwrap();
+    registry::register(make_entry("test", "/tmp/test"), false, &cfg).unwrap();
+    registry::set_default_wiki("test", &cfg).unwrap();
 
     let config = load_global(&cfg).unwrap();
     assert_eq!(config.global.default_wiki, "test");
@@ -252,7 +253,7 @@ fn set_default_wiki_errors_on_unregistered() {
     let cfg = dir.path().join("config.toml");
     std::fs::write(&cfg, "[global]\ndefault_wiki = \"\"\n").unwrap();
 
-    assert!(spaces::set_default_wiki("nope", &cfg).is_err());
+    assert!(registry::set_default_wiki("nope", &cfg).is_err());
 }
 
 // ── load_all ──────────────────────────────────────────────────────────────────
@@ -263,7 +264,7 @@ fn load_all_returns_all_entries() {
         wikis: vec![make_entry("a", "/a"), make_entry("b", "/b")],
         ..Default::default()
     };
-    let entries = spaces::load_all(&global);
+    let entries = registry::load_all(&global);
     assert_eq!(entries.len(), 2);
 }
 
@@ -275,14 +276,14 @@ fn resolve_name_finds_entry() {
         wikis: vec![make_entry("research", "/tmp/research")],
         ..Default::default()
     };
-    let entry = spaces::resolve_name("research", &global).unwrap();
+    let entry = registry::resolve_name("research", &global).unwrap();
     assert_eq!(entry.name, "research");
 }
 
 #[test]
 fn resolve_name_errors_on_missing() {
     let global = GlobalConfig::default();
-    assert!(spaces::resolve_name("nope", &global).is_err());
+    assert!(registry::resolve_name("nope", &global).is_err());
 }
 
 // ── schemas and wiki.toml types ──────────────────────────────────────────────
@@ -293,7 +294,7 @@ fn create_writes_default_schema_files() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
 
     let schemas_dir = wiki_path.join("schemas");
     for name in &[
@@ -317,7 +318,7 @@ fn create_schema_files_match_embedded() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
 
     let embedded = llm_wiki::default_schemas::default_schemas();
     for (filename, expected) in &embedded {
@@ -332,7 +333,7 @@ fn create_generates_wiki_toml_without_types() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(
+    registry::create(
         &wiki_path,
         "research",
         Some("ML wiki"),
@@ -356,7 +357,7 @@ fn create_does_not_overwrite_existing_schemas() {
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
 
     // Modify a schema on disk
     let custom = wiki_path.join("schemas/base.json");
@@ -365,66 +366,66 @@ fn create_does_not_overwrite_existing_schemas() {
     // Re-run create (same name = skip path)
     // Simulate by calling ensure_structure indirectly via a new wiki
     let wiki_path2 = dir.path().join("other");
-    spaces::create(&wiki_path2, "other", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path2, "other", None, false, false, &cfg, None).unwrap();
 
     // Original wiki's custom schema untouched (create skipped it)
     let content = std::fs::read_to_string(&custom).unwrap();
     assert!(content.contains("custom"));
 }
 
-// ── validate_wiki_root ────────────────────────────────────────────────────────
+// ── validate_content_root ────────────────────────────────────────────────────────
 
 #[test]
-fn validate_wiki_root_accepts_simple_name() {
+fn validate_content_root_accepts_simple_name() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().join("skills");
     std::fs::create_dir_all(&root).unwrap();
-    assert!(llm_wiki::spaces::validate_wiki_root(dir.path(), "skills").is_ok());
+    assert!(llm_wiki::registry::validate_content_root(dir.path(), "skills").is_ok());
 }
 
 #[test]
-fn validate_wiki_root_accepts_multi_component() {
+fn validate_content_root_accepts_multi_component() {
     let dir = tempfile::tempdir().unwrap();
-    let root = dir.path().join("src").join("wiki");
+    let root = dir.path().join("src").join("content");
     std::fs::create_dir_all(&root).unwrap();
-    assert!(llm_wiki::spaces::validate_wiki_root(dir.path(), "src/wiki").is_ok());
+    assert!(llm_wiki::registry::validate_content_root(dir.path(), "src/content").is_ok());
 }
 
 #[test]
-fn validate_wiki_root_rejects_absolute() {
+fn validate_content_root_rejects_absolute() {
     let dir = tempfile::tempdir().unwrap();
-    let err = llm_wiki::spaces::validate_wiki_root(dir.path(), "/absolute").unwrap_err();
+    let err = llm_wiki::registry::validate_content_root(dir.path(), "/absolute").unwrap_err();
     assert!(err.to_string().contains("must be a relative path"));
 }
 
 #[test]
-fn validate_wiki_root_rejects_dotdot() {
+fn validate_content_root_rejects_dotdot() {
     let dir = tempfile::tempdir().unwrap();
-    let err = llm_wiki::spaces::validate_wiki_root(dir.path(), "../outside").unwrap_err();
+    let err = llm_wiki::registry::validate_content_root(dir.path(), "../outside").unwrap_err();
     assert!(err.to_string().contains("must not contain"));
 }
 
 #[test]
-fn validate_wiki_root_rejects_empty() {
+fn validate_content_root_rejects_empty() {
     let dir = tempfile::tempdir().unwrap();
-    let err = llm_wiki::spaces::validate_wiki_root(dir.path(), "").unwrap_err();
+    let err = llm_wiki::registry::validate_content_root(dir.path(), "").unwrap_err();
     assert!(err.to_string().contains("must not be empty"));
 }
 
 #[test]
-fn validate_wiki_root_rejects_dot() {
+fn validate_content_root_rejects_dot() {
     let dir = tempfile::tempdir().unwrap();
-    let err = llm_wiki::spaces::validate_wiki_root(dir.path(), ".").unwrap_err();
+    let err = llm_wiki::registry::validate_content_root(dir.path(), ".").unwrap_err();
     assert!(err.to_string().contains("must not be empty"));
 }
 
 #[test]
-fn validate_wiki_root_rejects_reserved_dirs() {
+fn validate_content_root_rejects_reserved_dirs() {
     let dir = tempfile::tempdir().unwrap();
     // `raw` remains reserved for backward compatibility with spaces created
     // before the capture layer was renamed to `evidence/`.
     for reserved in &["inbox", "evidence", "raw", "schemas"] {
-        let err = llm_wiki::spaces::validate_wiki_root(dir.path(), reserved).unwrap_err();
+        let err = llm_wiki::registry::validate_content_root(dir.path(), reserved).unwrap_err();
         assert!(
             err.to_string().contains("reserved"),
             "expected reserved error for {reserved}, got: {err}"
@@ -433,15 +434,15 @@ fn validate_wiki_root_rejects_reserved_dirs() {
 }
 
 #[test]
-fn validate_wiki_root_rejects_missing_directory() {
+fn validate_content_root_rejects_missing_directory() {
     let dir = tempfile::tempdir().unwrap();
     // "content" dir does NOT exist
-    let err = llm_wiki::spaces::validate_wiki_root(dir.path(), "content").unwrap_err();
+    let err = llm_wiki::registry::validate_content_root(dir.path(), "content").unwrap_err();
     assert!(err.to_string().contains("does not exist"));
 }
 
 #[test]
-fn validate_wiki_root_rejects_traversal_via_symlink() {
+fn validate_content_root_rejects_traversal_via_symlink() {
     let outer = tempfile::tempdir().unwrap();
     let inner = tempfile::tempdir().unwrap();
     let link = outer.path().join("escape");
@@ -449,20 +450,20 @@ fn validate_wiki_root_rejects_traversal_via_symlink() {
     std::os::unix::fs::symlink(inner.path(), &link).unwrap();
     #[cfg(unix)]
     {
-        let err = llm_wiki::spaces::validate_wiki_root(outer.path(), "escape").unwrap_err();
+        let err = llm_wiki::registry::validate_content_root(outer.path(), "escape").unwrap_err();
         assert!(err.to_string().contains("must be inside"));
     }
 }
 
-// ── create with wiki_root ─────────────────────────────────────────────────────
+// ── create with content_root ─────────────────────────────────────────────────────
 
 #[test]
-fn create_with_custom_wiki_root_creates_correct_directory() {
+fn create_with_custom_content_root_creates_correct_directory() {
     let dir = tempfile::tempdir().unwrap();
     let wiki_path = dir.path().join("skills-wiki");
     let cfg = config_path(dir.path());
 
-    llm_wiki::spaces::create(
+    llm_wiki::registry::create(
         &wiki_path,
         "skills",
         None,
@@ -475,28 +476,28 @@ fn create_with_custom_wiki_root_creates_correct_directory() {
 
     assert!(
         wiki_path.join("skills").is_dir(),
-        "custom wiki_root dir should exist"
+        "custom content_root dir should exist"
     );
     assert!(
-        !wiki_path.join("wiki").exists(),
+        !wiki_path.join("content").exists(),
         "default wiki/ dir should NOT be created"
     );
     let toml_content = std::fs::read_to_string(wiki_path.join("wiki.toml")).unwrap();
-    assert!(toml_content.contains("wiki_root = \"skills\""));
+    assert!(toml_content.contains("content_root = \"skills\""));
 }
 
 #[test]
-fn create_without_wiki_root_keeps_default_wiki_dir() {
+fn create_without_content_root_keeps_default_wiki_dir() {
     let dir = tempfile::tempdir().unwrap();
     let wiki_path = dir.path().join("research");
     let cfg = config_path(dir.path());
 
-    llm_wiki::spaces::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
+    llm_wiki::registry::create(&wiki_path, "research", None, false, false, &cfg, None).unwrap();
 
-    assert!(wiki_path.join("wiki").is_dir());
+    assert!(wiki_path.join("content").is_dir());
     let toml_content = std::fs::read_to_string(wiki_path.join("wiki.toml")).unwrap();
-    // default wiki_root should NOT be written to toml
-    assert!(!toml_content.contains("wiki_root"));
+    // default content_root should NOT be written to toml
+    assert!(!toml_content.contains("content_root"));
 }
 
 // ── register_existing ─────────────────────────────────────────────────────────
@@ -507,11 +508,11 @@ fn register_existing_basic() {
     let wiki_path = dir.path().join("existing-wiki");
     let cfg = config_path(dir.path());
 
-    std::fs::create_dir_all(wiki_path.join("wiki")).unwrap();
+    std::fs::create_dir_all(wiki_path.join("content")).unwrap();
     std::fs::write(wiki_path.join("wiki.toml"), "name = \"existing\"\n").unwrap();
 
     let report =
-        llm_wiki::spaces::register_existing(&wiki_path, "existing", None, None, &cfg).unwrap();
+        llm_wiki::registry::register_existing(&wiki_path, "existing", None, None, &cfg).unwrap();
 
     assert!(report.registered);
     assert!(!report.created);
@@ -531,7 +532,7 @@ fn register_existing_basic() {
         "schemas/ must be created"
     );
     assert!(
-        wiki_path.join("wiki").exists(),
+        wiki_path.join("content").exists(),
         "wiki/ content dir must exist"
     );
 
@@ -544,7 +545,7 @@ fn register_existing_basic() {
 }
 
 #[test]
-fn register_existing_with_custom_wiki_root() {
+fn register_existing_with_custom_content_root() {
     let dir = tempfile::tempdir().unwrap();
     let wiki_path = dir.path().join("skills-repo");
     let cfg = config_path(dir.path());
@@ -552,12 +553,12 @@ fn register_existing_with_custom_wiki_root() {
     std::fs::create_dir_all(wiki_path.join("skills")).unwrap();
     std::fs::write(
         wiki_path.join("wiki.toml"),
-        "name = \"skills\"\nwiki_root = \"skills\"\n",
+        "name = \"skills\"\ncontent_root = \"skills\"\n",
     )
     .unwrap();
 
     let report =
-        llm_wiki::spaces::register_existing(&wiki_path, "skills", None, None, &cfg).unwrap();
+        llm_wiki::registry::register_existing(&wiki_path, "skills", None, None, &cfg).unwrap();
 
     assert!(report.registered);
 
@@ -576,16 +577,16 @@ fn register_existing_with_custom_wiki_root() {
         "skills/ content dir must exist"
     );
 
-    // existing wiki.toml with wiki_root must not be overwritten
+    // existing wiki.toml with content_root must not be overwritten
     let toml_content = std::fs::read_to_string(wiki_path.join("wiki.toml")).unwrap();
     assert!(
-        toml_content.contains("wiki_root = \"skills\""),
-        "wiki.toml must preserve wiki_root"
+        toml_content.contains("content_root = \"skills\""),
+        "wiki.toml must preserve content_root"
     );
 }
 
 #[test]
-fn register_existing_wiki_root_flag_conflicts_with_toml() {
+fn register_existing_content_root_flag_conflicts_with_toml() {
     let dir = tempfile::tempdir().unwrap();
     let wiki_path = dir.path().join("skills-repo");
     let cfg = config_path(dir.path());
@@ -593,18 +594,19 @@ fn register_existing_wiki_root_flag_conflicts_with_toml() {
     std::fs::create_dir_all(wiki_path.join("skills")).unwrap();
     std::fs::write(
         wiki_path.join("wiki.toml"),
-        "name = \"skills\"\nwiki_root = \"skills\"\n",
+        "name = \"skills\"\ncontent_root = \"skills\"\n",
     )
     .unwrap();
 
-    let err = llm_wiki::spaces::register_existing(&wiki_path, "skills", None, Some("other"), &cfg)
-        .unwrap_err();
+    let err =
+        llm_wiki::registry::register_existing(&wiki_path, "skills", None, Some("other"), &cfg)
+            .unwrap_err();
 
-    assert!(err.to_string().contains("already declares wiki_root"));
+    assert!(err.to_string().contains("already declares content_root"));
 }
 
 #[test]
-fn register_existing_missing_wiki_root_directory_errors() {
+fn register_existing_missing_content_root_directory_errors() {
     let dir = tempfile::tempdir().unwrap();
     let wiki_path = dir.path().join("skills-repo");
     let cfg = config_path(dir.path());
@@ -612,12 +614,12 @@ fn register_existing_missing_wiki_root_directory_errors() {
     std::fs::create_dir_all(&wiki_path).unwrap();
     std::fs::write(
         wiki_path.join("wiki.toml"),
-        "name = \"skills\"\nwiki_root = \"skills\"\n",
+        "name = \"skills\"\ncontent_root = \"skills\"\n",
     )
     .unwrap();
 
     let err =
-        llm_wiki::spaces::register_existing(&wiki_path, "skills", None, None, &cfg).unwrap_err();
+        llm_wiki::registry::register_existing(&wiki_path, "skills", None, None, &cfg).unwrap_err();
 
     assert!(err.to_string().contains("does not exist"));
 }
@@ -631,7 +633,7 @@ fn register_existing_no_prior_toml_creates_wiki_toml() {
     // Only create the content dir — no wiki.toml, no other dirs
     std::fs::create_dir_all(wiki_path.join("content")).unwrap();
 
-    let report = llm_wiki::spaces::register_existing(
+    let report = llm_wiki::registry::register_existing(
         &wiki_path,
         "new-repo",
         Some("test description"),
@@ -655,8 +657,8 @@ fn register_existing_no_prior_toml_creates_wiki_toml() {
         "wiki.toml must contain description"
     );
     assert!(
-        toml_content.contains("wiki_root = \"content\""),
-        "wiki.toml must contain wiki_root"
+        !toml_content.contains("content_root"),
+        "the default content_root is not written to wiki.toml"
     );
 
     // standard dirs created
@@ -694,7 +696,7 @@ fn create_installs_engine_schema_library() {
     let wiki_path = dir.path().join("kb");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
 
     for schema in ["guide.json", "glossary-entry.json", "worked-example.json"] {
         assert!(
@@ -718,7 +720,7 @@ fn create_provisions_strict_validation_and_search_weights() {
     let wiki_path = dir.path().join("kb");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
 
     let wiki_cfg = load_wiki(&wiki_path).unwrap();
     assert_eq!(
@@ -755,13 +757,13 @@ fn create_installs_admission_hooks() {
     let wiki_path = dir.path().join("kb");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
 
     let hooks = wiki_path.join(".git").join("hooks");
     let pre = std::fs::read_to_string(hooks.join("pre-commit")).unwrap();
     let post = std::fs::read_to_string(hooks.join("post-commit")).unwrap();
 
-    assert!(pre.contains("managed by `llm-wiki spaces create`"));
+    assert!(pre.contains("managed by `llm-wiki admin create`"));
     assert!(
         pre.contains("ingest . --dry-run"),
         "pre-commit is the validate-only gate"
@@ -792,7 +794,7 @@ fn create_sets_index_auto_rebuild() {
     let wiki_path = dir.path().join("kb");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
 
     let global = load_global(&cfg).unwrap();
     assert!(
@@ -807,14 +809,14 @@ fn recreate_preserves_foreign_hooks() {
     let wiki_path = dir.path().join("kb");
     let cfg = config_path(dir.path());
 
-    spaces::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
 
     // A user replaces the pre-commit hook with their own.
     let pre = wiki_path.join(".git").join("hooks").join("pre-commit");
     std::fs::write(&pre, "#!/bin/sh\n# my own hook\nexit 0\n").unwrap();
 
     // Idempotent re-create must not clobber it.
-    spaces::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
+    registry::create(&wiki_path, "kb", None, false, false, &cfg, None).unwrap();
     let content = std::fs::read_to_string(&pre).unwrap();
     assert!(
         content.contains("my own hook"),
@@ -826,6 +828,6 @@ fn recreate_preserves_foreign_hooks() {
     assert!(
         std::fs::read_to_string(post)
             .unwrap()
-            .contains("managed by `llm-wiki spaces create`")
+            .contains("managed by `llm-wiki admin create`")
     );
 }

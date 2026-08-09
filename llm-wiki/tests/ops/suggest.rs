@@ -11,10 +11,10 @@ fn suggest_returns_candidates_with_shared_tags() {
 
     // Add a paper with the same tag as moe
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
-    fs::create_dir_all(wiki_root.join("sources")).unwrap();
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("sources")).unwrap();
     fs::write(
-        wiki_root.join("sources/paper-a.md"),
+        content_root.join("sources/paper-a.md"),
         "---\ntitle: \"Paper A\"\ntype: paper\nstatus: active\ntags: [ml]\n---\n\nA paper about ML.\n",
     )
     .unwrap();
@@ -66,12 +66,12 @@ fn suggest_on_empty_wiki() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("state").join("config.toml");
     let wiki_path = dir.path().join("empty");
-    llm_wiki::spaces::create(&wiki_path, "empty", None, false, true, &config_path, None).unwrap();
+    llm_wiki::registry::create(&wiki_path, "empty", None, false, true, &config_path, None).unwrap();
 
-    let wiki_root = wiki_path.join("wiki");
-    fs::create_dir_all(wiki_root.join("concepts")).unwrap();
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("concepts")).unwrap();
     fs::write(
-        wiki_root.join("concepts/lonely.md"),
+        content_root.join("concepts/lonely.md"),
         "---\ntitle: \"Lonely\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\nAlone.\n",
     )
     .unwrap();
@@ -95,10 +95,10 @@ fn suggest_has_field_suggestion() {
     let config_path = setup_wiki(dir.path(), "test");
 
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
-    fs::create_dir_all(wiki_root.join("sources")).unwrap();
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("sources")).unwrap();
     fs::write(
-        wiki_root.join("sources/paper-b.md"),
+        content_root.join("sources/paper-b.md"),
         "---\ntitle: \"Paper B\"\ntype: paper\nstatus: active\ntags: [ml]\n---\n\nAnother ML paper.\n",
     )
     .unwrap();

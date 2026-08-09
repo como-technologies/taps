@@ -27,21 +27,21 @@ pub fn ingest_with_redact(
     redact: bool,
     wiki_name: &str,
 ) -> Result<ingest::IngestReport> {
-    let space = engine.space(wiki_name)?;
-    let resolved = space.resolved_config(&engine.config);
+    let wiki = engine.wiki(wiki_name)?;
+    let resolved = wiki.resolved_config(&engine.config);
 
     // Build changed-paths set from git diff (normal ingest only; dry_run validates all).
     // Paths from collect_changed_files are relative to repo_root; strip the wiki prefix
-    // so they match paths relative to wiki_root used inside the walk loop.
+    // so they match paths relative to content_root used inside the walk loop.
     let changed_paths = if dry_run {
         None
     } else {
-        let last = space.index_manager.last_commit();
-        let wiki_rel = space
-            .wiki_root
-            .strip_prefix(&space.repo_root)
-            .unwrap_or(&space.wiki_root);
-        match git::collect_changed_files(&space.repo_root, &space.wiki_root, last.as_deref()) {
+        let last = wiki.index_manager.last_commit();
+        let wiki_rel = wiki
+            .content_root
+            .strip_prefix(&wiki.repo_root)
+            .unwrap_or(&wiki.content_root);
+        match git::collect_changed_files(&wiki.repo_root, &wiki.content_root, last.as_deref()) {
             Ok(map) => {
                 let set: HashSet<_> = map
                     .into_keys()
@@ -68,8 +68,8 @@ pub fn ingest_with_redact(
     let mut report = ingest::ingest(
         Path::new(path),
         &opts,
-        &space.wiki_root,
-        &space.type_registry,
+        &wiki.content_root,
+        &wiki.type_registry,
         &resolved.validation,
     )?;
 
@@ -90,7 +90,7 @@ pub fn ingest_with_redact(
                 match manager.rebuild_index(wiki_name) {
                     Ok(rb) => report.indexed = rb.pages_indexed,
                     Err(e) => report.warnings.push(format!(
-                        "pages committed but not indexed ({e}) — search is stale; run wiki_index_rebuild"
+                        "pages committed but not indexed ({e}) — search is stale; run wiki_admin_index_rebuild"
                     )),
                 }
             }
@@ -101,24 +101,24 @@ pub fn ingest_with_redact(
             Err(e) => match manager.rebuild_index(wiki_name) {
                 Ok(rb) => report.indexed = rb.pages_indexed,
                 Err(e2) => report.warnings.push(format!(
-                    "index update failed ({e}) and rebuild failed ({e2}) — search is stale; run wiki_index_rebuild"
+                    "index update failed ({e}) and rebuild failed ({e2}) — search is stale; run wiki_admin_index_rebuild"
                 )),
             },
         }
 
         // Validate edge targets after index update (targets must be indexed)
-        let edge_warnings = validate_edge_targets(space)?;
+        let edge_warnings = validate_edge_targets(wiki)?;
         report.warnings.extend(edge_warnings);
     }
 
     Ok(report)
 }
 
-fn validate_edge_targets(space: &crate::engine::SpaceContext) -> Result<Vec<String>> {
+fn validate_edge_targets(wiki: &crate::engine::WikiContext) -> Result<Vec<String>> {
     use tantivy::schema::Value;
 
-    let searcher = space.index_manager.searcher()?;
-    let is = &space.index_schema;
+    let searcher = wiki.index_manager.searcher()?;
+    let is = &wiki.index_schema;
     let f_slug = is.field("slug");
     let f_type = is.field("type");
 
@@ -154,7 +154,7 @@ fn validate_edge_targets(space: &crate::engine::SpaceContext) -> Result<Vec<Stri
             .unwrap_or("")
             .to_string();
 
-        for decl in space.type_registry.edges(&page_type) {
+        for decl in wiki.type_registry.edges(&page_type) {
             if decl.target_types.is_empty() {
                 continue;
             }

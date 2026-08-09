@@ -1,3 +1,4 @@
+mod admin;
 mod config;
 mod content;
 /// Wiki export operations — llms.txt, llms-full, and JSON export formats.
@@ -12,10 +13,10 @@ mod logs;
 pub mod redact;
 mod schema;
 mod search;
-mod spaces;
 mod stats;
 mod suggest;
 
+pub use admin::*;
 pub use config::*;
 pub use content::*;
 pub use export::*;
@@ -28,6 +29,5 @@ pub use logs::*;
 pub use redact::*;
 pub use schema::*;
 pub use search::*;
-pub use spaces::*;
 pub use stats::*;
 pub use suggest::*;

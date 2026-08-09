@@ -9,7 +9,7 @@ fn spaces_create_and_list() {
     let config_path = setup_wiki(dir.path(), "test");
 
     let global = llm_wiki::config::load_global(&config_path).unwrap();
-    let entries = ops::spaces_list(&global, None);
+    let entries = ops::admin_list(&global, None);
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].name, "test");
 }
@@ -19,7 +19,7 @@ fn spaces_list_filters_by_name() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "alpha");
     let beta_path = dir.path().join("beta");
-    ops::spaces_create(
+    ops::admin_create(
         &beta_path,
         "beta",
         None,
@@ -32,7 +32,7 @@ fn spaces_list_filters_by_name() {
     .unwrap();
 
     let global = llm_wiki::config::load_global(&config_path).unwrap();
-    let filtered = ops::spaces_list(&global, Some("beta"));
+    let filtered = ops::admin_list(&global, Some("beta"));
     assert_eq!(filtered.len(), 1);
     assert_eq!(filtered[0].name, "beta");
 }
@@ -43,7 +43,7 @@ fn spaces_list_unknown_name_returns_empty() {
     let config_path = setup_wiki(dir.path(), "test");
 
     let global = llm_wiki::config::load_global(&config_path).unwrap();
-    let filtered = ops::spaces_list(&global, Some("nonexistent"));
+    let filtered = ops::admin_list(&global, Some("nonexistent"));
     assert!(filtered.is_empty());
 }
 
@@ -54,7 +54,7 @@ fn spaces_set_default_and_remove() {
 
     // Create a second wiki
     let beta_path = dir.path().join("beta");
-    ops::spaces_create(
+    ops::admin_create(
         &beta_path,
         "beta",
         None,
@@ -66,11 +66,11 @@ fn spaces_set_default_and_remove() {
     )
     .unwrap();
 
-    ops::spaces_set_default("beta", &config_path, None).unwrap();
+    ops::admin_set_default("beta", &config_path, None).unwrap();
     let global = llm_wiki::config::load_global(&config_path).unwrap();
     assert_eq!(global.global.default_wiki, "beta");
 
-    ops::spaces_remove("alpha", false, &config_path, None).unwrap();
+    ops::admin_remove("alpha", false, &config_path, None).unwrap();
     let global = llm_wiki::config::load_global(&config_path).unwrap();
     assert_eq!(global.wikis.len(), 1);
 }

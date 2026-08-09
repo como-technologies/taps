@@ -3,12 +3,12 @@ use std::path::Path;
 
 use llm_wiki::engine::WikiEngine;
 use llm_wiki::ops;
-use llm_wiki::spaces;
+use llm_wiki::registry;
 
 fn setup_wiki(dir: &Path) -> std::path::PathBuf {
     let wiki_path = dir.join("wiki-repo");
     let config_path = dir.join("engine").join("config.toml");
-    spaces::create(&wiki_path, "test", None, false, true, &config_path, None).unwrap();
+    registry::create(&wiki_path, "test", None, false, true, &config_path, None).unwrap();
     config_path
 }
 
@@ -148,7 +148,7 @@ fn schema_template_passes_own_validation() {
         let fm: std::collections::BTreeMap<String, serde_yaml::Value> =
             serde_yaml::from_str(yaml_content).unwrap_or_default();
 
-        let space = eng.space("test").unwrap();
+        let space = eng.wiki("test").unwrap();
         let result = space.type_registry.validate(&fm, "loose");
         assert!(
             result.is_ok(),
@@ -178,8 +178,8 @@ fn roundtrip_template_write_ingest() {
 
     let content = format!("{filled}\n\n## Body\n\nSome content.\n");
 
-    let space = eng.space("test").unwrap();
-    let page_path = space.wiki_root.join("concepts/test.md");
+    let space = eng.wiki("test").unwrap();
+    let page_path = space.content_root.join("concepts/test.md");
     fs::create_dir_all(page_path.parent().unwrap()).unwrap();
     fs::write(&page_path, &content).unwrap();
 
@@ -227,7 +227,7 @@ fn schema_add_registers_custom_type() {
     assert!(msg.contains("copied to"));
 
     // Verify the schema file was copied
-    let space = eng.space("test").unwrap();
+    let space = eng.wiki("test").unwrap();
     assert!(space.repo_root.join("schemas/meeting.json").exists());
 }
 
@@ -299,7 +299,7 @@ fn schema_add_from_inside_schemas_dir_does_not_truncate() {
 
     // Author the schema directly inside schemas/ — src == dest.
     let (repo_root, in_place) = {
-        let space = eng.space("test").unwrap();
+        let space = eng.wiki("test").unwrap();
         let in_place = space.repo_root.join("schemas/meeting.json");
         fs::write(&in_place, schema_json).unwrap();
         (space.repo_root.clone(), in_place)
@@ -317,7 +317,7 @@ fn schema_add_from_inside_schemas_dir_does_not_truncate() {
     assert_eq!(parsed["x-wiki-types"]["meeting"], "Meeting notes");
 
     // And the type registers when the space is rebuilt from disk.
-    let (registry, _) = llm_wiki::space_builder::build_space(&repo_root, "en_stem").unwrap();
+    let (registry, _) = llm_wiki::wiki_builder::build_wiki(&repo_root, "en_stem").unwrap();
     assert!(registry.is_known("meeting"), "meeting type should register");
 }
 
@@ -342,7 +342,7 @@ fn schema_validate_catches_invalid_json() {
     let eng = mgr.state.read().unwrap();
 
     // Write an invalid JSON file to schemas/
-    let space = eng.space("test").unwrap();
+    let space = eng.wiki("test").unwrap();
     fs::write(
         space.repo_root.join("schemas/broken.json"),
         "not valid json {{{",
@@ -397,7 +397,7 @@ fn schema_change_makes_index_stale() {
     // Index is current after build
     {
         let eng = mgr.state.read().unwrap();
-        let space = eng.space("test").unwrap();
+        let space = eng.wiki("test").unwrap();
         let status = space.index_manager.status(&space.repo_root).unwrap();
         assert!(!status.stale, "index should not be stale after build");
     }
@@ -405,7 +405,7 @@ fn schema_change_makes_index_stale() {
     // Modify a schema file
     {
         let eng = mgr.state.read().unwrap();
-        let space = eng.space("test").unwrap();
+        let space = eng.wiki("test").unwrap();
         let schema_path = space.repo_root.join("schemas/concept.json");
         let mut content = fs::read_to_string(&schema_path).unwrap();
         content = content.replace(
@@ -418,7 +418,7 @@ fn schema_change_makes_index_stale() {
     // Rebuild engine — new schema_hash should differ
     let mgr2 = engine(&config_path);
     let eng2 = mgr2.state.read().unwrap();
-    let space2 = eng2.space("test").unwrap();
+    let space2 = eng2.wiki("test").unwrap();
 
     // The old state.toml has the old hash, new registry has new hash
     // So if we check with the OLD hash, it's not stale

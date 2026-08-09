@@ -67,7 +67,7 @@ fn stats_on_empty_wiki() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("state").join("config.toml");
     let wiki_path = dir.path().join("empty");
-    llm_wiki::spaces::create(&wiki_path, "empty", None, false, true, &config_path, None).unwrap();
+    llm_wiki::registry::create(&wiki_path, "empty", None, false, true, &config_path, None).unwrap();
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
@@ -82,24 +82,24 @@ fn setup_wiki_with_cycle(dir: &std::path::Path, name: &str) -> std::path::PathBu
     let config_path = dir.join("state").join("config.toml");
     let wiki_path = dir.join(name);
 
-    llm_wiki::spaces::create(&wiki_path, name, None, false, true, &config_path, None).unwrap();
+    llm_wiki::registry::create(&wiki_path, name, None, false, true, &config_path, None).unwrap();
 
-    let wiki_root = wiki_path.join("wiki");
-    fs::create_dir_all(wiki_root.join("concepts")).unwrap();
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("concepts")).unwrap();
     // Three pages forming a directed cycle: a→b→c→a
     // This guarantees a strongly connected graph where diameter/radius are defined
     fs::write(
-        wiki_root.join("concepts/alpha.md"),
+        content_root.join("concepts/alpha.md"),
         "---\ntitle: \"Alpha\"\ntype: concept\nstatus: active\n---\n\nSee [[concepts/beta]].\n",
     )
     .unwrap();
     fs::write(
-        wiki_root.join("concepts/beta.md"),
+        content_root.join("concepts/beta.md"),
         "---\ntitle: \"Beta\"\ntype: concept\nstatus: active\n---\n\nSee [[concepts/gamma]].\n",
     )
     .unwrap();
     fs::write(
-        wiki_root.join("concepts/gamma.md"),
+        content_root.join("concepts/gamma.md"),
         "---\ntitle: \"Gamma\"\ntype: concept\nstatus: active\n---\n\nSee [[concepts/alpha]].\n",
     )
     .unwrap();

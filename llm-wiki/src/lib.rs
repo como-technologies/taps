@@ -10,7 +10,7 @@ pub mod cli;
 pub mod config;
 /// Embedded default JSON schemas and body templates.
 pub mod default_schemas;
-/// Central wiki engine — mounts spaces and manages indexes.
+/// Central wiki engine — mounts wikis and manages indexes.
 pub mod engine;
 /// Frontmatter parsing, scaffolding, and serialization helpers.
 pub mod frontmatter;
@@ -18,7 +18,7 @@ pub mod frontmatter;
 pub mod git;
 /// Concept graph construction, community detection, and renderers.
 pub mod graph;
-/// Tantivy index lifecycle manager for a single wiki space.
+/// Tantivy index lifecycle manager for a single wiki.
 pub mod index_manager;
 /// Tantivy schema builder and field classification.
 pub mod index_schema;
@@ -32,17 +32,17 @@ pub mod markdown;
 pub mod mcp;
 /// High-level operations called by CLI and server handlers.
 pub mod ops;
+/// Wiki wiki creation, registration, and management.
+pub mod registry;
 /// Full-text BM25 search and paginated list operations.
 pub mod search;
 /// HTTP and stdio server entry points.
 pub mod server;
 /// Slug validation, resolution, and URI parsing.
 pub mod slug;
-/// Builds SpaceTypeRegistry and IndexSchema from schema files.
-pub mod space_builder;
-/// Wiki space creation, registration, and management.
-pub mod spaces;
 /// Per-wiki type registry — schema compilation and validation.
 pub mod type_registry;
 /// Filesystem watcher for auto-ingest on file save.
 pub mod watch;
+/// Builds WikiTypeRegistry and IndexSchema from schema files.
+pub mod wiki_builder;

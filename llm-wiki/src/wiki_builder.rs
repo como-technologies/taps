@@ -7,14 +7,14 @@ use crate::config;
 use crate::default_schemas;
 use crate::index_schema::{FieldClass, IndexSchema, SchemaBuilder, classify_field};
 use crate::type_registry::{
-    self, SpaceTypeRegistry, compile_schema_from_value, compute_hashes, extract_aliases,
-    sha256_hex, validate_base_invariant,
+    self, WikiTypeRegistry, compile_schema_from_value, compute_hashes, extract_aliases, sha256_hex,
+    validate_base_invariant,
 };
 
-/// Build both SpaceTypeRegistry and IndexSchema from a wiki's schema
+/// Build both WikiTypeRegistry and IndexSchema from a wiki's schema
 /// files. Reads each schema file once, discards raw JSON after
 /// construction.
-pub fn build_space(repo_root: &Path, tokenizer: &str) -> Result<(SpaceTypeRegistry, IndexSchema)> {
+pub fn build_wiki(repo_root: &Path, tokenizer: &str) -> Result<(WikiTypeRegistry, IndexSchema)> {
     let schemas_dir = repo_root.join("schemas");
     let parsed = if schemas_dir.is_dir() {
         parse_from_dir(&schemas_dir, repo_root)?
@@ -27,7 +27,7 @@ pub fn build_space(repo_root: &Path, tokenizer: &str) -> Result<(SpaceTypeRegist
 }
 
 /// Build both from embedded defaults (no disk access).
-pub fn build_space_from_embedded(tokenizer: &str) -> (SpaceTypeRegistry, IndexSchema) {
+pub fn build_wiki_from_embedded(tokenizer: &str) -> (WikiTypeRegistry, IndexSchema) {
     let parsed = parse_from_embedded().expect("embedded schemas are valid");
     // No wiki.toml overrides for embedded
     assemble_without_overrides(parsed, tokenizer).expect("embedded schemas are valid")
@@ -147,7 +147,7 @@ fn assemble(
     parsed: Vec<ParsedSchemaFile>,
     repo_root: &Path,
     tokenizer: &str,
-) -> Result<(SpaceTypeRegistry, IndexSchema)> {
+) -> Result<(WikiTypeRegistry, IndexSchema)> {
     let mut types = HashMap::new();
     let mut schema_builder = SchemaBuilder::new(tokenizer);
     schema_builder.add_fixed_fields();
@@ -213,7 +213,7 @@ fn assemble(
     }
 
     let (schema_hash, type_hashes) = compute_hashes(&types);
-    let registry = SpaceTypeRegistry::from_parts(types, schema_hash, type_hashes);
+    let registry = WikiTypeRegistry::from_parts(types, schema_hash, type_hashes);
     let index_schema = schema_builder.finish();
 
     Ok((registry, index_schema))
@@ -222,7 +222,7 @@ fn assemble(
 fn assemble_without_overrides(
     parsed: Vec<ParsedSchemaFile>,
     tokenizer: &str,
-) -> Result<(SpaceTypeRegistry, IndexSchema)> {
+) -> Result<(WikiTypeRegistry, IndexSchema)> {
     let mut types = HashMap::new();
     let mut schema_builder = SchemaBuilder::new(tokenizer);
     schema_builder.add_fixed_fields();
@@ -263,7 +263,7 @@ fn assemble_without_overrides(
 
     // Base invariant — embedded always has default
     let (schema_hash, type_hashes) = compute_hashes(&types);
-    let registry = SpaceTypeRegistry::from_parts(types, schema_hash, type_hashes);
+    let registry = WikiTypeRegistry::from_parts(types, schema_hash, type_hashes);
     let index_schema = schema_builder.finish();
 
     Ok((registry, index_schema))

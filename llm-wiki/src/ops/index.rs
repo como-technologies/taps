@@ -10,6 +10,6 @@ pub fn index_rebuild(manager: &WikiEngine, wiki_name: &str) -> Result<index_mana
 
 /// Return the health and staleness status of the named wiki's index.
 pub fn index_status(engine: &EngineState, wiki_name: &str) -> Result<index_manager::IndexStatus> {
-    let space = engine.space(wiki_name)?;
-    space.index_manager.status(&space.repo_root)
+    let wiki = engine.wiki(wiki_name)?;
+    wiki.index_manager.status(&wiki.repo_root)
 }

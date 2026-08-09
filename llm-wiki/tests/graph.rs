@@ -3,13 +3,13 @@ use std::path::Path;
 
 use llm_wiki::git;
 use llm_wiki::graph::*;
-use llm_wiki::index_manager::SpaceIndexManager;
+use llm_wiki::index_manager::WikiIndexManager;
 use llm_wiki::index_schema::IndexSchema;
-use llm_wiki::space_builder;
-use llm_wiki::type_registry::SpaceTypeRegistry;
+use llm_wiki::type_registry::WikiTypeRegistry;
+use llm_wiki::wiki_builder;
 
-fn schema_and_registry() -> (IndexSchema, SpaceTypeRegistry) {
-    let (registry, schema) = space_builder::build_space_from_embedded("en_stem");
+fn schema_and_registry() -> (IndexSchema, WikiTypeRegistry) {
+    let (registry, schema) = wiki_builder::build_wiki_from_embedded("en_stem");
     (schema, registry)
 }
 
@@ -17,34 +17,35 @@ fn schema() -> IndexSchema {
     schema_and_registry().0
 }
 
-fn registry() -> SpaceTypeRegistry {
+fn registry() -> WikiTypeRegistry {
     schema_and_registry().1
 }
 
 fn setup_repo(dir: &Path) -> std::path::PathBuf {
-    let wiki_root = dir.join("wiki");
-    fs::create_dir_all(&wiki_root).unwrap();
+    let content_root = dir.join("content");
+    fs::create_dir_all(&content_root).unwrap();
     fs::create_dir_all(dir.join("inbox")).unwrap();
     fs::create_dir_all(dir.join("evidence")).unwrap();
     git::init_repo(dir).unwrap();
     fs::write(dir.join("README.md"), "# test\n").unwrap();
     git::commit(dir, "init").unwrap();
-    wiki_root
+    content_root
 }
 
-fn write_page(wiki_root: &Path, rel_path: &str, content: &str) {
-    let path = wiki_root.join(rel_path);
+fn write_page(content_root: &Path, rel_path: &str, content: &str) {
+    let path = content_root.join(rel_path);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }
     fs::write(path, content).unwrap();
 }
 
-fn build_index(dir: &Path, wiki_root: &Path) -> SpaceIndexManager {
+fn build_index(dir: &Path, content_root: &Path) -> WikiIndexManager {
     let index_path = dir.join("index-store");
     git::commit(dir, "index pages").unwrap();
-    let mgr = SpaceIndexManager::new("test", &index_path);
-    mgr.rebuild(wiki_root, dir, &schema(), &registry()).unwrap();
+    let mgr = WikiIndexManager::new("test", &index_path);
+    mgr.rebuild(content_root, dir, &schema(), &registry())
+        .unwrap();
     mgr.open(&schema(), None).unwrap();
     mgr
 }
@@ -66,19 +67,19 @@ fn default_filter() -> GraphFilter {
 #[test]
 fn build_graph_creates_nodes_from_index() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &simple_page("MoE", "concept"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "sources/switch.md",
         &simple_page("Switch", "paper"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -94,19 +95,19 @@ fn build_graph_creates_nodes_from_index() {
 #[test]
 fn build_graph_creates_edges_from_body_links() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &page_with_body_links("MoE", "See [[concepts/scaling]] for details."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/scaling.md",
         &simple_page("Scaling", "concept"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -124,14 +125,14 @@ fn build_graph_creates_edges_from_body_links() {
 #[test]
 fn build_graph_skips_broken_references() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &page_with_body_links("MoE", "See [[concepts/nonexistent]]."),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -150,19 +151,19 @@ fn build_graph_skips_broken_references() {
 #[test]
 fn build_graph_type_filter() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &simple_page("MoE", "concept"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "sources/switch.md",
         &simple_page("Switch", "paper"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let filter = GraphFilter {
         types: vec!["concept".into()],
@@ -179,19 +180,19 @@ fn build_graph_type_filter() {
 #[test]
 fn build_graph_relation_filter_excludes_non_matching() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &page_with_body_links("MoE", "See [[concepts/scaling]]."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/scaling.md",
         &simple_page("Scaling", "concept"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
 
     // Filter for "fed-by" — should exclude "links-to" edges
@@ -208,19 +209,19 @@ fn build_graph_relation_filter_excludes_non_matching() {
 #[test]
 fn render_mermaid_includes_titles_and_relations() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &page_with_body_links("MoE", "See [[concepts/scaling]]."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/scaling.md",
         &simple_page("Scaling", "concept"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -243,19 +244,19 @@ fn render_mermaid_includes_titles_and_relations() {
 #[test]
 fn render_dot_includes_labels_and_relations() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &page_with_body_links("MoE", "See [[concepts/scaling]]."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/scaling.md",
         &simple_page("Scaling", "concept"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -278,27 +279,27 @@ fn render_dot_includes_labels_and_relations() {
 #[test]
 fn subgraph_limits_depth() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // Chain: a -> b -> c -> d via body links
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         &page_with_body_links("A", "See [[concepts/b]]."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/b.md",
         &page_with_body_links("B", "See [[concepts/c]]."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/c.md",
         &page_with_body_links("C", "See [[concepts/d]]."),
     );
-    write_page(&wiki_root, "concepts/d.md", &simple_page("D", "concept"));
+    write_page(&content_root, "concepts/d.md", &simple_page("D", "concept"));
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let filter = GraphFilter {
         root: Some("concepts/a".into()),
@@ -317,15 +318,15 @@ fn subgraph_limits_depth() {
 #[test]
 fn subgraph_depth_0_returns_root_only() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         &page_with_body_links("A", "See [[concepts/b]]."),
     );
-    write_page(&wiki_root, "concepts/b.md", &simple_page("B", "concept"));
+    write_page(&content_root, "concepts/b.md", &simple_page("B", "concept"));
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let filter = GraphFilter {
         root: Some("concepts/a".into()),
@@ -377,15 +378,15 @@ fn paper_page(title: &str) -> String {
 #[test]
 fn build_graph_creates_edges_from_frontmatter_sources() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "sources/paper-a.md", &paper_page("Paper A"));
+    let content_root = setup_repo(dir.path());
+    write_page(&content_root, "sources/paper-a.md", &paper_page("Paper A"));
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &concept_with_sources("MoE", &["sources/paper-a"]),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -415,21 +416,21 @@ fn build_graph_creates_edges_from_frontmatter_sources() {
 #[test]
 fn build_graph_relation_filter_with_declared_edges() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "sources/paper-a.md", &paper_page("Paper A"));
+    let content_root = setup_repo(dir.path());
+    write_page(&content_root, "sources/paper-a.md", &paper_page("Paper A"));
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/moe.md",
         &concept_with_sources("MoE", &["sources/paper-a"]),
     );
     // Also add a body link to create a "links-to" edge
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/other.md",
         &page_with_body_links("Other", "See [[concepts/moe]]."),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
 
     // Filter to only "fed-by" edges
@@ -448,18 +449,18 @@ fn build_graph_relation_filter_with_declared_edges() {
 #[test]
 fn build_graph_multiple_edge_types_from_same_page() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
-    write_page(&wiki_root, "sources/paper-a.md", &paper_page("Paper A"));
+    let content_root = setup_repo(dir.path());
+    write_page(&content_root, "sources/paper-a.md", &paper_page("Paper A"));
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/scaling.md",
         &simple_page("Scaling", "concept"),
     );
     // Concept with both sources and concepts fields
     let content = "---\ntitle: \"MoE\"\ntype: concept\nstatus: active\nsources:\n  - sources/paper-a\nconcepts:\n  - concepts/scaling\n---\n\nBody.\n";
-    write_page(&wiki_root, "concepts/moe.md", content);
+    write_page(&content_root, "concepts/moe.md", content);
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -490,16 +491,24 @@ fn build_graph_multiple_edge_types_from_same_page() {
 #[test]
 fn render_llms_shows_node_and_edge_counts() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         &page_with_body_links("Alpha", "See [[concepts/b]]."),
     );
-    write_page(&wiki_root, "concepts/b.md", &simple_page("Beta", "concept"));
-    write_page(&wiki_root, "sources/s.md", &simple_page("Source", "paper"));
+    write_page(
+        &content_root,
+        "concepts/b.md",
+        &simple_page("Beta", "concept"),
+    );
+    write_page(
+        &content_root,
+        "sources/s.md",
+        &simple_page("Source", "paper"),
+    );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -520,31 +529,31 @@ fn render_llms_shows_node_and_edge_counts() {
 #[test]
 fn render_llms_shows_hubs_and_isolated() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     // Hub: a linked from b and c
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/a.md",
         &page_with_body_links("Hub", "See [[concepts/b]] and [[concepts/c]]."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/b.md",
         &simple_page("Spoke1", "concept"),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/c.md",
         &simple_page("Spoke2", "concept"),
     );
     // Isolated: no edges
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/z.md",
         &simple_page("Isolated", "concept"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -572,14 +581,14 @@ fn page_with_cross_wiki_link(title: &str, target: &str) -> String {
 #[test]
 fn build_graph_with_cross_wiki_target_produces_external_node() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/local.md",
         &page_with_cross_wiki_link("Local", "wiki://other/concepts/remote"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -607,17 +616,17 @@ fn build_graph_with_cross_wiki_target_produces_external_node() {
 fn build_graph_cross_wiki_resolves_cross_wiki_edge() {
     // Two wikis: wiki-a has a page linking to wiki-b
     let dir_a = tempfile::tempdir().unwrap();
-    let wiki_root_a = setup_repo(dir_a.path());
+    let content_root_a = setup_repo(dir_a.path());
     write_page(
-        &wiki_root_a,
+        &content_root_a,
         "concepts/concept-a.md",
         &page_with_cross_wiki_link("ConceptA", "wiki://wiki-b/concepts/concept-b"),
     );
 
     let dir_b = tempfile::tempdir().unwrap();
-    let wiki_root_b = setup_repo(dir_b.path());
+    let content_root_b = setup_repo(dir_b.path());
     write_page(
-        &wiki_root_b,
+        &content_root_b,
         "concepts/concept-b.md",
         &simple_page("ConceptB", "concept"),
     );
@@ -629,15 +638,15 @@ fn build_graph_cross_wiki_resolves_cross_wiki_edge() {
     git::commit(dir_a.path(), "pages").unwrap();
     git::commit(dir_b.path(), "pages").unwrap();
 
-    let mgr_a = SpaceIndexManager::new("wiki-a", &index_a);
+    let mgr_a = WikiIndexManager::new("wiki-a", &index_a);
     mgr_a
-        .rebuild(&wiki_root_a, dir_a.path(), &is, &reg)
+        .rebuild(&content_root_a, dir_a.path(), &is, &reg)
         .unwrap();
     mgr_a.open(&is, None).unwrap();
 
-    let mgr_b = SpaceIndexManager::new("wiki-b", &index_b);
+    let mgr_b = WikiIndexManager::new("wiki-b", &index_b);
     mgr_b
-        .rebuild(&wiki_root_b, dir_b.path(), &is, &reg)
+        .rebuild(&content_root_b, dir_b.path(), &is, &reg)
         .unwrap();
     mgr_b.open(&is, None).unwrap();
 
@@ -645,7 +654,7 @@ fn build_graph_cross_wiki_resolves_cross_wiki_edge() {
     let searcher_b = mgr_b.searcher().unwrap();
 
     let filter = GraphFilter::default();
-    let tuples: Vec<(&str, &tantivy::Searcher, &IndexSchema, &SpaceTypeRegistry)> = vec![
+    let tuples: Vec<(&str, &tantivy::Searcher, &IndexSchema, &WikiTypeRegistry)> = vec![
         ("wiki-a", &searcher_a, &is, &reg),
         ("wiki-b", &searcher_b, &is, &reg),
     ];
@@ -665,14 +674,14 @@ fn build_graph_cross_wiki_resolves_cross_wiki_edge() {
 #[test]
 fn render_mermaid_external_node_has_class_def() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/local.md",
         &page_with_cross_wiki_link("Local", "wiki://other/concepts/remote"),
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -697,15 +706,15 @@ fn render_mermaid_external_node_has_class_def() {
 
 /// Build a dense cluster: `size` nodes all linked to node 0.
 fn add_cluster(
-    wiki_root: &Path,
+    content_root: &Path,
     prefix: &str,
     size: usize,
     hub_links: bool, // if true, all link to the hub; otherwise form a chain
 ) {
     let hub = format!("{prefix}/node-00.md");
-    fs::create_dir_all(wiki_root.join(prefix)).unwrap();
+    fs::create_dir_all(content_root.join(prefix)).unwrap();
     fs::write(
-        wiki_root.join(&hub),
+        content_root.join(&hub),
         format!("---\ntitle: \"{prefix} hub\"\ntype: concept\nstatus: active\n---\n\nHub.\n"),
     )
     .unwrap();
@@ -718,7 +727,7 @@ fn add_cluster(
             format!("See [[{prefix}/node-{prev:02}]].\n")
         };
         fs::write(
-            wiki_root.join(format!("{slug}.md")),
+            content_root.join(format!("{slug}.md")),
             format!(
                 "---\ntitle: \"{prefix} node {i}\"\ntype: concept\nstatus: active\n---\n\n{link}"
             ),
@@ -730,14 +739,14 @@ fn add_cluster(
 #[test]
 fn compute_communities_three_dense_clusters() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // 3 clusters of 10 nodes each (30 total, all linked to their cluster hub)
-    add_cluster(&wiki_root, "clust-a", 10, true);
-    add_cluster(&wiki_root, "clust-b", 10, true);
-    add_cluster(&wiki_root, "clust-c", 10, true);
+    add_cluster(&content_root, "clust-a", 10, true);
+    add_cluster(&content_root, "clust-b", 10, true);
+    add_cluster(&content_root, "clust-c", 10, true);
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -755,14 +764,14 @@ fn compute_communities_three_dense_clusters() {
 #[test]
 fn compute_communities_below_threshold_returns_none() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // 29 nodes (below default threshold of 30)
-    add_cluster(&wiki_root, "clust-a", 10, true);
-    add_cluster(&wiki_root, "clust-b", 10, true);
-    add_cluster(&wiki_root, "clust-c", 9, true);
+    add_cluster(&content_root, "clust-a", 10, true);
+    add_cluster(&content_root, "clust-b", 10, true);
+    add_cluster(&content_root, "clust-c", 9, true);
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -781,23 +790,23 @@ fn compute_communities_below_threshold_returns_none() {
 #[test]
 fn compute_communities_isolated_pair_appears_in_isolated_list() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // One big cluster of 30 nodes + 2 nodes only linked to each other
-    add_cluster(&wiki_root, "main", 30, true);
-    fs::create_dir_all(wiki_root.join("orphans")).unwrap();
+    add_cluster(&content_root, "main", 30, true);
+    fs::create_dir_all(content_root.join("orphans")).unwrap();
     fs::write(
-        wiki_root.join("orphans/alpha.md"),
+        content_root.join("orphans/alpha.md"),
         "---\ntitle: \"Alpha\"\ntype: concept\nstatus: active\n---\n\nSee [[orphans/beta]].\n",
     )
     .unwrap();
     fs::write(
-        wiki_root.join("orphans/beta.md"),
+        content_root.join("orphans/beta.md"),
         "---\ntitle: \"Beta\"\ntype: concept\nstatus: active\n---\n\nSee [[orphans/alpha]].\n",
     )
     .unwrap();
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -821,12 +830,12 @@ fn compute_communities_isolated_pair_appears_in_isolated_list() {
 #[test]
 fn compute_communities_deterministic() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
-    add_cluster(&wiki_root, "clust-a", 15, true);
-    add_cluster(&wiki_root, "clust-b", 15, true);
+    add_cluster(&content_root, "clust-a", 15, true);
+    add_cluster(&content_root, "clust-b", 15, true);
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),
@@ -851,7 +860,7 @@ fn compute_communities_deterministic() {
 #[test]
 fn index_manager_generation_starts_at_zero() {
     let dir = tempfile::tempdir().unwrap();
-    let mgr = SpaceIndexManager::new("test", dir.path().join("idx"));
+    let mgr = WikiIndexManager::new("test", dir.path().join("idx"));
     assert_eq!(mgr.generation(), 0);
 }
 
@@ -886,19 +895,19 @@ fn graphfilter_with_root_not_default() {
 #[test]
 fn build_graph_resolves_id_link_to_edge() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/linker.md",
         &page_with_body_links("Linker", "See [[01ARZ3NDEKTSV4RRFFQ69G5FAV]]."),
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/target.md",
         "---\ntitle: \"Target\"\nid: 01ARZ3NDEKTSV4RRFFQ69G5FAV\ntype: concept\nstatus: active\n---\n\nBody.\n",
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let is = schema();
     let g = build_graph(
         &mgr.searcher().unwrap(),

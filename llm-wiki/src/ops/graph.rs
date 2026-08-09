@@ -37,8 +37,8 @@ pub fn graph_build(
     wiki_name: &str,
     params: &GraphParams<'_>,
 ) -> Result<GraphResult> {
-    let space = engine.space(wiki_name)?;
-    let resolved = space.resolved_config(&engine.config);
+    let wiki = engine.wiki(wiki_name)?;
+    let resolved = wiki.resolved_config(&engine.config);
 
     let fmt = params.format.unwrap_or(&resolved.graph.format);
     let types: Vec<String> = params
@@ -53,9 +53,9 @@ pub fn graph_build(
         relation: params.relation.clone(),
     };
     let g: Arc<graph::WikiGraph> = if params.cross_wiki {
-        // Build each space graph through its cache, then merge
-        let mut per_space: Vec<(&str, Arc<graph::WikiGraph>)> = Vec::new();
-        for (name, sp) in engine.spaces.iter() {
+        // Build each wiki graph through its cache, then merge
+        let mut per_wiki: Vec<(&str, Arc<graph::WikiGraph>)> = Vec::new();
+        for (name, sp) in engine.wikis.iter() {
             if let Ok(searcher) = sp.index_manager.searcher() {
                 let g = graph::get_or_build_graph(
                     &sp.index_schema,
@@ -65,17 +65,17 @@ pub fn graph_build(
                     &searcher,
                     &filter,
                 )?;
-                per_space.push((name.as_str(), g));
+                per_wiki.push((name.as_str(), g));
             }
         }
-        Arc::new(graph::merge_cached_graphs(&per_space, &filter)?)
+        Arc::new(graph::merge_cached_graphs(&per_wiki, &filter)?)
     } else {
-        let searcher = space.index_manager.searcher()?;
+        let searcher = wiki.index_manager.searcher()?;
         graph::get_or_build_graph(
-            &space.index_schema,
-            &space.type_registry,
-            &space.index_manager,
-            &space.graph_cache,
+            &wiki.index_schema,
+            &wiki.type_registry,
+            &wiki.index_manager,
+            &wiki.graph_cache,
             &searcher,
             &filter,
         )?

@@ -24,17 +24,17 @@ pub fn history(
     let (entry, slug) = engine.resolve_address(slug_or_uri, wiki_flag)?;
     let wiki_name = entry.name;
 
-    let space = engine.space(&wiki_name)?;
-    let resolved = space.resolved_config(&engine.config);
+    let wiki = engine.wiki(&wiki_name)?;
+    let resolved = wiki.resolved_config(&engine.config);
 
     let limit = limit.unwrap_or(resolved.history.default_limit as usize);
     let follow = follow.unwrap_or(resolved.history.follow);
 
     // Resolve slug to absolute path, then make relative to repo root
-    let abs_path = slug.resolve(&space.wiki_root)?;
-    let rel_path = abs_path.strip_prefix(&space.repo_root).unwrap_or(&abs_path);
+    let abs_path = slug.resolve(&wiki.content_root)?;
+    let rel_path = abs_path.strip_prefix(&wiki.repo_root).unwrap_or(&abs_path);
 
-    let entries = git::page_history(&space.repo_root, rel_path, limit, follow)?;
+    let entries = git::page_history(&wiki.repo_root, rel_path, limit, follow)?;
 
     Ok(HistoryResult {
         slug: slug.to_string(),

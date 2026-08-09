@@ -2,46 +2,47 @@ use std::fs;
 use std::path::Path;
 
 use llm_wiki::git;
-use llm_wiki::index_manager::SpaceIndexManager;
+use llm_wiki::index_manager::WikiIndexManager;
 use llm_wiki::index_schema::IndexSchema;
 use llm_wiki::ops::backlinks_query;
-use llm_wiki::space_builder;
-use llm_wiki::type_registry::SpaceTypeRegistry;
+use llm_wiki::type_registry::WikiTypeRegistry;
+use llm_wiki::wiki_builder;
 
 fn schema() -> IndexSchema {
-    let (_registry, schema) = space_builder::build_space_from_embedded("en_stem");
+    let (_registry, schema) = wiki_builder::build_wiki_from_embedded("en_stem");
     schema
 }
 
-fn registry() -> SpaceTypeRegistry {
-    let (registry, _schema) = space_builder::build_space_from_embedded("en_stem");
+fn registry() -> WikiTypeRegistry {
+    let (registry, _schema) = wiki_builder::build_wiki_from_embedded("en_stem");
     registry
 }
 
 fn setup_repo(dir: &Path) -> std::path::PathBuf {
-    let wiki_root = dir.join("wiki");
-    fs::create_dir_all(&wiki_root).unwrap();
+    let content_root = dir.join("content");
+    fs::create_dir_all(&content_root).unwrap();
     fs::create_dir_all(dir.join("inbox")).unwrap();
     fs::create_dir_all(dir.join("evidence")).unwrap();
     git::init_repo(dir).unwrap();
     fs::write(dir.join("README.md"), "# test\n").unwrap();
     git::commit(dir, "init").unwrap();
-    wiki_root
+    content_root
 }
 
-fn write_page(wiki_root: &Path, rel_path: &str, content: &str) {
-    let path = wiki_root.join(rel_path);
+fn write_page(content_root: &Path, rel_path: &str, content: &str) {
+    let path = content_root.join(rel_path);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }
     fs::write(path, content).unwrap();
 }
 
-fn build_index(dir: &Path, wiki_root: &Path) -> SpaceIndexManager {
+fn build_index(dir: &Path, content_root: &Path) -> WikiIndexManager {
     let index_path = dir.join("index-store");
     git::commit(dir, "index pages").unwrap();
-    let mgr = SpaceIndexManager::new("test", &index_path);
-    mgr.rebuild(wiki_root, dir, &schema(), &registry()).unwrap();
+    let mgr = WikiIndexManager::new("test", &index_path);
+    mgr.rebuild(content_root, dir, &schema(), &registry())
+        .unwrap();
     mgr.open(&schema(), None).unwrap();
     mgr
 }
@@ -49,33 +50,33 @@ fn build_index(dir: &Path, wiki_root: &Path) -> SpaceIndexManager {
 #[test]
 fn backlinks_for_returns_pages_that_link_to_target() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     // target page
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/target.md",
         "---\ntitle: \"Target\"\ntype: concept\nread_when: [\"x\"]\n---\n\nThe target page.\n",
     );
     // two pages linking to it via [[concepts/target]]
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/alpha.md",
         "---\ntitle: \"Alpha\"\ntype: concept\nread_when: [\"x\"]\n---\n\nSee [[concepts/target]] for details.\n",
     );
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/beta.md",
         "---\ntitle: \"Beta\"\ntype: concept\nread_when: [\"x\"]\n---\n\nAlso links [[concepts/target]] here.\n",
     );
     // unrelated page — no link to target
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/unrelated.md",
         "---\ntitle: \"Unrelated\"\ntype: concept\nread_when: [\"x\"]\n---\n\nNo links here.\n",
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let searcher = mgr.searcher().unwrap();
     let is = schema();
 
@@ -100,15 +101,15 @@ fn backlinks_for_returns_pages_that_link_to_target() {
 #[test]
 fn backlinks_for_returns_empty_when_no_incoming_links() {
     let dir = tempfile::tempdir().unwrap();
-    let wiki_root = setup_repo(dir.path());
+    let content_root = setup_repo(dir.path());
 
     write_page(
-        &wiki_root,
+        &content_root,
         "concepts/isolated.md",
         "---\ntitle: \"Isolated\"\ntype: concept\nread_when: [\"x\"]\n---\n\nNo one links here.\n",
     );
 
-    let mgr = build_index(dir.path(), &wiki_root);
+    let mgr = build_index(dir.path(), &content_root);
     let searcher = mgr.searcher().unwrap();
     let is = schema();
 

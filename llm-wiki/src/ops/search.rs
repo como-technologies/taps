@@ -25,8 +25,8 @@ pub fn search(
     wiki_name: &str,
     params: &SearchParams<'_>,
 ) -> Result<search::SearchResult> {
-    let space = engine.space(wiki_name)?;
-    let resolved = space.resolved_config(&engine.config);
+    let wiki = engine.wiki(wiki_name)?;
+    let resolved = wiki.resolved_config(&engine.config);
 
     let opts = search::SearchOptions {
         no_excerpt: params.no_excerpt,
@@ -41,20 +41,20 @@ pub fn search(
 
     if params.cross_wiki {
         let mut wikis = Vec::new();
-        for s in engine.spaces.values() {
+        for s in engine.wikis.values() {
             let searcher = s.index_manager.searcher()?;
             wikis.push((s.name.clone(), searcher, &s.index_schema));
         }
         return search::search_all(params.query, &opts, &wikis);
     }
 
-    let searcher = space.index_manager.searcher()?;
+    let searcher = wiki.index_manager.searcher()?;
     search::search(
         params.query,
         &opts,
         &searcher,
         wiki_name,
-        &space.index_schema,
+        &wiki.index_schema,
     )
 }
 
@@ -67,8 +67,8 @@ pub fn list(
     page: usize,
     page_size: Option<usize>,
 ) -> Result<search::PageList> {
-    let space = engine.space(wiki_name)?;
-    let resolved = space.resolved_config(&engine.config);
+    let wiki = engine.wiki(wiki_name)?;
+    let resolved = wiki.resolved_config(&engine.config);
 
     let opts = search::ListOptions {
         r#type: type_filter.map(|s| s.to_string()),
@@ -77,6 +77,6 @@ pub fn list(
         page_size: page_size.unwrap_or(resolved.defaults.list_page_size as usize),
         facets_top_tags: resolved.defaults.facets_top_tags as usize,
     };
-    let searcher = space.index_manager.searcher()?;
-    search::list(&opts, &searcher, wiki_name, &space.index_schema)
+    let searcher = wiki.index_manager.searcher()?;
+    search::list(&opts, &searcher, wiki_name, &wiki.index_schema)
 }

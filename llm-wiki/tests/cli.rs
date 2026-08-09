@@ -12,7 +12,7 @@ fn config_flag_overrides_default_path() {
     std::fs::write(&config, "").unwrap();
 
     let out = binary()
-        .args(["--config", config.to_str().unwrap(), "spaces", "list"])
+        .args(["--config", config.to_str().unwrap(), "admin", "list"])
         .output()
         .unwrap();
 
@@ -33,7 +33,7 @@ fn llm_wiki_config_env_var_overrides_default_path() {
         .env("LLM_WIKI_CONFIG", config.to_str().unwrap())
         // Ensure HOME doesn't accidentally point to a real config
         .env("HOME", dir.path())
-        .args(["spaces", "list"])
+        .args(["admin", "list"])
         .output()
         .unwrap();
 
@@ -53,7 +53,7 @@ fn config_flag_takes_priority_over_env_var() {
     std::fs::write(&env_config, "").unwrap();
 
     let out = binary()
-        .args(["--config", flag_config.to_str().unwrap(), "spaces", "list"])
+        .args(["--config", flag_config.to_str().unwrap(), "admin", "list"])
         .env("LLM_WIKI_CONFIG", env_config.to_str().unwrap())
         .output()
         .unwrap();

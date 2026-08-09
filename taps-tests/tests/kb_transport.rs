@@ -46,8 +46,8 @@ async fn schema_registers_and_pages_admit_over_http() {
     // First contact: register a tool-owned type; idempotent on repeat.
     let report = kb
         .call_json(
-            "wiki_schema",
-            json!({"action": "register", "type": "sample", "schema": SAMPLE_SCHEMA}),
+            "wiki_admin_schema_register",
+            json!({"type": "sample", "schema": SAMPLE_SCHEMA}),
         )
         .await
         .unwrap();
@@ -55,8 +55,8 @@ async fn schema_registers_and_pages_admit_over_http() {
     assert_eq!(report["owner"], "taps-tests");
     let again = kb
         .call_json(
-            "wiki_schema",
-            json!({"action": "register", "type": "sample", "schema": SAMPLE_SCHEMA}),
+            "wiki_admin_schema_register",
+            json!({"type": "sample", "schema": SAMPLE_SCHEMA}),
         )
         .await
         .unwrap();

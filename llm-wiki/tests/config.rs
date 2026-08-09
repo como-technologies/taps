@@ -697,18 +697,18 @@ fn save_wiki_roundtrips_types() {
     assert_eq!(loaded.types["concept"].description, "Synthesized knowledge");
 }
 
-// ── wiki_root ─────────────────────────────────────────────────────────────────
+// ── content_root ─────────────────────────────────────────────────────────────────
 
 #[test]
-fn wiki_config_wiki_root_defaults_to_wiki() {
+fn wiki_config_content_root_defaults_to_content() {
     let cfg: WikiConfig = toml::from_str("name = \"test\"\n").unwrap();
-    assert_eq!(cfg.wiki_root, "wiki");
+    assert_eq!(cfg.content_root, "content");
 }
 
 #[test]
-fn wiki_config_wiki_root_parses_custom_value() {
-    let cfg: WikiConfig = toml::from_str("name = \"test\"\nwiki_root = \"skills\"\n").unwrap();
-    assert_eq!(cfg.wiki_root, "skills");
+fn wiki_config_content_root_parses_custom_value() {
+    let cfg: WikiConfig = toml::from_str("name = \"test\"\ncontent_root = \"skills\"\n").unwrap();
+    assert_eq!(cfg.content_root, "skills");
 }
 
 #[test]

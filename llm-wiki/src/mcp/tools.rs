@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rmcp::model::Tool;
+use rmcp::model::{Tool, ToolAnnotations};
 use serde_json::{Map, Value, json};
 
 use super::McpServer;
@@ -38,52 +38,63 @@ fn opt_int(desc: &str) -> Value {
     json!({"type": "integer", "description": desc})
 }
 
-// ── Tool definitions (22 tools) ───────────────────────────────────────────────
+/// Annotation for tools that only read — never touch the environment.
+fn read_only() -> ToolAnnotations {
+    ToolAnnotations::new().read_only(true)
+}
+
+/// Annotation for admin tools that can delete data.
+fn destructive() -> ToolAnnotations {
+    ToolAnnotations::new().destructive(true)
+}
+
+// ── Tool definitions (25 tools) ───────────────────────────────────────────────
 
 /// Return the complete list of MCP tool definitions for registration.
 pub fn tool_list() -> Vec<Tool> {
     vec![
         Tool::new(
-            "wiki_spaces_create",
-            "Initialize a new wiki repository",
+            "wiki_admin_create",
+            "Admin: initialize a new wiki repository and register it",
             schema(
                 json!({
                     "path": str_prop("Path to create the wiki at"),
                     "name": str_prop("Wiki name — used in wiki:// URIs"),
                     "description": opt_str("Optional one-line description"),
-                    "force": opt_bool("Update space entry if name already exists"),
+                    "force": opt_bool("Update the registry entry if the name already exists"),
                     "set_default": opt_bool("Set as default wiki"),
-                    "wiki_root": opt_str("Content directory relative to repo root (default: \"wiki\")"),
+                    "content_root": opt_str("Content directory relative to repo root (default: \"content\")"),
                 }),
                 &["path", "name"],
             ),
         ),
         Tool::new(
-            "wiki_spaces_register",
-            "Register an existing wiki repository without creating files",
+            "wiki_admin_register",
+            "Admin: register an existing wiki repository without creating files",
             schema(
                 json!({
                     "path": str_prop("Absolute path to the existing wiki repository"),
                     "name": str_prop("Wiki name — used in wiki:// URIs"),
                     "description": opt_str("Optional one-line description"),
-                    "wiki_root": opt_str("Content directory (overrides wiki.toml; must already exist)"),
+                    "content_root": opt_str("Content directory (overrides wiki.toml; must already exist)"),
                 }),
                 &["path", "name"],
             ),
         ),
         Tool::new(
-            "wiki_spaces_list",
-            "List all registered wiki spaces",
+            "wiki_admin_list",
+            "Admin: list all registered wikis",
             schema(
                 json!({
                     "name": opt_str("Wiki name (omit for all)"),
                 }),
                 &[],
             ),
-        ),
+        )
+        .annotate(read_only()),
         Tool::new(
-            "wiki_spaces_remove",
-            "Remove a wiki space",
+            "wiki_admin_remove",
+            "Admin: remove a wiki from the registry, optionally deleting it from disk",
             schema(
                 json!({
                     "name": str_prop("Wiki name to remove"),
@@ -91,10 +102,11 @@ pub fn tool_list() -> Vec<Tool> {
                 }),
                 &["name"],
             ),
-        ),
+        )
+        .annotate(destructive()),
         Tool::new(
-            "wiki_spaces_set_default",
-            "Set the default wiki space",
+            "wiki_admin_set_default",
+            "Admin: set the default wiki",
             schema(
                 json!({
                     "name": str_prop("Wiki name to set as default"),
@@ -103,8 +115,8 @@ pub fn tool_list() -> Vec<Tool> {
             ),
         ),
         Tool::new(
-            "wiki_config",
-            "Get or set configuration values",
+            "wiki_admin_config",
+            "Admin: get or set engine configuration values",
             schema(
                 json!({
                     "action": str_prop("Action: get, set, or list"),
@@ -116,6 +128,34 @@ pub fn tool_list() -> Vec<Tool> {
                 &["action"],
             ),
         ),
+        Tool::new(
+            "wiki_admin_schema_register",
+            "Admin: register a type schema (idempotent; never overwrites — identical content is a no-op, different content is a named conflict)",
+            schema(
+                json!({
+                    "type": str_prop("Type name (must be declared in the schema's x-wiki-types; x-owner records the owning tool)"),
+                    "schema": str_prop("JSON Schema content"),
+                    "body_template": opt_str("Markdown body template content (optional)"),
+                    "wiki": opt_str("Target wiki name"),
+                }),
+                &["type", "schema"],
+            ),
+        ),
+        Tool::new(
+            "wiki_admin_schema_remove",
+            "Admin: unregister a type and remove its pages from the index",
+            schema(
+                json!({
+                    "type": str_prop("Type name"),
+                    "delete": opt_bool("Also delete the schema file"),
+                    "delete_pages": opt_bool("Also delete page .md files from disk"),
+                    "dry_run": opt_bool("Show what would be done without doing it"),
+                    "wiki": opt_str("Target wiki name"),
+                }),
+                &["type"],
+            ),
+        )
+        .annotate(destructive()),
         Tool::new(
             "wiki_content_read",
             "Read full content of a page by slug or URI",
@@ -217,8 +257,8 @@ pub fn tool_list() -> Vec<Tool> {
             ),
         ),
         Tool::new(
-            "wiki_index_rebuild",
-            "Rebuild the tantivy search index",
+            "wiki_admin_index_rebuild",
+            "Admin: rebuild the tantivy search index",
             schema(
                 json!({
                     "wiki": opt_str("Target wiki name"),
@@ -227,15 +267,16 @@ pub fn tool_list() -> Vec<Tool> {
             ),
         ),
         Tool::new(
-            "wiki_index_status",
-            "Inspect index health",
+            "wiki_admin_index_status",
+            "Admin: inspect index health",
             schema(
                 json!({
                     "wiki": opt_str("Target wiki name"),
                 }),
                 &[],
             ),
-        ),
+        )
+        .annotate(read_only()),
         Tool::new(
             "wiki_graph",
             "Generate concept graph, returns GraphReport",
@@ -326,23 +367,18 @@ pub fn tool_list() -> Vec<Tool> {
         ),
         Tool::new(
             "wiki_schema",
-            "Inspect and manage type schemas",
+            "Inspect type schemas (read-only — vocabulary changes go through the wiki_admin_schema_* tools)",
             schema(
                 json!({
-                    "action": str_prop("Action: list, show, register, add, remove, validate"),
-                    "type": opt_str("Type name (for show/register/add/remove/validate)"),
+                    "action": str_prop("Action: list, show, or validate"),
+                    "type": opt_str("Type name (for show; optional for validate)"),
                     "template": opt_bool("Return frontmatter template instead of schema (for show)"),
-                    "schema": opt_str("JSON Schema content (for register — must declare the type in x-wiki-types; x-owner records the owning tool)"),
-                    "body_template": opt_str("Markdown body template content (for register, optional)"),
-                    "schema_path": opt_str("Path to schema file (for add)"),
-                    "delete": opt_bool("Also delete schema file (for remove)"),
-                    "delete_pages": opt_bool("Also delete page files from disk (for remove)"),
-                    "dry_run": opt_bool("Show what would be done (for remove)"),
                     "wiki": opt_str("Target wiki name"),
                 }),
                 &["action"],
             ),
-        ),
+        )
+        .annotate(read_only()),
     ]
 }
 
@@ -352,12 +388,14 @@ pub fn tool_list() -> Vec<Tool> {
 pub fn call(server: &McpServer, name: &str, args: &Map<String, Value>) -> ToolResult {
     let _span = tracing::info_span!("tool_call", tool = name).entered();
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match name {
-        "wiki_spaces_create" => handlers::handle_spaces_create(server, args),
-        "wiki_spaces_register" => handlers::handle_spaces_register(server, args),
-        "wiki_spaces_list" => handlers::handle_spaces_list(server, args),
-        "wiki_spaces_remove" => handlers::handle_spaces_remove(server, args),
-        "wiki_spaces_set_default" => handlers::handle_spaces_set_default(server, args),
-        "wiki_config" => handlers::handle_config(server, args),
+        "wiki_admin_create" => handlers::handle_admin_create(server, args),
+        "wiki_admin_register" => handlers::handle_admin_register(server, args),
+        "wiki_admin_list" => handlers::handle_admin_list(server, args),
+        "wiki_admin_remove" => handlers::handle_admin_remove(server, args),
+        "wiki_admin_set_default" => handlers::handle_admin_set_default(server, args),
+        "wiki_admin_config" => handlers::handle_admin_config(server, args),
+        "wiki_admin_schema_register" => handlers::handle_admin_schema_register(server, args),
+        "wiki_admin_schema_remove" => handlers::handle_admin_schema_remove(server, args),
         "wiki_content_read" => handlers::handle_content_read(server, args),
         "wiki_content_write" => handlers::handle_content_write(server, args),
         "wiki_content_new" => handlers::handle_content_new(server, args),
@@ -365,8 +403,8 @@ pub fn call(server: &McpServer, name: &str, args: &Map<String, Value>) -> ToolRe
         "wiki_search" => handlers::handle_search(server, args),
         "wiki_list" => handlers::handle_list(server, args),
         "wiki_ingest" => handlers::handle_ingest(server, args),
-        "wiki_index_rebuild" => handlers::handle_index_rebuild(server, args),
-        "wiki_index_status" => handlers::handle_index_status(server, args),
+        "wiki_admin_index_rebuild" => handlers::handle_admin_index_rebuild(server, args),
+        "wiki_admin_index_status" => handlers::handle_admin_index_status(server, args),
         "wiki_graph" => handlers::handle_graph(server, args),
         "wiki_history" => handlers::handle_history(server, args),
         "wiki_stats" => handlers::handle_stats(server, args),
@@ -381,10 +419,10 @@ pub fn call(server: &McpServer, name: &str, args: &Map<String, Value>) -> ToolRe
         Ok(Ok((content, notify_uris))) => {
             let notify_resources_changed = matches!(
                 name,
-                "wiki_spaces_create"
-                    | "wiki_spaces_register"
-                    | "wiki_spaces_remove"
-                    | "wiki_spaces_set_default"
+                "wiki_admin_create"
+                    | "wiki_admin_register"
+                    | "wiki_admin_remove"
+                    | "wiki_admin_set_default"
             );
             tracing::debug!(tool = name, "tool call ok");
             ToolResult {

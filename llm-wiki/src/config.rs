@@ -20,7 +20,7 @@ pub struct WikiEntry {
     pub name: String,
     /// Absolute path to the wiki repository root on disk.
     pub path: String,
-    /// Optional one-line description shown in `spaces list`.
+    /// Optional one-line description shown in `admin list`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Optional git remote URL for the wiki repository.
@@ -129,7 +129,7 @@ pub struct GraphConfig {
     /// Set false in CI or tests to avoid snapshot files.
     #[serde(default = "default_true")]
     pub snapshot: bool,
-    /// Number of snapshots to retain per wiki space (default: 3).
+    /// Number of snapshots to retain per wiki (default: 3).
     #[serde(default = "default_snapshot_keep")]
     pub snapshot_keep: u32,
     /// Snapshot format: "bincode+lz4" | "bincode" | "bincode+zstd" (default: "bincode+lz4").
@@ -419,7 +419,7 @@ pub struct GlobalConfig {
     /// `[global]` section.
     #[serde(default)]
     pub global: GlobalSection,
-    /// `[[wikis]]` array — registered wiki spaces.
+    /// `[[wikis]]` array — registered wikis.
     #[serde(default)]
     pub wikis: Vec<WikiEntry>,
     /// `[defaults]` section — CLI flag defaults.
@@ -519,9 +519,9 @@ pub struct WikiConfig {
     /// Per-wiki override for `[redact]`.
     #[serde(default)]
     pub redact: Option<RedactConfig>,
-    /// Content directory relative to repo root. Default: `"wiki"`.
-    #[serde(default = "default_wiki_root")]
-    pub wiki_root: String,
+    /// Content directory relative to repo root. Default: `"content"`.
+    #[serde(default = "default_content_root")]
+    pub content_root: String,
 }
 
 /// Fully merged config for a specific wiki — global settings overlaid with per-wiki overrides.
@@ -638,8 +638,8 @@ fn default_stale_days() -> u32 {
 fn default_stale_confidence_threshold() -> f32 {
     0.4
 }
-fn default_wiki_root() -> String {
-    "wiki".to_string()
+fn default_content_root() -> String {
+    "content".to_string()
 }
 // ── Functions ─────────────────────────────────────────────────────────────────
 
@@ -702,9 +702,9 @@ pub fn load_global(path: &Path) -> Result<GlobalConfig> {
     Ok(config)
 }
 
-/// Load per-wiki config from `<wiki_root>/wiki.toml`. Returns default config if absent.
-pub fn load_wiki(wiki_root: &Path) -> Result<WikiConfig> {
-    let path = wiki_root.join("wiki.toml");
+/// Load per-wiki config from `<content_root>/wiki.toml`. Returns default config if absent.
+pub fn load_wiki(content_root: &Path) -> Result<WikiConfig> {
+    let path = content_root.join("wiki.toml");
     if !path.exists() {
         return Ok(WikiConfig::default());
     }
@@ -725,9 +725,9 @@ pub fn save_global(config: &GlobalConfig, path: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Serialize and write the per-wiki config to `<wiki_root>/wiki.toml`.
-pub fn save_wiki(config: &WikiConfig, wiki_root: &Path) -> Result<()> {
-    let path = wiki_root.join("wiki.toml");
+/// Serialize and write the per-wiki config to `<content_root>/wiki.toml`.
+pub fn save_wiki(config: &WikiConfig, content_root: &Path) -> Result<()> {
+    let path = content_root.join("wiki.toml");
     let content = toml::to_string_pretty(config)?;
     std::fs::write(path, content)?;
     Ok(())

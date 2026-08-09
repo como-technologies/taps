@@ -156,7 +156,7 @@ fn schema_register_new_type_with_owner() {
     assert_eq!(report.status, "registered");
     assert_eq!(report.owner.as_deref(), Some("amaker"));
 
-    let space = engine.space("test").unwrap();
+    let space = engine.wiki("test").unwrap();
     assert!(space.repo_root.join("schemas/assessment.json").is_file());
     assert!(space.repo_root.join("schemas/assessment.md").is_file());
 }

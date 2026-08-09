@@ -7,17 +7,17 @@ pub fn setup_wiki(dir: &Path, name: &str) -> std::path::PathBuf {
     let config_path = dir.join("state").join("config.toml");
     let wiki_path = dir.join(name);
 
-    llm_wiki::spaces::create(&wiki_path, name, None, false, true, &config_path, None).unwrap();
+    llm_wiki::registry::create(&wiki_path, name, None, false, true, &config_path, None).unwrap();
 
-    let wiki_root = wiki_path.join("wiki");
-    fs::create_dir_all(wiki_root.join("concepts")).unwrap();
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("concepts")).unwrap();
     fs::write(
-        wiki_root.join("concepts/moe.md"),
+        content_root.join("concepts/moe.md"),
         "---\ntitle: \"MoE\"\ntype: concept\nstatus: active\ntags: [ml]\nread_when: [testing]\n---\n\nMixture of Experts.\n",
     )
     .unwrap();
     fs::write(
-        wiki_root.join("concepts/transformer.md"),
+        content_root.join("concepts/transformer.md"),
         "---\ntitle: \"Transformer\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\nAttention is all you need. See [[concepts/moe]].\n",
     )
     .unwrap();

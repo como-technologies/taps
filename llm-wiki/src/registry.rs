@@ -10,7 +10,7 @@ use crate::git;
 
 // ── CreateReport ──────────────────────────────────────────────────────────────
 
-/// Outcome of a wiki space creation.
+/// Outcome of a wiki creation.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateReport {
     /// Absolute path of the wiki directory.
@@ -19,20 +19,20 @@ pub struct CreateReport {
     pub name: String,
     /// True if the directory was newly created.
     pub created: bool,
-    /// True if the space was added to the global config.
+    /// True if the wiki was added to the global config.
     pub registered: bool,
     /// True if an initial git commit was made.
     pub committed: bool,
 }
 
-/// Outcome of registering an existing wiki space.
+/// Outcome of registering an existing wiki.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegisterReport {
     /// Absolute path of the wiki directory.
     pub path: String,
     /// Registered name of the wiki.
     pub name: String,
-    /// True if the space was added to the global config (false if already registered).
+    /// True if the wiki was added to the global config (false if already registered).
     pub registered: bool,
     /// Always false — register does not create directories.
     pub created: bool,
@@ -50,7 +50,7 @@ pub fn create(
     force: bool,
     set_default: bool,
     config_path: &Path,
-    wiki_root: Option<&str>,
+    content_root: Option<&str>,
 ) -> Result<CreateReport> {
     let mut created = false;
     if !path.exists() {
@@ -58,7 +58,7 @@ pub fn create(
         created = true;
     }
     let path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-    let wiki_root = wiki_root.unwrap_or("wiki");
+    let content_root = content_root.unwrap_or("content");
     let mut committed = false;
 
     // Check re-run conditions
@@ -69,7 +69,7 @@ pub fn create(
         .find(|w| w.path == path.to_string_lossy())
     {
         if existing.name == name {
-            ensure_structure(&path, name, description, wiki_root)?;
+            ensure_structure(&path, name, description, content_root)?;
             provision_admission(&path, name, config_path)?;
             return Ok(CreateReport {
                 path: path.to_string_lossy().into(),
@@ -86,7 +86,7 @@ pub fn create(
         }
     }
 
-    ensure_structure(&path, name, description, wiki_root)?;
+    ensure_structure(&path, name, description, content_root)?;
 
     // Git init if not already a repo
     if !path.join(".git").exists() {
@@ -135,14 +135,14 @@ pub fn create(
 
 /// Register an existing wiki repository without creating files.
 ///
-/// Reads `wiki.toml` from `path` (if it exists) to determine `wiki_root`.
-/// If `wiki_root_override` is given and `wiki.toml` already declares a
-/// different `wiki_root`, returns an error.
+/// Reads `wiki.toml` from `path` (if it exists) to determine `content_root`.
+/// If `content_root_override` is given and `wiki.toml` already declares a
+/// different `content_root`, returns an error.
 pub fn register_existing(
     path: &Path,
     name: &str,
     description: Option<&str>,
-    wiki_root_override: Option<&str>,
+    content_root_override: Option<&str>,
     config_path: &Path,
 ) -> Result<RegisterReport> {
     if !path.exists() {
@@ -150,14 +150,14 @@ pub fn register_existing(
     }
     let path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
 
-    // Read existing wiki.toml wiki_root if present
+    // Read existing wiki.toml content_root if present
     let existing_toml_root: Option<String> = {
         let toml_path = path.join("wiki.toml");
         if toml_path.exists() {
             let raw = std::fs::read_to_string(&toml_path)?;
-            if raw.contains("wiki_root") {
+            if raw.contains("content_root") {
                 let cfg: crate::config::WikiConfig = toml::from_str(&raw).unwrap_or_default();
-                Some(cfg.wiki_root)
+                Some(cfg.content_root)
             } else {
                 None
             }
@@ -167,19 +167,19 @@ pub fn register_existing(
     };
 
     // Conflict check
-    let effective_root: String = match (&wiki_root_override, &existing_toml_root) {
+    let effective_root: String = match (&content_root_override, &existing_toml_root) {
         (Some(flag), Some(toml)) if *flag != toml => {
             bail!(
-                "wiki.toml already declares wiki_root = \"{toml}\". \
+                "wiki.toml already declares content_root = \"{toml}\". \
                  Remove it manually before registering with a different value."
             );
         }
         (Some(flag), _) => flag.to_string(),
         (None, Some(toml)) => toml.clone(),
-        (None, None) => "wiki".to_string(),
+        (None, None) => "content".to_string(),
     };
 
-    validate_wiki_root(&path, &effective_root)?;
+    validate_content_root(&path, &effective_root)?;
 
     ensure_structure(&path, name, description, &effective_root)?;
 
@@ -209,7 +209,7 @@ fn ensure_structure(
     path: &Path,
     name: &str,
     description: Option<&str>,
-    wiki_root: &str,
+    content_root: &str,
 ) -> Result<()> {
     for dir in &["inbox", "evidence", "schemas"] {
         let d = path.join(dir);
@@ -223,7 +223,7 @@ fn ensure_structure(
     }
 
     // Create the (possibly custom) wiki content directory
-    let wiki_dir = path.join(wiki_root);
+    let wiki_dir = path.join(content_root);
     if !wiki_dir.exists() {
         std::fs::create_dir_all(&wiki_dir)?;
     }
@@ -260,22 +260,25 @@ fn ensure_structure(
 
     let wiki_toml = path.join("wiki.toml");
     if !wiki_toml.exists() {
-        std::fs::write(&wiki_toml, generate_wiki_toml(name, description, wiki_root))?;
+        std::fs::write(
+            &wiki_toml,
+            generate_wiki_toml(name, description, content_root),
+        )?;
     }
 
     Ok(())
 }
 
-fn generate_wiki_toml(name: &str, description: Option<&str>, wiki_root: &str) -> String {
+fn generate_wiki_toml(name: &str, description: Option<&str>, content_root: &str) -> String {
     let mut s = format!("name = \"{name}\"\n");
     if let Some(desc) = description {
         s.push_str(&format!("description = \"{desc}\"\n"));
     }
-    if wiki_root != "wiki" {
-        s.push_str(&format!("wiki_root = \"{wiki_root}\"\n"));
+    if content_root != "content" {
+        s.push_str(&format!("content_root = \"{content_root}\"\n"));
     }
 
-    // Como provisioning defaults (llm-wiki#14) — written per-space so the
+    // Como provisioning defaults (llm-wiki#14) — written per-wiki so the
     // admission contract travels with the data, not the machine.
     s.push_str(
         "\n\
@@ -305,9 +308,9 @@ fn generate_wiki_toml(name: &str, description: Option<&str>, wiki_root: &str) ->
 
 /// Marker line identifying hooks this engine manages; a hook file without it
 /// is user-owned and never overwritten.
-const HOOK_MARKER: &str = "managed by `llm-wiki spaces create`";
+const HOOK_MARKER: &str = "managed by `llm-wiki admin create`";
 
-/// Provision the admission model for a space: the two git hooks that make a
+/// Provision the admission model for a wiki: the two git hooks that make a
 /// commit the unit of admission (kb-spec §7), plus catch-up-on-read
 /// (`index.auto_rebuild`) in the global config. Idempotent on every path.
 fn provision_admission(path: &Path, name: &str, config_path: &Path) -> Result<()> {
@@ -325,7 +328,7 @@ fn provision_admission(path: &Path, name: &str, config_path: &Path) -> Result<()
 
 /// Write `pre-commit` (validate-only gate) and `post-commit` (index consumer)
 /// into `.git/hooks`. The hooks embed this binary's path and the registry
-/// config so a bare `git commit` in the space works from any shell. Hooks run
+/// config so a bare `git commit` in the wiki works from any shell. Hooks run
 /// only for real `git` invocations — libgit2 commits (the engine's own
 /// `ingest`/`content commit`) never execute them, so no recursion is possible.
 fn install_admission_hooks(path: &Path, name: &str, config_path: &Path) -> Result<()> {
@@ -366,24 +369,24 @@ fn install_admission_hooks(path: &Path, name: &str, config_path: &Path) -> Resul
     Ok(())
 }
 
-/// Validate `wiki_root` before using it at registration time.
+/// Validate `content_root` before using it at registration time.
 ///
 /// Checks: non-empty, relative, no `..`, not a reserved dir, directory exists,
 /// and resolves to a path strictly inside `repo_path`.
-pub fn validate_wiki_root(repo_path: &Path, wiki_root: &str) -> Result<()> {
-    if wiki_root.is_empty() || wiki_root == "." {
-        bail!("wiki_root must not be empty or \".\"");
+pub fn validate_content_root(repo_path: &Path, content_root: &str) -> Result<()> {
+    if content_root.is_empty() || content_root == "." {
+        bail!("content_root must not be empty or \".\"");
     }
-    if std::path::Path::new(wiki_root).is_absolute() {
-        bail!("wiki_root must be a relative path (no leading \"/\")");
+    if std::path::Path::new(content_root).is_absolute() {
+        bail!("content_root must be a relative path (no leading \"/\")");
     }
     use std::path::Component;
-    for component in std::path::Path::new(wiki_root).components() {
+    for component in std::path::Path::new(content_root).components() {
         if matches!(component, Component::ParentDir) {
-            bail!("wiki_root must not contain \"..\" components");
+            bail!("content_root must not contain \"..\" components");
         }
     }
-    let top = std::path::Path::new(wiki_root)
+    let top = std::path::Path::new(content_root)
         .components()
         .next()
         .and_then(|c| {
@@ -394,28 +397,28 @@ pub fn validate_wiki_root(repo_path: &Path, wiki_root: &str) -> Result<()> {
             }
         })
         .unwrap_or_default();
-    // `raw` stays reserved for backward compatibility: existing spaces created
+    // `raw` stays reserved for backward compatibility: existing wikis created
     // before the capture layer was renamed to `evidence/` still contain a
     // `raw/` directory.
     for reserved in &["inbox", "evidence", "raw", "schemas"] {
         if top == *reserved {
-            bail!("wiki_root \"{wiki_root}\" uses reserved directory \"{reserved}\"");
+            bail!("content_root \"{content_root}\" uses reserved directory \"{reserved}\"");
         }
     }
-    let candidate = repo_path.join(wiki_root);
+    let candidate = repo_path.join(content_root);
     if !candidate.exists() {
         bail!(
-            "wiki_root directory \"{}\" does not exist",
+            "content_root directory \"{}\" does not exist",
             candidate.display()
         );
     }
     let repo_abs = std::fs::canonicalize(repo_path)
         .with_context(|| format!("cannot canonicalize repo path {}", repo_path.display()))?;
     let root_abs = std::fs::canonicalize(&candidate)
-        .with_context(|| format!("cannot canonicalize wiki_root {}", candidate.display()))?;
+        .with_context(|| format!("cannot canonicalize content_root {}", candidate.display()))?;
     if !root_abs.starts_with(&repo_abs) {
         bail!(
-            "wiki_root must be inside the repository (resolved to {}, repo is {})",
+            "content_root must be inside the repository (resolved to {}, repo is {})",
             root_abs.display(),
             repo_abs.display()
         );
@@ -423,7 +426,7 @@ pub fn validate_wiki_root(repo_path: &Path, wiki_root: &str) -> Result<()> {
     Ok(())
 }
 
-// ── Space management ──────────────────────────────────────────────────────────
+// ── Wiki registry ──────────────────────────────────────────────────────────────
 
 /// Look up a registered wiki by name; error if not found.
 pub fn resolve_name(name: &str, global: &GlobalConfig) -> Result<WikiEntry> {

@@ -74,10 +74,10 @@ pub fn resolve_wiki_name(
 // ── Resource notification helper ──────────────────────────────────────────────
 
 /// Collect `wiki://` URIs for all Markdown files under `path` (file or directory).
-pub fn collect_page_uris(path: &Path, wiki_root: &Path, wiki_name: &str) -> Vec<String> {
+pub fn collect_page_uris(path: &Path, content_root: &Path, wiki_name: &str) -> Vec<String> {
     if path.is_file() {
         if path.extension().and_then(|e| e.to_str()) == Some("md")
-            && let Ok(slug) = Slug::from_path(path, wiki_root)
+            && let Ok(slug) = Slug::from_path(path, content_root)
         {
             return vec![format!("wiki://{wiki_name}/{slug}")];
         }
@@ -90,7 +90,7 @@ pub fn collect_page_uris(path: &Path, wiki_root: &Path, wiki_name: &str) -> Vec<
             e.path().is_file() && e.path().extension().and_then(|x| x.to_str()) == Some("md")
         })
         .filter_map(|e| {
-            Slug::from_path(e.path(), wiki_root)
+            Slug::from_path(e.path(), content_root)
                 .ok()
                 .map(|slug| format!("wiki://{wiki_name}/{slug}"))
         })

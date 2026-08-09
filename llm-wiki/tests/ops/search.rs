@@ -87,12 +87,12 @@ fn search_facets_type_distribution() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
 
     // Add a paper page alongside the existing concepts
-    fs::create_dir_all(wiki_root.join("sources")).unwrap();
+    fs::create_dir_all(content_root.join("sources")).unwrap();
     fs::write(
-        wiki_root.join("sources/paper-a.md"),
+        content_root.join("sources/paper-a.md"),
         "---\ntitle: \"MoE Paper\"\ntype: paper\nstatus: active\ntags: [ml]\n---\n\nMixture of Experts paper.\n",
     )
     .unwrap();
@@ -133,11 +133,11 @@ fn search_facets_type_unfiltered_when_type_filter_active() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
     let wiki_path = dir.path().join("test");
-    let wiki_root = wiki_path.join("wiki");
+    let content_root = wiki_path.join("content");
 
-    fs::create_dir_all(wiki_root.join("sources")).unwrap();
+    fs::create_dir_all(content_root.join("sources")).unwrap();
     fs::write(
-        wiki_root.join("sources/paper-b.md"),
+        content_root.join("sources/paper-b.md"),
         "---\ntitle: \"Experts Paper\"\ntype: paper\nstatus: active\n---\n\nMixture of Experts scaling.\n",
     )
     .unwrap();
@@ -221,9 +221,9 @@ fn list_facets_always_present() {
 fn search_and_list_surface_page_id() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
-    let wiki_root = dir.path().join("test").join("wiki");
+    let content_root = dir.path().join("test").join("content");
     fs::write(
-        wiki_root.join("concepts/identified.md"),
+        content_root.join("concepts/identified.md"),
         "---\ntitle: \"Identified Unicorn\"\nid: 01ARZ3NDEKTSV4RRFFQ69G5FAV\ntype: concept\nstatus: active\n---\n\nBody.\n",
     )
     .unwrap();

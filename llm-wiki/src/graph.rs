@@ -16,10 +16,10 @@ use ulid::Ulid;
 use petgraph_live::cache::GenerationCache;
 use petgraph_live::live::GraphState;
 
-use crate::index_manager::SpaceIndexManager;
+use crate::index_manager::WikiIndexManager;
 use crate::index_schema::IndexSchema;
 use crate::links::ParsedLink;
-use crate::type_registry::SpaceTypeRegistry;
+use crate::type_registry::WikiTypeRegistry;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -157,7 +157,7 @@ pub struct CommunityStats {
     pub isolated: Vec<String>,
 }
 
-/// Cached community detection results for a space.
+/// Cached community detection results for a wiki.
 pub struct CommunityData {
     /// Number of local (non-external) nodes in the graph at cache time.
     pub local_count: usize,
@@ -169,7 +169,7 @@ pub struct CommunityData {
 
 /// Graph cache abstraction — either in-memory only or snapshot-backed.
 ///
-/// Constructed by `mount_space` based on `GraphConfig.snapshot`.
+/// Constructed by `mount_context` based on `GraphConfig.snapshot`.
 /// `NoSnapshot` preserves Phase 1 behaviour; `WithSnapshot` adds warm-start.
 pub enum WikiGraphCache {
     NoSnapshot(GenerationCache<WikiGraph>),
@@ -333,7 +333,7 @@ pub fn build_graph(
     searcher: &Searcher,
     is: &IndexSchema,
     filter: &GraphFilter,
-    registry: &SpaceTypeRegistry,
+    registry: &WikiTypeRegistry,
 ) -> Result<WikiGraph> {
     let f_slug = is.field("slug");
     let f_title = is.field("title");
@@ -531,7 +531,7 @@ fn resolve_or_external(
 /// were external placeholders in single-wiki graphs become resolved connections
 /// when both endpoint wikis are present in `wikis`.
 pub fn build_graph_cross_wiki(
-    wikis: &[(&str, &Searcher, &IndexSchema, &SpaceTypeRegistry)],
+    wikis: &[(&str, &Searcher, &IndexSchema, &WikiTypeRegistry)],
     filter: &GraphFilter,
 ) -> Result<WikiGraph> {
     // Build per-wiki graphs and merge into one, prefixing slugs with wiki name
@@ -618,7 +618,7 @@ pub fn build_graph_cross_wiki(
 
 // ── merge_cached_graphs ──────────────────────────────────────────────────────
 
-/// Merge pre-built per-space graphs into a single cross-wiki graph.
+/// Merge pre-built per-wiki graphs into a single cross-wiki graph.
 /// Accepts `Arc<WikiGraph>` inputs (from cache) instead of building from index.
 /// Matches the slug-prefixing and external-node resolution of `build_graph_cross_wiki`.
 ///
@@ -1121,8 +1121,8 @@ fn build_community_data(
 /// Filtered (non-default) requests bypass cache entirely.
 pub fn get_or_build_graph(
     index_schema: &IndexSchema,
-    type_registry: &SpaceTypeRegistry,
-    index_manager: &SpaceIndexManager,
+    type_registry: &WikiTypeRegistry,
+    index_manager: &WikiIndexManager,
     graph_cache: &WikiGraphCache,
     searcher: &Searcher,
     filter: &GraphFilter,
@@ -1149,8 +1149,8 @@ pub fn get_or_build_graph(
 /// Cold path (miss): graph built and cached first, community built and cached inside closure.
 pub fn get_cached_community_map(
     index_schema: &IndexSchema,
-    type_registry: &SpaceTypeRegistry,
-    index_manager: &SpaceIndexManager,
+    type_registry: &WikiTypeRegistry,
+    index_manager: &WikiIndexManager,
     graph_cache: &WikiGraphCache,
     community_cache: &petgraph_live::cache::GenerationCache<CommunityData>,
     searcher: &Searcher,
@@ -1194,8 +1194,8 @@ pub fn get_cached_community_map(
 /// Hot path: community_cache hits immediately — graph_cache not touched.
 pub fn get_cached_community_stats(
     index_schema: &IndexSchema,
-    type_registry: &SpaceTypeRegistry,
-    index_manager: &SpaceIndexManager,
+    type_registry: &WikiTypeRegistry,
+    index_manager: &WikiIndexManager,
     graph_cache: &WikiGraphCache,
     community_cache: &petgraph_live::cache::GenerationCache<CommunityData>,
     searcher: &Searcher,

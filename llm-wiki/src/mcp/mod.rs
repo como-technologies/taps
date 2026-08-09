@@ -48,8 +48,8 @@ impl McpServer {
             Err(_) => return vec![],
         };
         let mut resources = Vec::new();
-        for (wiki_name, space) in &engine.spaces {
-            let walker = walkdir::WalkDir::new(&space.wiki_root)
+        for (wiki_name, wiki) in &engine.wikis {
+            let walker = walkdir::WalkDir::new(&wiki.content_root)
                 .into_iter()
                 .filter_map(|e| e.ok())
                 .filter(|e| {
@@ -57,7 +57,7 @@ impl McpServer {
                         && e.path().extension().and_then(|x| x.to_str()) == Some("md")
                 });
             for entry in walker {
-                if let Ok(slug) = Slug::from_path(entry.path(), &space.wiki_root) {
+                if let Ok(slug) = Slug::from_path(entry.path(), &wiki.content_root) {
                     let uri = format!("wiki://{wiki_name}/{slug}");
                     resources.push(RawResource::new(uri, slug.title()).no_annotation());
                 }
@@ -119,7 +119,7 @@ impl ServerHandler for McpServer {
             });
         }
 
-        // Send resource list changed notification for space operations
+        // Send resource list changed notification for wiki operations
         if result.notify_resources_changed {
             let peer = context.peer.clone();
             tokio::spawn(async move {
@@ -169,11 +169,11 @@ impl ServerHandler for McpServer {
             };
             match engine.resolve_address(uri, None) {
                 Ok((entry, slug)) => {
-                    let wiki_root = engine
-                        .space(&entry.name)
-                        .map(|s| s.wiki_root.clone())
-                        .unwrap_or_else(|_| std::path::PathBuf::from(&entry.path).join("wiki"));
-                    match markdown::read_page(&slug, &wiki_root, false) {
+                    let content_root = engine
+                        .wiki(&entry.name)
+                        .map(|s| s.content_root.clone())
+                        .unwrap_or_else(|_| std::path::PathBuf::from(&entry.path).join("content"));
+                    match markdown::read_page(&slug, &content_root, false) {
                         Ok(content) => Ok(ReadResourceResult::new(vec![
                             ResourceContents::text(content, uri.to_string())
                                 .with_mime_type("text/markdown"),

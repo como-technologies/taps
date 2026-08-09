@@ -11,7 +11,7 @@ const SECTION: &str = include_str!("../schemas/section.json");
 // authors through the wiki tools. Tool-owned artifact classes (decision,
 // plan, measure-report, …) are NOT here — each owning tool ships its
 // schemas and registers them over the transport (`wiki_schema register`,
-// taps#65), so a space knows nothing about tools that never connected.
+// taps#65), so a wiki knows nothing about tools that never connected.
 const GUIDE: &str = include_str!("../schemas/guide.json");
 const GLOSSARY_ENTRY: &str = include_str!("../schemas/glossary-entry.json");
 const WORKED_EXAMPLE: &str = include_str!("../schemas/worked-example.json");

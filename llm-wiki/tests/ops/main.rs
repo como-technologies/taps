@@ -1,5 +1,6 @@
 mod helpers;
 
+mod admin;
 mod config;
 mod content;
 mod export;
@@ -11,7 +12,6 @@ mod ingest;
 mod logs;
 mod schema;
 mod search;
-mod spaces;
 mod stats;
 mod suggest;
 mod templates;

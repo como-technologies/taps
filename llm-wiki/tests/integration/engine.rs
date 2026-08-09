@@ -29,13 +29,13 @@ fn high_confidence_ranks_first() {
 #[test]
 fn config_list_global() {
     let env = WikiEnv::new();
-    env.run(&["config", "list"]);
+    env.run(&["admin", "config", "list"]);
 }
 
 #[test]
 fn config_get_graph_format() {
     let env = WikiEnv::new();
-    env.run(&["config", "get", "graph.format"]);
+    env.run(&["admin", "config", "get", "graph.format"]);
 }
 
 // ── content (test_content.py) ─────────────────────────────────────────────────
@@ -189,7 +189,7 @@ fn incremental_ingest_reports_result() {
 #[test]
 fn index_rebuild_research() {
     let env = WikiEnv::new();
-    let out = env.run(&["index", "rebuild", "--wiki", "research"]);
+    let out = env.run(&["admin", "index", "rebuild", "--wiki", "research"]);
     assert!(stdout(&out).contains("Indexed"));
 }
 
@@ -197,14 +197,14 @@ fn index_rebuild_research() {
 fn index_status_research() {
     let env = WikiEnv::new();
     env.rebuild("research");
-    let out = env.run(&["index", "status", "--wiki", "research"]);
+    let out = env.run(&["admin", "index", "status", "--wiki", "research"]);
     assert!(stdout(&out).contains("research"));
 }
 
 #[test]
 fn index_rebuild_notes() {
     let env = WikiEnv::new();
-    let out = env.run(&["index", "rebuild", "--wiki", "notes"]);
+    let out = env.run(&["admin", "index", "rebuild", "--wiki", "notes"]);
     assert!(stdout(&out).contains("Indexed"));
 }
 
@@ -420,7 +420,7 @@ fn seed_log(env: &WikiEnv) {
 fn logs_list_returns_files() {
     let env = WikiEnv::new();
     seed_log(&env);
-    let out = env.run(&["logs", "list"]);
+    let out = env.run(&["admin", "logs", "list"]);
     assert!(stdout(&out).contains("2000-01-01"));
 }
 
@@ -428,7 +428,7 @@ fn logs_list_returns_files() {
 fn logs_tail_returns_output() {
     let env = WikiEnv::new();
     seed_log(&env);
-    let out = env.run(&["logs", "tail"]);
+    let out = env.run(&["admin", "logs", "tail"]);
     assert!(stdout(&out).contains("line"));
 }
 
@@ -436,7 +436,7 @@ fn logs_tail_returns_output() {
 fn logs_tail_n_lines() {
     let env = WikiEnv::new();
     seed_log(&env);
-    let out = env.run(&["logs", "tail", "--lines", "3"]);
+    let out = env.run(&["admin", "logs", "tail", "--lines", "3"]);
     let text = stdout(&out);
     let lines: Vec<&str> = text.trim().lines().filter(|l| !l.is_empty()).collect();
     assert_eq!(lines.len(), 3);
@@ -447,7 +447,7 @@ fn logs_tail_n_lines() {
 fn logs_clear() {
     let env = WikiEnv::new();
     seed_log(&env);
-    let out = env.run(&["logs", "clear"]);
+    let out = env.run(&["admin", "logs", "clear"]);
     assert!(stdout(&out).contains("removed 1"));
 }
 
@@ -455,8 +455,8 @@ fn logs_clear() {
 fn logs_list_empty_after_clear() {
     let env = WikiEnv::new();
     seed_log(&env);
-    env.run(&["logs", "clear"]);
-    let out = env.run(&["logs", "list"]);
+    env.run(&["admin", "logs", "clear"]);
+    let out = env.run(&["admin", "logs", "list"]);
     assert!(stdout(&out).to_lowercase().contains("no log"));
 }
 
@@ -746,6 +746,7 @@ fn schema_add_and_remove() {
     fs::write(&schema_file, CUSTOM_SCHEMA).unwrap();
 
     let out = env.run(&[
+        "admin",
         "schema",
         "add",
         "test-custom",
@@ -756,7 +757,7 @@ fn schema_add_and_remove() {
     let out = env.run(&["schema", "list"]);
     assert!(stdout(&out).contains("test-custom"));
 
-    let out = env.run(&["schema", "remove", "test-custom", "--delete"]);
+    let out = env.run(&["admin", "schema", "remove", "test-custom", "--delete"]);
     assert!(stdout(&out).contains("schema file deleted: true"));
 
     let out = env.run(&["schema", "list"]);
@@ -801,25 +802,25 @@ fn search_json_has_results() {
 // ── spaces (test_spaces.py) ───────────────────────────────────────────────────
 
 #[test]
-fn spaces_list_returns_both_wikis() {
+fn admin_list_returns_both_wikis() {
     let env = WikiEnv::new();
-    let out = env.run(&["spaces", "list"]);
+    let out = env.run(&["admin", "list"]);
     let text = stdout(&out);
     assert!(text.contains("research"));
     assert!(text.contains("notes"));
 }
 
 #[test]
-fn spaces_list_shows_default_marker() {
+fn admin_list_shows_default_marker() {
     let env = WikiEnv::new();
-    let out = env.run(&["spaces", "list"]);
+    let out = env.run(&["admin", "list"]);
     assert!(stdout(&out).contains("* research"));
 }
 
 #[test]
-fn spaces_list_json_has_research_entry() {
+fn admin_list_json_has_research_entry() {
     let env = WikiEnv::new();
-    let data = env.json(&["spaces", "list"]);
+    let data = env.json(&["admin", "list"]);
     let names: Vec<&str> = data
         .as_array()
         .unwrap()
@@ -830,28 +831,28 @@ fn spaces_list_json_has_research_entry() {
 }
 
 #[test]
-fn spaces_set_default() {
+fn admin_set_default() {
     let env = WikiEnv::new();
-    env.run(&["spaces", "set-default", "notes"]);
-    let out = env.run(&["spaces", "list"]);
+    env.run(&["admin", "set-default", "notes"]);
+    let out = env.run(&["admin", "list"]);
     assert!(stdout(&out).contains("* notes"));
-    env.run(&["spaces", "set-default", "research"]);
-    let out = env.run(&["spaces", "list"]);
+    env.run(&["admin", "set-default", "research"]);
+    let out = env.run(&["admin", "list"]);
     assert!(stdout(&out).contains("* research"));
 }
 
 #[test]
-fn spaces_register_creates_entry() {
+fn admin_register_creates_entry() {
     let env = WikiEnv::new();
     let register_dir = env.tmp().join("wikis").join("register-test");
     fs::create_dir_all(register_dir.join("content")).unwrap();
 
     let out = env.run(&[
-        "spaces",
+        "admin",
         "register",
         "--name",
         "register-test",
-        "--wiki-root",
+        "--content-root",
         "content",
         "--description",
         "integration test wiki",
@@ -861,35 +862,36 @@ fn spaces_register_creates_entry() {
 }
 
 #[test]
-fn spaces_register_creates_wiki_toml() {
+fn admin_register_creates_wiki_toml() {
     let env = WikiEnv::new();
     let register_dir = env.tmp().join("wikis").join("register-test2");
-    fs::create_dir_all(register_dir.join("content")).unwrap();
+    fs::create_dir_all(register_dir.join("pages")).unwrap();
     env.run(&[
-        "spaces",
+        "admin",
         "register",
         "--name",
         "register-test2",
-        "--wiki-root",
-        "content",
+        "--content-root",
+        "pages",
         register_dir.to_str().unwrap(),
     ]);
     let toml_text = fs::read_to_string(register_dir.join("wiki.toml")).unwrap();
     assert!(toml_text.contains("register-test2"));
-    assert!(toml_text.contains("wiki_root"));
+    // A non-default content_root is recorded; the default ("content") is not.
+    assert!(toml_text.contains("content_root"));
 }
 
 #[test]
-fn spaces_register_creates_dirs() {
+fn admin_register_creates_dirs() {
     let env = WikiEnv::new();
     let register_dir = env.tmp().join("wikis").join("register-test3");
     fs::create_dir_all(register_dir.join("content")).unwrap();
     env.run(&[
-        "spaces",
+        "admin",
         "register",
         "--name",
         "register-test3",
-        "--wiki-root",
+        "--content-root",
         "content",
         register_dir.to_str().unwrap(),
     ]);
@@ -898,22 +900,22 @@ fn spaces_register_creates_dirs() {
 }
 
 #[test]
-fn spaces_remove_unregisters() {
+fn admin_remove_unregisters() {
     let env = WikiEnv::new();
     let register_dir = env.tmp().join("wikis").join("to-remove");
     fs::create_dir_all(register_dir.join("content")).unwrap();
     env.run(&[
-        "spaces",
+        "admin",
         "register",
         "--name",
         "to-remove",
-        "--wiki-root",
+        "--content-root",
         "content",
         register_dir.to_str().unwrap(),
     ]);
-    let out = env.run(&["spaces", "remove", "to-remove", "--delete"]);
+    let out = env.run(&["admin", "remove", "to-remove", "--delete"]);
     assert!(stdout(&out).contains("Removed"));
-    let out = env.run(&["spaces", "list"]);
+    let out = env.run(&["admin", "list"]);
     assert!(!stdout(&out).contains("to-remove"));
 }
 

@@ -42,7 +42,7 @@ pub struct Appliance {
 }
 
 impl Appliance {
-    /// Create a space named `wiki` in a scratch registry and serve it.
+    /// Create a wiki named `wiki` in a scratch registry and serve it.
     pub fn launch(wiki: &str) -> Appliance {
         let dir = tempfile::tempdir().expect("tempdir");
         let config = dir.path().join("config.toml");
@@ -50,14 +50,14 @@ impl Appliance {
 
         let create = Command::new(&llm_wiki)
             .env("LLM_WIKI_CONFIG", &config)
-            .args(["spaces", "create"])
-            .arg(dir.path().join("space"))
+            .args(["admin", "create"])
+            .arg(dir.path().join("wiki"))
             .args(["--name", wiki, "--set-default"])
             .output()
-            .expect("spaces create");
+            .expect("admin create");
         assert!(
             create.status.success(),
-            "spaces create failed: {}",
+            "admin create failed: {}",
             String::from_utf8_lossy(&create.stderr)
         );
 

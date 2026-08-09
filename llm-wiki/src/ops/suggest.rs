@@ -37,13 +37,13 @@ pub fn suggest(
     let (entry, slug) = engine.resolve_address(slug_or_uri, wiki_flag)?;
     let wiki_name = entry.name;
 
-    let space = engine.space(&wiki_name)?;
-    let resolved = space.resolved_config(&engine.config);
+    let wiki = engine.wiki(&wiki_name)?;
+    let resolved = wiki.resolved_config(&engine.config);
     let limit = limit.unwrap_or(resolved.suggest.default_limit as usize);
     let min_score = resolved.suggest.min_score;
 
-    let searcher = space.index_manager.searcher()?;
-    let is = &space.index_schema;
+    let searcher = wiki.index_manager.searcher()?;
+    let is = &wiki.index_schema;
 
     // Read the input page to get its tags, type, and existing links
     let input_doc = find_doc_by_slug(&searcher, is, slug.as_str())?;
@@ -105,9 +105,9 @@ pub fn suggest(
     // Strategy 2: Graph neighborhood (2 hops)
     let wiki_graph = get_or_build_graph(
         is,
-        &space.type_registry,
-        &space.index_manager,
-        &space.graph_cache,
+        &wiki.type_registry,
+        &wiki.index_manager,
+        &wiki.graph_cache,
         &searcher,
         &GraphFilter::default(),
     )?;
@@ -202,11 +202,11 @@ pub fn suggest(
 
     // Strategy 4: Community peers (same Louvain community, not already linked)
     if let Some(community_map) = get_cached_community_map(
-        &space.index_schema,
-        &space.type_registry,
-        &space.index_manager,
-        &space.graph_cache,
-        &space.community_cache,
+        &wiki.index_schema,
+        &wiki.type_registry,
+        &wiki.index_manager,
+        &wiki.graph_cache,
+        &wiki.community_cache,
         &searcher,
         resolved.graph.min_nodes_for_communities,
     )? && let Some(&my_community) = community_map.get(slug.as_str())
@@ -255,7 +255,7 @@ pub fn suggest(
     let suggestions = ranked
         .into_iter()
         .map(|c| {
-            let field = suggest_field(&input_type, &c.page_type, &space.type_registry);
+            let field = suggest_field(&input_type, &c.page_type, &wiki.type_registry);
             Suggestion {
                 uri: format!("wiki://{wiki_name}/{}", c.slug),
                 slug: c.slug,
@@ -362,7 +362,7 @@ fn find_doc_by_slug(
 fn suggest_field(
     page_type: &str,
     candidate_type: &str,
-    registry: &crate::type_registry::SpaceTypeRegistry,
+    registry: &crate::type_registry::WikiTypeRegistry,
 ) -> String {
     let source_types = [
         "paper",

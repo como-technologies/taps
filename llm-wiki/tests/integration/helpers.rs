@@ -77,7 +77,7 @@ impl WikiEnv {
         commit_all(&notes, "init");
 
         // Copy inbox fixtures into the research wiki inbox
-        let inbox = research.join("wiki").join("inbox");
+        let inbox = research.join("content").join("inbox");
         fs::create_dir_all(&inbox).unwrap();
         for entry in fs::read_dir(fixtures().join("inbox")).unwrap() {
             let entry = entry.unwrap();
@@ -86,7 +86,7 @@ impl WikiEnv {
         commit_all(&research, "add inbox");
 
         let env = WikiEnv {
-            research_wiki: research.join("wiki"),
+            research_wiki: research.join("content"),
             inbox,
             dir,
             config,
@@ -97,9 +97,9 @@ impl WikiEnv {
         // Register both wikis; research is the default
         let research_path = env.research.to_str().unwrap().to_string();
         let notes_path = env.notes.to_str().unwrap().to_string();
-        env.run(&["spaces", "register", "--name", "research", &research_path]);
-        env.run(&["spaces", "set-default", "research"]);
-        env.run(&["spaces", "register", "--name", "notes", &notes_path]);
+        env.run(&["admin", "register", "--name", "research", &research_path]);
+        env.run(&["admin", "set-default", "research"]);
+        env.run(&["admin", "register", "--name", "notes", &notes_path]);
 
         env
     }
@@ -146,7 +146,7 @@ impl WikiEnv {
 
     /// Rebuild the search index for a wiki.
     pub fn rebuild(&self, wiki: &str) {
-        self.run(&["index", "rebuild", "--wiki", wiki]);
+        self.run(&["admin", "index", "rebuild", "--wiki", wiki]);
     }
 }
 

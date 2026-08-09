@@ -4,11 +4,11 @@ use anyhow::Result;
 
 use crate::config::{self, GlobalConfig, WikiEntry};
 use crate::engine::WikiEngine;
-use crate::spaces;
+use crate::registry;
 
-/// Create a wiki space and hot-reload it into the running engine.
+/// Create a wiki and hot-reload it into the running engine.
 #[allow(clippy::too_many_arguments)]
-pub fn spaces_create(
+pub fn admin_create(
     path: &Path,
     name: &str,
     description: Option<&str>,
@@ -16,16 +16,16 @@ pub fn spaces_create(
     set_default: bool,
     config_path: &Path,
     engine: Option<&WikiEngine>,
-    wiki_root: Option<&str>,
-) -> Result<spaces::CreateReport> {
-    let report = spaces::create(
+    content_root: Option<&str>,
+) -> Result<registry::CreateReport> {
+    let report = registry::create(
         path,
         name,
         description,
         force,
         set_default,
         config_path,
-        wiki_root,
+        content_root,
     )?;
 
     // Hot reload: mount the new wiki in the running engine
@@ -44,16 +44,16 @@ pub fn spaces_create(
     Ok(report)
 }
 
-/// Register an existing wiki space and hot-reload it into the running engine.
-pub fn spaces_register(
+/// Register an existing wiki and hot-reload it into the running engine.
+pub fn admin_register(
     path: &Path,
     name: &str,
     description: Option<&str>,
-    wiki_root: Option<&str>,
+    content_root: Option<&str>,
     config_path: &Path,
     engine: Option<&WikiEngine>,
-) -> Result<spaces::RegisterReport> {
-    let report = spaces::register_existing(path, name, description, wiki_root, config_path)?;
+) -> Result<registry::RegisterReport> {
+    let report = registry::register_existing(path, name, description, content_root, config_path)?;
 
     if report.registered
         && let Some(engine) = engine
@@ -70,9 +70,9 @@ pub fn spaces_register(
     Ok(report)
 }
 
-/// List registered wiki spaces, optionally filtered to a single name.
-pub fn spaces_list(config: &GlobalConfig, name: Option<&str>) -> Vec<config::WikiEntry> {
-    let all = spaces::load_all(config);
+/// List registered wikis, optionally filtered to a single name.
+pub fn admin_list(config: &GlobalConfig, name: Option<&str>) -> Vec<config::WikiEntry> {
+    let all = registry::load_all(config);
     match name {
         Some(n) => all.into_iter().filter(|e| e.name == n).collect(),
         None => all,
@@ -80,7 +80,7 @@ pub fn spaces_list(config: &GlobalConfig, name: Option<&str>) -> Vec<config::Wik
 }
 
 /// Unmount a wiki from the engine and remove it from config.
-pub fn spaces_remove(
+pub fn admin_remove(
     name: &str,
     delete: bool,
     config_path: &Path,
@@ -90,16 +90,16 @@ pub fn spaces_remove(
     if let Some(engine) = engine {
         engine.unmount_wiki(name)?;
     }
-    spaces::remove(name, delete, config_path)
+    registry::remove(name, delete, config_path)
 }
 
 /// Set the default wiki in config and update the running engine.
-pub fn spaces_set_default(
+pub fn admin_set_default(
     name: &str,
     config_path: &Path,
     engine: Option<&WikiEngine>,
 ) -> Result<()> {
-    spaces::set_default_wiki(name, config_path)?;
+    registry::set_default_wiki(name, config_path)?;
 
     // Hot reload: update default in the running engine
     if let Some(engine) = engine {

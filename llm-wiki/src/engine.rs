@@ -12,36 +12,36 @@ use ulid::Ulid;
 
 use crate::config::{self, GlobalConfig, ResolvedConfig, WikiEntry};
 use crate::graph::{CommunityData, WikiGraph, WikiGraphCache};
-use crate::index_manager::{IndexReport, SpaceIndexManager, StalenessKind, UpdateReport};
+use crate::index_manager::{IndexReport, StalenessKind, UpdateReport, WikiIndexManager};
 use crate::index_schema::IndexSchema;
 use crate::search;
 use crate::slug::{Slug, WikiUri};
-use crate::space_builder;
-use crate::type_registry::SpaceTypeRegistry;
+use crate::type_registry::WikiTypeRegistry;
+use crate::wiki_builder;
 
-// ── SpaceContext ──────────────────────────────────────────────────────────────
+// ── WikiContext ──────────────────────────────────────────────────────────────
 
-/// All runtime state for a single mounted wiki space.
-pub struct SpaceContext {
-    /// Registered name of this wiki space.
+/// All runtime state for a single mounted wiki.
+pub struct WikiContext {
+    /// Registered name of this wiki.
     pub name: String,
     /// Absolute path to the `wiki/` subdirectory containing Markdown pages.
-    pub wiki_root: PathBuf,
+    pub content_root: PathBuf,
     /// Absolute path to the git repository root (parent of `wiki/`).
     pub repo_root: PathBuf,
     /// Type registry compiled from the wiki's schema files.
-    pub type_registry: Arc<SpaceTypeRegistry>,
-    /// Tantivy index schema for this space.
+    pub type_registry: Arc<WikiTypeRegistry>,
+    /// Tantivy index schema for this wiki.
     pub index_schema: IndexSchema,
     /// Lifecycle manager for the Tantivy search index.
-    pub index_manager: Arc<SpaceIndexManager>,
+    pub index_manager: Arc<WikiIndexManager>,
     /// Graph cache — either in-memory only (NoSnapshot) or snapshot-backed (WithSnapshot).
     pub graph_cache: WikiGraphCache,
     /// Generation-keyed community cache. Shares the same generation key as graph_cache.
     pub community_cache: GenerationCache<CommunityData>,
 }
 
-impl SpaceContext {
+impl WikiContext {
     /// Load and resolve the per-wiki config merged with `global`.
     pub fn resolved_config(&self, global: &GlobalConfig) -> ResolvedConfig {
         let wiki_cfg = config::load_wiki(&self.repo_root).unwrap_or_default();
@@ -59,8 +59,8 @@ pub struct EngineState {
     pub config_path: PathBuf,
     /// Directory that holds per-wiki index state (parent of the config file).
     pub state_dir: PathBuf,
-    /// Map from wiki name to its mounted `SpaceContext`.
-    pub spaces: HashMap<String, Arc<SpaceContext>>,
+    /// Map from wiki name to its mounted `WikiContext`.
+    pub wikis: HashMap<String, Arc<WikiContext>>,
 }
 
 impl EngineState {
@@ -69,9 +69,9 @@ impl EngineState {
         &self.config.global.default_wiki
     }
 
-    /// Look up a mounted wiki space by name. Errors if not mounted.
-    pub fn space(&self, name: &str) -> Result<&Arc<SpaceContext>> {
-        self.spaces
+    /// Look up a mounted wiki by name. Errors if not mounted.
+    pub fn wiki(&self, name: &str) -> Result<&Arc<WikiContext>> {
+        self.wikis
             .get(name)
             .ok_or_else(|| anyhow::anyhow!("wiki \"{name}\" is not mounted"))
     }
@@ -104,23 +104,23 @@ impl EngineState {
         wiki_flag: Option<&str>,
     ) -> Result<(WikiEntry, Slug)> {
         let (entry, slug) = WikiUri::resolve(input, wiki_flag, &self.config)?;
-        let Ok(space) = self.space(&entry.name) else {
+        let Ok(wiki) = self.wiki(&entry.name) else {
             return Ok((entry, slug));
         };
 
-        if slug.resolve(&space.wiki_root).is_ok() {
+        if slug.resolve(&wiki.content_root).is_ok() {
             return Ok((entry, slug));
         }
 
         if let Ok(id) = Ulid::from_string(slug.as_str())
-            && let Ok(searcher) = space.index_manager.searcher()
-            && let Some(mapped) = search::slug_for_id(&searcher, &space.index_schema, id)?
+            && let Ok(searcher) = wiki.index_manager.searcher()
+            && let Some(mapped) = search::slug_for_id(&searcher, &wiki.index_schema, id)?
         {
             let mapped_slug = Slug::try_from(mapped.as_str())?;
-            if mapped_slug.resolve(&space.wiki_root).is_err() {
+            if mapped_slug.resolve(&wiki.content_root).is_err() {
                 anyhow::bail!(
                     "page id {id} maps to \"{mapped}\" in the index but the file is missing \
-                     — the index may be stale, run: llm-wiki index rebuild --wiki {}",
+                     — the index may be stale, run: llm-wiki admin index rebuild --wiki {}",
                     entry.name,
                 );
             }
@@ -133,7 +133,7 @@ impl EngineState {
 
 // ── WikiEngine ─────────────────────────────────────────────────────────────
 
-/// Central engine — owns all wiki spaces and exposes index/mount operations.
+/// Central engine — owns all mounted wikis and exposes index/mount operations.
 ///
 /// Cheap to clone (`Arc` inside). Safe to share across async tasks.
 pub struct WikiEngine {
@@ -147,12 +147,12 @@ impl WikiEngine {
         let config = config::load_global(config_path)?;
         let state_dir = config_path.parent().unwrap_or(Path::new(".")).to_path_buf();
 
-        let mut spaces = HashMap::new();
+        let mut wikis = HashMap::new();
 
         for entry in &config.wikis {
-            match mount_space(entry, &state_dir, &config) {
+            match mount_context(entry, &state_dir, &config) {
                 Ok(ctx) => {
-                    spaces.insert(entry.name.clone(), Arc::new(ctx));
+                    wikis.insert(entry.name.clone(), Arc::new(ctx));
                 }
                 Err(e) => {
                     tracing::warn!(
@@ -167,7 +167,7 @@ impl WikiEngine {
             config,
             config_path: config_path.to_path_buf(),
             state_dir,
-            spaces,
+            wikis,
         };
 
         Ok(WikiEngine {
@@ -181,14 +181,14 @@ impl WikiEngine {
             .state
             .read()
             .map_err(|_| anyhow::anyhow!("lock poisoned"))?;
-        let space = engine.space(wiki_name)?;
-        let last_commit = space.index_manager.last_commit();
-        let report = space.index_manager.update(
-            &space.wiki_root,
-            &space.repo_root,
+        let wiki = engine.wiki(wiki_name)?;
+        let last_commit = wiki.index_manager.last_commit();
+        let report = wiki.index_manager.update(
+            &wiki.content_root,
+            &wiki.repo_root,
             last_commit.as_deref(),
-            &space.index_schema,
-            &space.type_registry,
+            &wiki.index_schema,
+            &wiki.type_registry,
         )?;
         if report.updated > 0 || report.deleted > 0 {
             tracing::info!(
@@ -207,12 +207,12 @@ impl WikiEngine {
             .state
             .read()
             .map_err(|_| anyhow::anyhow!("lock poisoned"))?;
-        let space = engine.space(wiki_name)?;
-        let report = space.index_manager.rebuild(
-            &space.wiki_root,
-            &space.repo_root,
-            &space.index_schema,
-            &space.type_registry,
+        let wiki = engine.wiki(wiki_name)?;
+        let report = wiki.index_manager.rebuild(
+            &wiki.content_root,
+            &wiki.repo_root,
+            &wiki.index_schema,
+            &wiki.type_registry,
         )?;
         tracing::info!(
             wiki = %wiki_name,
@@ -230,64 +230,64 @@ impl WikiEngine {
             .state
             .read()
             .map_err(|_| anyhow::anyhow!("lock poisoned"))?;
-        let space = engine.space(wiki_name)?;
-        match space.index_manager.staleness_kind(&space.repo_root) {
+        let wiki = engine.wiki(wiki_name)?;
+        match wiki.index_manager.staleness_kind(&wiki.repo_root) {
             Ok(StalenessKind::Current) => {}
             Ok(StalenessKind::CommitChanged) => {
-                let last = space.index_manager.last_commit();
-                space.index_manager.update(
-                    &space.wiki_root,
-                    &space.repo_root,
+                let last = wiki.index_manager.last_commit();
+                wiki.index_manager.update(
+                    &wiki.content_root,
+                    &wiki.repo_root,
                     last.as_deref(),
-                    &space.index_schema,
-                    &space.type_registry,
+                    &wiki.index_schema,
+                    &wiki.type_registry,
                 )?;
             }
             Ok(StalenessKind::TypesChanged(types)) => {
                 tracing::info!(wiki = %wiki_name, types = ?types, "partial rebuild");
-                if let Err(e) = space.index_manager.rebuild_types(
+                if let Err(e) = wiki.index_manager.rebuild_types(
                     &types,
-                    &space.wiki_root,
-                    &space.repo_root,
-                    &space.index_schema,
-                    &space.type_registry,
+                    &wiki.content_root,
+                    &wiki.repo_root,
+                    &wiki.index_schema,
+                    &wiki.type_registry,
                 ) {
                     tracing::warn!(wiki = %wiki_name, error = %e, "partial rebuild failed, doing full");
-                    space.index_manager.rebuild(
-                        &space.wiki_root,
-                        &space.repo_root,
-                        &space.index_schema,
-                        &space.type_registry,
+                    wiki.index_manager.rebuild(
+                        &wiki.content_root,
+                        &wiki.repo_root,
+                        &wiki.index_schema,
+                        &wiki.type_registry,
                     )?;
                 }
             }
             Ok(StalenessKind::FullRebuildNeeded) | Err(_) => {
-                space.index_manager.rebuild(
-                    &space.wiki_root,
-                    &space.repo_root,
-                    &space.index_schema,
-                    &space.type_registry,
+                wiki.index_manager.rebuild(
+                    &wiki.content_root,
+                    &wiki.repo_root,
+                    &wiki.index_schema,
+                    &wiki.type_registry,
                 )?;
             }
         }
         Ok(())
     }
 
-    /// Mount a wiki into the running engine. Called by space management
+    /// Mount a wiki into the running engine. Called by wiki management
     /// tools for hot reload.
     pub fn mount_wiki(&self, entry: &WikiEntry) -> Result<()> {
         let mut engine = self
             .state
             .write()
             .map_err(|_| anyhow::anyhow!("lock poisoned"))?;
-        let ctx = mount_space(entry, &engine.state_dir, &engine.config)?;
+        let ctx = mount_context(entry, &engine.state_dir, &engine.config)?;
         tracing::info!(wiki = %entry.name, "reload: mounted");
-        engine.spaces.insert(entry.name.clone(), Arc::new(ctx));
+        engine.wikis.insert(entry.name.clone(), Arc::new(ctx));
         Ok(())
     }
 
     /// Unmount a wiki from the running engine. Refuses if the wiki is
-    /// the current default. In-flight requests holding an `Arc<SpaceContext>`
+    /// the current default. In-flight requests holding an `Arc<WikiContext>`
     /// complete normally.
     pub fn unmount_wiki(&self, name: &str) -> Result<()> {
         let mut engine = self
@@ -297,7 +297,7 @@ impl WikiEngine {
         if engine.default_wiki_name() == name {
             anyhow::bail!("\"{name}\" is the default wiki \u{2014} set a new default first");
         }
-        if engine.spaces.remove(name).is_none() {
+        if engine.wikis.remove(name).is_none() {
             anyhow::bail!("wiki \"{name}\" is not mounted");
         }
         tracing::info!(wiki = %name, "reload: unmounted");
@@ -310,7 +310,7 @@ impl WikiEngine {
             .state
             .write()
             .map_err(|_| anyhow::anyhow!("lock poisoned"))?;
-        if !engine.spaces.contains_key(name) {
+        if !engine.wikis.contains_key(name) {
             anyhow::bail!("wiki \"{name}\" is not mounted");
         }
         engine.config.global.default_wiki = name.to_string();
@@ -321,18 +321,22 @@ impl WikiEngine {
 
 // ── mount_wiki ────────────────────────────────────────────────────────────────
 
-fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Result<SpaceContext> {
+fn mount_context(
+    entry: &WikiEntry,
+    state_dir: &Path,
+    config: &GlobalConfig,
+) -> Result<WikiContext> {
     let repo_root = PathBuf::from(&entry.path);
     let wiki_cfg = config::load_wiki(&repo_root).unwrap_or_default();
-    let wiki_root = repo_root.join(&wiki_cfg.wiki_root);
+    let content_root = repo_root.join(&wiki_cfg.content_root);
     let index_path = state_dir.join("indexes").join(&entry.name);
 
     // A broken schemas/ directory is a hard error: silently falling back to
     // embedded defaults would index pages against the wrong schema. A wiki
-    // with no schemas/ directory at all still works — build_space handles
+    // with no schemas/ directory at all still works — build_wiki handles
     // that case internally by using the embedded defaults.
     let (type_registry, index_schema) =
-        space_builder::build_space(&repo_root, &config.index.tokenizer).with_context(|| {
+        wiki_builder::build_wiki(&repo_root, &config.index.tokenizer).with_context(|| {
             format!(
                 "failed to build type registry for wiki \"{}\" from {}",
                 entry.name,
@@ -340,7 +344,7 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
             )
         })?;
 
-    let index_manager = Arc::new(SpaceIndexManager::new(&entry.name, &index_path));
+    let index_manager = Arc::new(WikiIndexManager::new(&entry.name, &index_path));
 
     let search_dir = index_path.join("search-index");
     std::fs::create_dir_all(&search_dir)?;
@@ -351,7 +355,8 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
 
     if needs_first_build {
         tracing::info!(wiki = %entry.name, "building index for the first time");
-        if let Err(e) = index_manager.rebuild(&wiki_root, &repo_root, &index_schema, &type_registry)
+        if let Err(e) =
+            index_manager.rebuild(&content_root, &repo_root, &index_schema, &type_registry)
         {
             tracing::warn!(wiki = %entry.name, error = %e, "initial index build failed");
         }
@@ -362,7 +367,7 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
                 tracing::info!(wiki = %entry.name, "index behind HEAD, updating");
                 let last = index_manager.last_commit();
                 if let Err(e) = index_manager.update(
-                    &wiki_root,
+                    &content_root,
                     &repo_root,
                     last.as_deref(),
                     &index_schema,
@@ -375,14 +380,14 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
                 tracing::info!(wiki = %entry.name, types = ?types, "types changed, partial rebuild");
                 if let Err(e) = index_manager.rebuild_types(
                     &types,
-                    &wiki_root,
+                    &content_root,
                     &repo_root,
                     &index_schema,
                     &type_registry,
                 ) {
                     tracing::warn!(wiki = %entry.name, error = %e, "partial rebuild failed, doing full");
                     let _ = index_manager.rebuild(
-                        &wiki_root,
+                        &content_root,
                         &repo_root,
                         &index_schema,
                         &type_registry,
@@ -392,7 +397,7 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
             Ok(StalenessKind::FullRebuildNeeded) => {
                 tracing::info!(wiki = %entry.name, "index stale, rebuilding");
                 if let Err(e) =
-                    index_manager.rebuild(&wiki_root, &repo_root, &index_schema, &type_registry)
+                    index_manager.rebuild(&content_root, &repo_root, &index_schema, &type_registry)
                 {
                     tracing::warn!(wiki = %entry.name, error = %e, "index rebuild failed");
                 }
@@ -400,7 +405,7 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
             Err(e) => {
                 tracing::warn!(wiki = %entry.name, error = %e, "staleness check failed, rebuilding");
                 let _ =
-                    index_manager.rebuild(&wiki_root, &repo_root, &index_schema, &type_registry);
+                    index_manager.rebuild(&content_root, &repo_root, &index_schema, &type_registry);
             }
         }
     } else if let Ok(ref s) = status
@@ -408,7 +413,7 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
     {
         tracing::warn!(
             wiki = %entry.name,
-            "index stale — run `llm-wiki index rebuild --wiki {}`",
+            "index stale — run `llm-wiki admin index rebuild --wiki {}`",
             entry.name,
         );
     }
@@ -416,7 +421,7 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
     // Open the index for serving
     if let Err(e) = index_manager.open(
         &index_schema,
-        Some((&wiki_root, &repo_root, &type_registry)),
+        Some((&content_root, &repo_root, &type_registry)),
     ) {
         tracing::warn!(wiki = %entry.name, error = %e, "failed to open index");
     }
@@ -450,9 +455,9 @@ fn mount_space(entry: &WikiEntry, state_dir: &Path, config: &GlobalConfig) -> Re
         )?
     };
 
-    Ok(SpaceContext {
+    Ok(WikiContext {
         name: entry.name.clone(),
-        wiki_root,
+        content_root,
         repo_root,
         type_registry,
         index_schema,

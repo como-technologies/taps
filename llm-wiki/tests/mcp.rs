@@ -1,9 +1,9 @@
 use llm_wiki::mcp::tools;
 
 #[test]
-fn tool_list_returns_23_tools() {
+fn tool_list_returns_25_tools() {
     let tools = tools::tool_list();
-    assert_eq!(tools.len(), 23);
+    assert_eq!(tools.len(), 25);
 }
 
 #[test]
@@ -11,12 +11,12 @@ fn tool_list_contains_expected_names() {
     let tools = tools::tool_list();
     let names: Vec<&str> = tools.iter().map(|t| t.name.as_ref()).collect();
     let expected = [
-        "wiki_spaces_create",
-        "wiki_spaces_register",
-        "wiki_spaces_list",
-        "wiki_spaces_remove",
-        "wiki_spaces_set_default",
-        "wiki_config",
+        "wiki_admin_create",
+        "wiki_admin_register",
+        "wiki_admin_list",
+        "wiki_admin_remove",
+        "wiki_admin_set_default",
+        "wiki_admin_config",
         "wiki_content_read",
         "wiki_content_write",
         "wiki_content_new",
@@ -24,8 +24,8 @@ fn tool_list_contains_expected_names() {
         "wiki_search",
         "wiki_list",
         "wiki_ingest",
-        "wiki_index_rebuild",
-        "wiki_index_status",
+        "wiki_admin_index_rebuild",
+        "wiki_admin_index_status",
         "wiki_graph",
         "wiki_history",
         "wiki_stats",
@@ -86,7 +86,7 @@ fn spaces_create_requires_path_and_name() {
     let tools = tools::tool_list();
     let tool = tools
         .iter()
-        .find(|t| t.name == "wiki_spaces_create")
+        .find(|t| t.name == "wiki_admin_create")
         .unwrap();
     let required = tool
         .input_schema
