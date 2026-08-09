@@ -74,6 +74,19 @@ pub struct LintParams {
     pub id: String,
 }
 
+/// Parameters for `edit`.
+#[derive(clap::Args, Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct EditParams {
+    /// Decision identifier: a reference (ADR-0007, 7), a slug, or a page id
+    pub id: String,
+    /// The replacement markdown body — the whole body, not a patch
+    #[arg(long, conflicts_with = "body_file")]
+    pub body: Option<String>,
+    /// Read the replacement body from a file instead
+    #[arg(long, value_name = "PATH")]
+    pub body_file: Option<PathBuf>,
+}
+
 /// Parameters for `set-status`.
 #[derive(clap::Args, Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct SetStatusParams {
@@ -258,6 +271,45 @@ pub async fn lint_core(
         "findings": findings,
         "errors": errors,
         "warnings": warnings,
+    }))
+}
+
+/// `edit`: replace a **proposed** decision's body in place — the refine
+/// seat (#93: the walk found refine had no door). The frontmatter
+/// round-trip preserves every field, including keys adroit doesn't own.
+/// Decided records don't get edited — supersede them.
+pub async fn edit_core(
+    store: &dyn PageStore,
+    naming: NamingScheme,
+    p: &EditParams,
+) -> Result<Value> {
+    let body = match (&p.body, &p.body_file) {
+        (Some(text), _) => text.clone(),
+        (None, Some(path)) => std::fs::read_to_string(path)
+            .with_context(|| format!("cannot read {}", path.display()))?,
+        (None, None) => bail!("provide the replacement body with --body or --body-file"),
+    };
+    store.ensure_schemas().await?;
+    let corpus = Corpus::load(store).await?;
+    let e = corpus.resolve(naming, &p.id)?.clone();
+    if e.decision.status != Status::Proposed {
+        bail!(
+            "{} is {} — only proposed decisions are refined in place; \
+             a decided record is replaced with `supersede`",
+            e.reference(),
+            e.decision.status
+        );
+    }
+    let reference = e.reference();
+    let mut d = e.decision;
+    d.body = body;
+    store.write(&e.slug, &page::serialize(&d)?).await?;
+    let ingest = store.ingest().await?;
+    Ok(json!({
+        "reference": reference,
+        "slug": e.slug,
+        "status": d.status,
+        "ingest": ingest,
     }))
 }
 

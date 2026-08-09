@@ -29,6 +29,7 @@ The surface:
 | `new` | create a proposed decision (`--relates` provenance; title, body from the caller's judgment) |
 | `list` / `show` | corpus and single-decision reads, reference-resolved |
 | `lint` | authoring-quality gate on one decision's body (mechanical, CI-safe) |
+| `edit` | replace a proposed decision's body — the refine seat (decided records are superseded, not edited) |
 | `set-status` | lifecycle in place: `proposed`→`accepted`/`rejected`; `accepted`→`deprecated` |
 | `set-review` | set/clear a review-by date |
 | `supersede` | link new over old, both sides' frontmatter, statuses consistent |

@@ -597,3 +597,69 @@ async fn lint_gates_an_unfinished_draft() {
         .unwrap();
     assert!(r["errors"].as_u64().unwrap() > 0, "{r}");
 }
+
+#[tokio::test]
+async fn edit_refines_proposed_decisions_only() {
+    let store = FakeStore::default();
+    create(&store, "First").await;
+
+    // The refine seat: replace the body wholesale; frontmatter (and foreign
+    // keys) survive by construction.
+    let slug = "decisions/0001-first";
+    let foreign = "citations:\n- evidence/kb-chat.md@abc123\n";
+    let text = store.page(slug);
+    let close = text.rfind("\n---\n").unwrap();
+    store.put(
+        slug,
+        &format!("{}{}{}", &text[..close + 1], foreign, &text[close + 1..]),
+    );
+
+    let r = surface::edit_core(
+        &store,
+        SEQ,
+        &adroit::surface::EditParams {
+            id: "1".into(),
+            body: Some("## Context and Problem Statement\n\nRefined.".into()),
+            body_file: None,
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(r["reference"], "ADR-0001");
+    assert_eq!(r["status"], "proposed");
+    let after = store.page(slug);
+    assert!(after.contains("Refined."));
+    assert!(
+        after.contains("citations:\n- evidence/kb-chat.md@abc123"),
+        "{after}"
+    );
+
+    // A body is required…
+    let err = surface::edit_core(
+        &store,
+        SEQ,
+        &adroit::surface::EditParams {
+            id: "1".into(),
+            body: None,
+            body_file: None,
+        },
+    )
+    .await
+    .unwrap_err();
+    assert!(err.to_string().contains("--body"), "{err}");
+
+    // …and decided records don't get edited — supersede them.
+    set_status(&store, "1", "accepted").await.unwrap();
+    let err = surface::edit_core(
+        &store,
+        SEQ,
+        &adroit::surface::EditParams {
+            id: "1".into(),
+            body: Some("rewrite history".into()),
+            body_file: None,
+        },
+    )
+    .await
+    .unwrap_err();
+    assert!(err.to_string().contains("supersede"), "{err}");
+}

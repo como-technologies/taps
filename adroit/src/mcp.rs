@@ -21,8 +21,8 @@ use rmcp::{ServerHandler, ServiceExt, tool, tool_handler, tool_router};
 use crate::naming::NamingScheme;
 use crate::store::KbStore;
 use crate::surface::{
-    self, LintParams, ListParams, NewParams, PlanParams, SetReviewParams, SetStatusParams,
-    ShowParams, SupersedeParams,
+    self, EditParams, LintParams, ListParams, NewParams, PlanParams, SetReviewParams,
+    SetStatusParams, ShowParams, SupersedeParams,
 };
 
 /// MCP server over the adroit command surface.
@@ -140,6 +140,21 @@ impl AdroitServer {
         .await
     }
 
+    /// Replace a proposed decision's body — the refine seat. Takes the
+    /// whole replacement body (not a patch); frontmatter and every foreign
+    /// key survive the rewrite. Decided records are superseded, not edited.
+    #[tool]
+    async fn edit(
+        &self,
+        Parameters(p): Parameters<EditParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.with_store(async |s, n| {
+            let out = surface::edit_core(&s, n, &p).await;
+            (s, out)
+        })
+        .await
+    }
+
     /// A lifecycle transition in place: proposed → accepted/rejected,
     /// accepted → deprecated. Superseded goes through `supersede`. The
     /// rewrite preserves every frontmatter key adroit doesn't own.
@@ -245,6 +260,7 @@ mod tests {
             names,
             vec![
                 "check",
+                "edit",
                 "lint",
                 "list",
                 "new",

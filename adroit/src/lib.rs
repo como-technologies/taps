@@ -24,8 +24,8 @@ use serde_json::Value;
 use crate::naming::NamingScheme;
 use crate::store::KbStore;
 use crate::surface::{
-    LintParams, ListParams, NewParams, PlanParams, SetReviewParams, SetStatusParams, ShowParams,
-    SupersedeParams,
+    EditParams, LintParams, ListParams, NewParams, PlanParams, SetReviewParams, SetStatusParams,
+    ShowParams, SupersedeParams,
 };
 
 /// How reports are printed.
@@ -69,6 +69,9 @@ pub enum Command {
     Show(ShowParams),
     /// Authoring-quality gate on one decision's body (mechanical text rules)
     Lint(LintParams),
+    /// Replace a proposed decision's body — the refine seat (decided
+    /// records are superseded, not edited)
+    Edit(EditParams),
     /// Lifecycle transition in place (proposed → accepted/rejected;
     /// accepted → deprecated)
     SetStatus(SetStatusParams),
@@ -125,6 +128,7 @@ async fn dispatch(
         Command::List(p) => surface::list_core(store, naming, p).await,
         Command::Show(p) => surface::show_core(store, naming, p).await,
         Command::Lint(p) => surface::lint_core(store, naming, p).await,
+        Command::Edit(p) => surface::edit_core(store, naming, p).await,
         Command::SetStatus(p) => surface::set_status_core(store, naming, p).await,
         Command::SetReview(p) => surface::set_review_core(store, naming, p).await,
         Command::Supersede(p) => surface::supersede_core(store, naming, p).await,
@@ -224,6 +228,13 @@ fn print_human(command: &Command, r: &Value) {
             } else {
                 println!("{e} error(s), {w} warning(s)");
             }
+        }
+        Command::Edit(_) => {
+            println!(
+                "{}: body replaced — still {}",
+                s(&r["reference"]),
+                s(&r["status"])
+            );
         }
         Command::SetStatus(_) => {
             if r["changed"].as_bool().unwrap_or(true) {
