@@ -1,6 +1,6 @@
 ---
 title: "Como Authoring Contract"
-summary: "The harness-agnostic rules for agents authoring content in a Como KB space: page classes, the decision boundary, citations, status vocabularies, and the confidence flow."
+summary: "The harness-agnostic rules for agents authoring content in a Como KB wiki: page classes, the decision boundary, citations, status vocabularies, and the confidence flow."
 status: active
 last_updated: "2026-07-28"
 ---
@@ -8,7 +8,7 @@ last_updated: "2026-07-28"
 # Como Authoring Contract
 
 This is the contract an AI agent follows when authoring content in a Como
-KB space — regardless of harness. Claude Code, Claude Desktop, or any
+KB wiki — regardless of harness. Claude Code, Claude Desktop, or any
 MCP-capable client: the engine enforces *shape* deterministically (strict
 schemas, admission hooks, lint), and this contract covers the *intent* the
 engine cannot check. The packaged skills and harness configs live in
@@ -21,7 +21,7 @@ portfolio#7.
 
 ## The five page classes
 
-Every Como space is provisioned (`spaces create`) with the Como schema
+Every Como wiki is provisioned (`admin create`) with the Como schema
 library. Choose the class first — it decides the writer:
 
 | Class | What it holds | Who writes it |
@@ -97,7 +97,7 @@ truth arrives through this flow, not through the schema.
   — adroit's lifecycle, transitioned only by adroit, only on human
   instruction.
 
-Both vocabularies carry search weights provisioned into the space's
+Both vocabularies carry search weights provisioned into the wiki's
 `wiki.toml`; a superseded decision still resolves but ranks far below
 its accepted rival. Don't fight the ranking — fix the status.
 

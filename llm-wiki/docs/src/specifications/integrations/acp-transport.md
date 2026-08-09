@@ -54,7 +54,7 @@ ACP is NDJSON over stdio. Key messages:
 ## Session Model
 
 Sessions are transient conversation threads stored in memory for the
-process lifetime. A session targets a specific wiki from the spaces
+process lifetime. A session targets a specific wiki from the wikis
 config (default wiki if not specified).
 
 ### Session fields

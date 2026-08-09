@@ -37,7 +37,7 @@ llm-wiki/
 │   │   ├── redact.rs
 │   │   ├── export.rs
 │   │   ├── schema.rs
-│   │   ├── spaces.rs
+│   │   ├── wikis.rs
 │   │   ├── config.rs
 │   │   ├── index.rs
 │   │   ├── history.rs
@@ -46,17 +46,17 @@ llm-wiki/
 │   ├── config.rs            # GlobalConfig, WikiConfig, resolution
 │   ├── slug.rs              # Slug, WikiUri types and resolution
 │   ├── frontmatter.rs       # YAML extraction, BTreeMap parsing
-│   ├── type_registry.rs     # SpaceTypeRegistry, EdgeDecl, schema hashing
+│   ├── type_registry.rs     # WikiTypeRegistry, EdgeDecl, schema hashing
 │   ├── default_schemas.rs   # embedded default schemas (include_str!)
-│   ├── space_builder.rs     # build SpaceTypeRegistry + IndexSchema from schemas/
-│   ├── index_manager.rs     # SpaceIndexManager, rebuild, staleness
+│   ├── wiki_builder.rs     # build WikiTypeRegistry + IndexSchema from schemas/
+│   ├── index_manager.rs     # WikiIndexManager, rebuild, staleness
 │   ├── index_schema.rs      # IndexSchema from type registry
 │   ├── search.rs            # tantivy search + list queries
 │   ├── ingest.rs            # ingest pipeline
 │   ├── graph.rs             # petgraph builder + Mermaid/DOT rendering
 │   ├── links.rs             # [[wiki-link]] extraction
 │   ├── markdown.rs          # page I/O (read, write, create)
-│   ├── spaces.rs            # space management (register, remove)
+│   ├── wikis.rs            # wiki management (register, remove)
 │   ├── git.rs               # git2 wrappers (init, commit, diff)
 │   ├── server.rs            # serve command, transport startup
 │   ├── mcp/

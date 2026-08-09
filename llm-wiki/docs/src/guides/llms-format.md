@@ -105,7 +105,7 @@ Use when you need a **file** — for the `llms.txt` ecosystem, offline
 analysis, or CI auditing. Response is a report, not the content.
 
 ```
-wiki_export(wiki: "research")                           # → <wiki-root>/llms.txt
+wiki_export(wiki: "research")                           # → <content-root>/llms.txt
 wiki_export(wiki: "research", format: "llms-full")      # with full bodies
 wiki_export(wiki: "research", format: "json")           # JSON array
 wiki_export(wiki: "research", status: "all")            # include archived

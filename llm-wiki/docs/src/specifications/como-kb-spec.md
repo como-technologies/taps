@@ -43,10 +43,10 @@ not yet built — every consumer that runs today is mechanical.
 
 - **Structured writers (the normal case).** Every portfolio tool — adroit,
   tuesday, pulse — owns its page type(s) and writes typed pages straight
-  into `wiki/`, then commits. No LLM in the admission path; tools never
+  into `content/`, then commits. No LLM in the admission path; tools never
   block on a model. The gate is the pre-commit hook: strict schema
   validation — **a failing page fails the commit**, so invalid data never
-  enters history. One substrate: the ADR corpus lives *in* the space, and
+  enters history. One substrate: the ADR corpus lives *in* the wiki, and
   adroit operates on it there.
 - **Capture (`evidence/`).** Unstructured material — conversation exports,
   assessment dumps, third-party docs — lands as files and commits. Bulk
@@ -129,7 +129,7 @@ Each contract cites its evidence in the spike's
   `worked-example`, `plan`, and `measure-report` (the Measure heads'
   class, joined at portfolio#7 wave 4) — **ship in-engine as the Como
   schema library**
-  (llm-wiki#14): `spaces create` installs them alongside the bundled types.
+  (llm-wiki#14): `admin create` installs them alongside the bundled types.
   Further custom types remain a `schema add` away, one JSON Schema per type.
 - The `decision` type is derived from adroit's `Adr`/`Status` model
   (authored in the spike at `kb-spike/schemas/decision.json`, now moved
@@ -140,9 +140,9 @@ Each contract cites its evidence in the spike's
 
 ### 3. Validation & strictness
 
-- `validation.type_strictness = "strict"`, always — `spaces create` writes
+- `validation.type_strictness = "strict"`, always — `admin create` writes
   it into the generated `wiki.toml` (llm-wiki#14), so the contract travels
-  with the space.
+  with the wiki.
 - **The CI gate**: every frontmatter violation class — missing required
   field, unknown type, out-of-enum value, failed `if/then` conditional,
   unknown key — fails `ingest` with exit 1 and a named rule. `lint` exits 1
@@ -161,8 +161,8 @@ Each contract cites its evidence in the spike's
   `superseded ⇒ superseded_by` via `if/then` fails ingest when violated.
 - **`[search.status]` carries both vocabularies** — custom keys rank
   exactly as configured (a superseded page scores 0.30× its accepted
-  rival at the recommended weights); `spaces create` provisions both
-  vocabularies into the space's `wiki.toml` (llm-wiki#14), and
+  rival at the recommended weights); `admin create` provisions both
+  vocabularies into the wiki's `wiki.toml` (llm-wiki#14), and
   `config set search.status.<key>` adjusts them. Evidence: findings/issue-03.
 - Resolved at the adroit retrofit (adroit ADR-0020): frontmatter is the
   sole source of truth — the body is prose only, with no `## Status`
@@ -205,7 +205,7 @@ Each contract cites its evidence in the spike's
 - **The file is the API; a git commit is the unit of admission** — the
   transaction semantics of Part I. The two git hooks (`ingest --dry-run`
   pre-commit; `ingest` post-commit) and catch-up-on-read
-  (`index.auto_rebuild`) are installed by `spaces create` (llm-wiki#14);
+  (`index.auto_rebuild`) are installed by `admin create` (llm-wiki#14);
   hooks fire only for real `git` commits, never the engine's own libgit2
   commits, so the chain terminates by construction.
 - **`evidence/` is the capture layer** (renaming the engine's `raw/`,
@@ -232,7 +232,7 @@ Each contract cites its evidence in the spike's
   remote exists for opportunistic cherry-picks; no discipline is owed to it.
   The spec's substrate-neutral contracts (above) are what keep the KB
   replaceable — not repo topology.
-- **KB instances**: near-pure data spaces (`wiki/`, `evidence/`, `schemas/`
+- **KB instances**: near-pure data wikis (`content/`, `evidence/`, `schemas/`
   as installed) created and managed by `llm-wiki`. At this stage instances
   are **ephemeral** (portfolio ADR-0009): stood up per-checkout by `just
   init`, derived from canonical content that stays in its repo of record,

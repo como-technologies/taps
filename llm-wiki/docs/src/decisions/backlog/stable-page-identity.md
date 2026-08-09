@@ -54,7 +54,7 @@ Key choices:
 - New lint rules `duplicate-id` (error) and `id-format` (warning).
 - The graph snapshot name was bumped (`wiki-graph-v2`) because
   `PageNode` gained the id field and old bincode snapshots are
-  layout-incompatible; one cold rebuild per space on upgrade.
+  layout-incompatible; one cold rebuild per wiki on upgrade.
 - Schema files gained an `id` property, which changes the schema hash
   and triggers one automatic partial rebuild on first mount.
 

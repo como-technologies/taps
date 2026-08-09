@@ -1,6 +1,6 @@
 ---
 title: "Engine State"
-summary: "Where the engine stores its state — global config, space registry, and search indexes at ~/.llm-wiki/."
+summary: "Where the engine stores its state — global config, wiki registry, and search indexes at ~/.llm-wiki/."
 read_when:
   - Understanding where engine state lives on disk
   - Understanding the separation between wiki repo and engine state
@@ -16,7 +16,7 @@ is local to the machine — never committed, never shared.
 
 ```
 ~/.llm-wiki/
-├── config.toml             ← global config + space registry
+├── config.toml             ← global config + wiki registry
 ├── indexes/
 │   └── <name>/             ← per-wiki index
 │       ├── search-index/   ← tantivy files
@@ -28,9 +28,9 @@ is local to the machine — never committed, never shared.
 
 ## Global Config
 
-`~/.llm-wiki/config.toml` holds the space registry (which wikis are
+`~/.llm-wiki/config.toml` holds the wiki registry (which wikis are
 registered and where they live) and global defaults. Created
-automatically on the first `llm-wiki spaces create`.
+automatically on the first `llm-wiki admin create`.
 
 See [global-config.md](../model/global-config.md) for the full
 key reference.
@@ -40,7 +40,7 @@ key reference.
 
 One index per wiki at `~/.llm-wiki/indexes/<name>/`. The search index
 is a derived artifact — rebuildable from committed files at any time
-via `llm-wiki index rebuild`.
+via `llm-wiki admin index rebuild`.
 
 `state.toml` tracks the indexed commit, page count, and build date.
 The engine uses it for staleness detection.

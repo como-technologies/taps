@@ -97,7 +97,7 @@ impl AmakerServer {
 
     /// Publish a project's assessment + analysis to the KB as
     /// amaker-owned pages (needs KB_URL; KB_WIKI or `wiki` names the
-    /// space). Returns the publish report: pages written, schemas
+    /// wiki). Returns the publish report: pages written, schemas
     /// registered, ingest verdict.
     #[tool]
     async fn publish(

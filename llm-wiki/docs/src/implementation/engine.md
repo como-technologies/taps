@@ -1,6 +1,6 @@
 ---
 title: "Engine Implementation"
-summary: "Top-level engine structs, space mounting, and how registries and indexes compose at runtime."
+summary: "Top-level engine structs, wiki mounting, and how registries and indexes compose at runtime."
 status: ready
 last_updated: "2026-05-03"
 ---
@@ -13,12 +13,12 @@ see [specifications/](../specifications/README.md) for the design.
 ## Core Structs
 
 ```rust
-/// Holds the current engine state — config, mounted spaces.
+/// Holds the current engine state — config, mounted wikis.
 pub struct EngineState {
     pub config: GlobalConfig,
     pub config_path: PathBuf,
     pub state_dir: PathBuf,
-    pub spaces: HashMap<String, SpaceContext>,
+    pub wikis: HashMap<String, WikiContext>,
 }
 
 /// Top-level coordinator. Wraps EngineState in Arc<RwLock>.
@@ -31,27 +31,27 @@ pub struct WikiEngine {
 provides `build`, `refresh_index`, and `rebuild_index`. Tools read
 from `EngineState` via the shared reference.
 
-### SpaceContext
+### WikiContext
 
 One per mounted wiki. Holds everything needed to serve a wiki:
 
 ```rust
-pub struct SpaceContext {
+pub struct WikiContext {
     pub name: String,
-    pub wiki_root: PathBuf,
+    pub content_root: PathBuf,
     pub repo_root: PathBuf,
-    pub type_registry: Arc<SpaceTypeRegistry>,
+    pub type_registry: Arc<WikiTypeRegistry>,
     pub index_schema: IndexSchema,
-    pub index_manager: Arc<SpaceIndexManager>,
+    pub index_manager: Arc<WikiIndexManager>,
     pub graph_cache:     WikiGraphCache,
     pub community_cache: GenerationCache<CommunityData>,
 }
 ```
 
-`type_registry` is `Arc<SpaceTypeRegistry>` — shared with the `'static` build closure
+`type_registry` is `Arc<WikiTypeRegistry>` — shared with the `'static` build closure
 inside `WikiGraphCache::WithSnapshot`. Arc clone at construction; deref is transparent.
 
-`index_manager` is `Arc<SpaceIndexManager>` — shared ownership needed for
+`index_manager` is `Arc<WikiIndexManager>` — shared ownership needed for
 `'static` closures passed to `GraphState::builder`.
 
 `graph_cache` is a `WikiGraphCache` enum: `NoSnapshot(GenerationCache<WikiGraph>)`
@@ -68,9 +68,9 @@ See [graph-cache.md](graph-cache.md) and [petgraph-live.md](petgraph-live.md).
 ```
 1. Load GlobalConfig from ~/.llm-wiki/config.toml
 2. For each registered wiki → mount_wiki():
-   a. Build SpaceTypeRegistry from schemas/ + wiki.toml overrides
+   a. Build WikiTypeRegistry from schemas/ + wiki.toml overrides
    b. Build IndexSchema from the type registry
-   c. Create SpaceIndexManager
+   c. Create WikiIndexManager
    d. Check staleness (StalenessKind enum):
       - Current → skip
       - CommitChanged → incremental update
@@ -80,7 +80,7 @@ See [graph-cache.md](graph-cache.md) and [petgraph-live.md](petgraph-live.md).
    f. Initialize graph_cache: build_wiki_graph_cache() → WikiGraphCache enum
       (petgraph-live ≥ 0.3.1 creates the snapshot directory automatically)
    g. Initialize community_cache: GenerationCache::new()
-   h. Return SpaceContext
+   h. Return WikiContext
 3. Per-wiki errors: warn and skip (don't fail the engine)
 4. Assemble EngineState, wrap in Arc<RwLock>
 ```
@@ -93,8 +93,8 @@ Tools receive a read reference to `EngineState` and a wiki name (from
 ```rust
 // Read path (search, list, graph, read)
 let engine = wiki_engine.state.read();
-let space = engine.space(wiki_name)?;
-let searcher = space.index_manager.searcher()?;
+let wiki = engine.wiki(wiki_name)?;
+let searcher = wiki.index_manager.searcher()?;
 
 // Write path (ingest)
 wiki_engine.refresh_index(wiki_name)?;

@@ -37,13 +37,13 @@ just init-adroit          # builds the in-tree adroit where conduit expects it
 ```
 
 Push your project to the local forge, then configure conduit with the
-repo and your KB space so it can read the accepted decisions from Step 4.
+repo and your KB so it can read the accepted decisions from Step 4.
 
 > 🚧 **Unverified — the biggest open seam in this guide.** Two things
 > are moving here. First: today the polished path is the packaged
 > engagement demo (`demo/kit/demo-up` … `beat-4-adopt`), which runs
 > against a fictional client corpus; the walk will establish the
-> first-party path for *your own* project and space — what
+> first-party path for *your own* project and wiki — what
 > configuration conduit needs, which engine drives the changes, and
 > where the human gates sit. Second: the throwaway forge currently runs
 > in Docker, and the suite has decided to retire Docker for incus

@@ -16,7 +16,7 @@ create schema → register → write page → ingest → search/list/graph
 ```
 
 1. Create a schema file
-2. Register it with `llm-wiki schema add`
+2. Register it with `llm-wiki admin schema add`
 3. Pages with that type are validated and indexed automatically
 
 ## Example: Meeting Notes
@@ -93,7 +93,7 @@ Key parts:
 ### 2. Register the schema
 
 ```bash
-llm-wiki schema add meeting schemas/meeting.json
+llm-wiki admin schema add meeting schemas/meeting.json
 ```
 
 This copies the schema into the wiki's `schemas/` directory and

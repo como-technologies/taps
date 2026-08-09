@@ -4,7 +4,7 @@ The loop opens with evidence: a structured maturity assessment of your
 project, not a gut feeling. [amaker](../portfolio/loop/assess.html) is
 the assessment tool — and the first tool in this guide that reaches your
 KB the way every tool does: over the appliance's transport. amaker owns
-two page classes, `assessment` and `assessment-report`. Your space has
+two page classes, `assessment` and `assessment-report`. Your wiki has
 never heard of them; it learns them the moment amaker first connects,
 and only amaker writes them.
 
@@ -97,7 +97,7 @@ EOF
 entries trust every tool the appliance and amaker serve; the `Edit`
 grant covers every file-editing tool for the files this step's prompts
 create (the assessment draft lives in your home, not the KB — it
-enters the space only through amaker's publish). On a
+enters the wiki only through amaker's publish). On a
 production workspace you'd grant
 narrowly and answer prompts as they come; this rig is a throwaway, and
 pre-granting makes every session in the walk paste-and-go. (Prefer the
@@ -113,7 +113,7 @@ agent is the assist. Paste this into your **workspace session**
 ```text
 Author a maturity assessment of this project's delivery practice as an
 amaker assessment file at ~/assessment.yaml. Ground it in the myproject
-space: search and read what we know before drafting. Shape: 2-3
+wiki: search and read what we know before drafting. Shape: 2-3
 domains, each with 1-2 practices, each practice with 2-4 yes/no
 questions — set each question's polarity, and give negative findings a
 remediation and roles. Then check it with amaker's validate tool and
@@ -137,7 +137,7 @@ that's the one seat in this loop that stays human on purpose.
 ## Analyze and publish
 
 The analyze app (`:3002`) shows the scorecard, gaps, and roadmap as you
-answer. When it reflects reality, land the result in your space — ask
+answer. When it reflects reality, land the result in your wiki — ask
 your workspace session (amaker's `status` tool tells it your response
 is in — `response.complete` — and `publish` lands it), or do it
 yourself from a terminal:
@@ -163,7 +163,7 @@ What does our assessment report say about the project? Cite pages.
 
 It finds `assessments/<name>-report` by search and reads it — the wiki
 tools read amaker's pages like any others; ownership is a *write*
-boundary. Then look at what first contact did to your space's
+boundary. Then look at what first contact did to your wiki's
 vocabulary:
 
 ```sh
@@ -171,6 +171,6 @@ incus exec kb -- su - kb -c 'llm-wiki schema list --wiki myproject'
 ```
 
 `assessment` and `assessment-report` are registered now, each carrying
-`x-owner: amaker` — your space learned amaker's classes when amaker
+`x-owner: amaker` — your wiki learned amaker's classes when amaker
 showed up, not a moment earlier. Step 4 picks the loop up from these
 pages.

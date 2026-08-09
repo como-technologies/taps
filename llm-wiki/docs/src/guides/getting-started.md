@@ -22,7 +22,7 @@ llm-wiki --version
 ## 2. Create a Wiki
 
 ```bash
-llm-wiki spaces create ~/wikis/research --name research
+llm-wiki admin create ~/wikis/research --name research
 ```
 
 This creates:
@@ -44,7 +44,7 @@ This creates:
 The first wiki becomes the default. Check:
 
 ```bash
-llm-wiki spaces list
+llm-wiki admin list
 ```
 
 ## 3. Create a Page

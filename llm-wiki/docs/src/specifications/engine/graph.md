@@ -102,7 +102,7 @@ TypeRegistry)` tuples. It:
 ### Lint rule
 
 `wiki_lint(rules: "broken-cross-wiki-link")` reports a `Warning` when a `wiki://`
-URI references a wiki name not currently in the space registry. Unmounted does not
+URI references a wiki name not currently in the wiki registry. Unmounted does not
 mean wrong — the warning is advisory.
 
 ## Filtering
@@ -159,7 +159,7 @@ The graph is built from the tantivy index — no file reads. Construction
 is O(pages + edges). Rendering is O(filtered nodes + filtered edges).
 
 In serve mode (`llm-wiki serve`), the full unfiltered graph is cached
-in memory per wiki space and reused across `wiki_graph`, `wiki_stats`,
+in memory per wiki and reused across `wiki_graph`, `wiki_stats`,
 and `wiki_suggest` calls. The cache is keyed on an index generation
 counter incremented after every write (`reload_reader`). Filtered
 graph requests (type, relation, root) bypass the cache and build on

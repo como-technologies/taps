@@ -66,7 +66,7 @@ Assets always belong to one page — there is no shared asset folder.
 
 ## Slug Resolution
 
-A slug is a path without extension, relative to `wiki/`. Resolution
+A slug is a path without extension, relative to the content root (`content/` by default). Resolution
 checks two forms in order:
 
 ```

@@ -156,9 +156,9 @@ fn schema_register_new_type_with_owner() {
     assert_eq!(report.status, "registered");
     assert_eq!(report.owner.as_deref(), Some("amaker"));
 
-    let space = engine.wiki("test").unwrap();
-    assert!(space.repo_root.join("schemas/assessment.json").is_file());
-    assert!(space.repo_root.join("schemas/assessment.md").is_file());
+    let wiki = engine.wiki("test").unwrap();
+    assert!(wiki.repo_root.join("schemas/assessment.json").is_file());
+    assert!(wiki.repo_root.join("schemas/assessment.md").is_file());
 }
 
 #[test]
@@ -231,7 +231,7 @@ fn schema_register_rejects_unsafe_type_name() {
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
 
-    for bad in ["../evil", "UPPER", "has space", "", "-leading"] {
+    for bad in ["../evil", "UPPER", "has wiki", "", "-leading"] {
         let err = ops::schema_register(&engine, "test", bad, ASSESSMENT_SCHEMA, None).unwrap_err();
         assert!(
             format!("{err}").contains("invalid type name"),

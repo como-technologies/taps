@@ -1,11 +1,11 @@
 ---
 name: research
-description: Answer a question from the Como KB with citations - search, read, graph-walk, and answer only from what the space actually says. Use when the user asks what the KB knows, what was decided, or why.
+description: Answer a question from the Como KB with citations - search, read, graph-walk, and answer only from what the wiki actually says. Use when the user asks what the KB knows, what was decided, or why.
 ---
 
 # Research the knowledge base
 
-Answer from the space, not from memory. The KB is the record; your
+Answer from the wiki, not from memory. The KB is the record; your
 training data is not.
 
 1. **Search wide**: `wiki_search` the question's terms (try the
@@ -27,5 +27,5 @@ training data is not.
    carries the class's semantics. Without one, those pages are readable
    like any page via the wiki tools; treat them as read-only.
 
-Never present an ungrounded answer as the KB's position. "The space
+Never present an ungrounded answer as the KB's position. "The wiki
 doesn't record this" is a correct, useful answer.

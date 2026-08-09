@@ -71,7 +71,7 @@ ingested — the commit is the proof of prior validation.
 |---|---|
 | `wiki_ingest <path>` (normal) | Git-changed since last indexed commit |
 | `wiki_ingest <path> --dry-run` | All files (explicit full audit) |
-| `wiki_index_rebuild` | None — index rebuild only |
+| `wiki_admin_index_rebuild` | None — index rebuild only |
 
 **Fallback:** when `last_commit` is absent (fresh wiki, first ingest) or the
 git query returns an error, all files are validated.

@@ -22,7 +22,7 @@ of the wiki.
 # Identity
 name        = "research"
 description = "ML research knowledge base"
-# wiki_root = "wiki"   # default — omit in normal repos
+# content_root = "wiki"   # default — omit in normal repos
 
 # Type overrides (optional)
 # Only needed to remap a type to a different schema file.
@@ -52,9 +52,9 @@ stub     = 0.6   # add a custom status
 
 | Field         | Required | Default  | Description                                               |
 | ------------- | -------- | -------- | --------------------------------------------------------- |
-| `name`        | yes      | —        | Wiki name — used in `wiki://` URIs and the space registry |
-| `description` | no       | —        | One-line description — shown in `wiki_spaces_list`        |
-| `wiki_root`   | no       | `"wiki"` | Content directory relative to repo root. Omit for standard layout. Use when adopting an existing repo where pages already live in a different subdirectory (e.g. `"content"`, `"docs"`). |
+| `name`        | yes      | —        | Wiki name — used in `wiki://` URIs and the wiki registry |
+| `description` | no       | —        | One-line description — shown in `wiki_admin_list`        |
+| `content_root`   | no       | `"wiki"` | Content directory relative to repo root. Omit for standard layout. Use when adopting an existing repo where pages already live in a different subdirectory (e.g. `"content"`, `"docs"`). |
 
 ### `[types.*]` — Type Overrides (optional)
 

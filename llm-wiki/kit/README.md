@@ -11,13 +11,14 @@ model; this kit brings the instructions and wiring.
 
 ## The posture: workspace and appliance
 
-Spaces live behind a running `llm-wiki serve` — **the appliance** — and
-every client reaches them through its transport surface (MCP tools over
-stdio or streamable HTTP). The harness runs in an **authoring
-workspace**: a thin directory holding only the config in this kit, no
-corpus. One workspace session reaches every space its wired appliances
-host; spaces are addressed by name per tool call. Nothing but the
-engine touches a space's filesystem.
+A knowledge base has one or more **wikis**, and they live behind a
+running `llm-wiki serve` — **the appliance** — with every client
+reaching them through its transport surface (MCP tools over stdio or
+streamable HTTP). The harness runs in an **authoring workspace**: a
+thin directory holding only the config in this kit, no corpus. One
+workspace session reaches every wiki its wired appliances host; wikis
+are addressed by name per tool call. Nothing but the engine touches a
+wiki's filesystem.
 
 ## Layout
 
@@ -38,8 +39,8 @@ kit/
 
 There is no starter content, on purpose. Content follows the same
 ownership boundary as schemas: each tool contributes its own
-documentation to a space when it integrates (taps #76), so a fresh
-space is a blank canvas until its tools teach it. Decision pages in
+documentation to a wiki when it integrates (taps #76), so a fresh
+wiki is a blank canvas until its tools teach it. Decision pages in
 particular belong to adroit (rebuilding greenfield, taps #93), whose
 corpus starts empty; test data lives with tests, never in the kit.
 
@@ -50,9 +51,9 @@ corpus starts empty; test data lives with tests, never in the kit.
    is topology-agnostic; its registry is `~/.llm-wiki/config.toml` (or
    `$LLM_WIKI_CONFIG`) *where the appliance runs*. The Getting Started
    guide's walked path is an incus container named `kb`.
-2. Create the space on the appliance:
-   `llm-wiki spaces create <dir> --name <name>` (run on the appliance,
-   or call the `wiki_spaces_create` tool once connected). Provisioning
+2. Create the wiki on the appliance:
+   `llm-wiki admin create <dir> --name <name>` (run on the appliance,
+   or call the `wiki_admin_create` tool once connected). Provisioning
    installs the Como schema library, strict validation, admission
    hooks, and search weights.
 3. Make a workspace: copy `kit/workspace/` (the whole directory,
@@ -74,10 +75,12 @@ corpus starts empty; test data lives with tests, never in the kit.
    The `.claude/settings.json` rules and the `.mcp.json` entry key all
    name the appliance `kb` — keep them in sync if you rename. The
    settings pre-authorize the authoring lane (search, read, write,
-   ingest, lint, …) since the engine's gates live server-side; the
-   sharp lifecycle tools — space create/remove, `wiki_schema`,
-   `wiki_config` — still prompt, because permission rules can't see
-   arguments and those can delete or loosen things.
+   ingest, lint, …) plus the read-only `wiki_schema`, since the
+   engine's gates live server-side; the sharp lifecycle tools — the
+   `wiki_admin_*` writes (create/remove, schema register/remove,
+   config) — still prompt, and the destructive ones carry MCP
+   `destructiveHint` annotations so a harness can treat them
+   accordingly.
 5. Open Claude Code in the workspace and talk.
 
 One appliance per `.mcp.json` entry; a workspace may wire several. Note

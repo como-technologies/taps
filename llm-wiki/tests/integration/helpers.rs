@@ -104,7 +104,7 @@ impl WikiEnv {
         env
     }
 
-    /// Tempdir root (scratch space shared with nothing else).
+    /// Tempdir root (scratch wiki shared with nothing else).
     pub fn tmp(&self) -> &Path {
         self.dir.path()
     }

@@ -743,10 +743,10 @@ fn list_json_type_filter_all_concepts() {
     }
 }
 
-// ── spaces (test_spaces.py) ───────────────────────────────────────────────────
+// ── wikis (test_spaces.py) ───────────────────────────────────────────────────
 
 #[test]
-fn spaces_list_returns_research() {
+fn admin_list_returns_research() {
     let (_env, mut mcp) = mcp_env();
     let text = mcp.call("wiki_admin_list", json!({}));
     assert!(text.contains(SPACE_NAME));
@@ -760,7 +760,7 @@ fn spaces_list_returns_research() {
 }
 
 #[test]
-fn spaces_set_default_research() {
+fn admin_set_default_research() {
     let (_env, mut mcp) = mcp_env();
     let text = mcp.call("wiki_admin_set_default", json!({"name": SPACE_NAME}));
     assert!(text.contains(SPACE_NAME));

@@ -9,7 +9,7 @@ last_updated: "2025-07-17"
 
 # Config Management
 
-MCP tool: `wiki_config`
+MCP tool: `wiki_admin_config`
 
 | Command                    | Description              |
 | -------------------------- | ------------------------ |
@@ -26,11 +26,11 @@ Operates on `wiki.toml` (per-wiki) or `~/.llm-wiki/config.toml`
 ## CLI
 
 ```
-llm-wiki config get <key>
-llm-wiki config set <key> <value>
+llm-wiki admin config get <key>
+llm-wiki admin config set <key> <value>
                 [--global]          # write to ~/.llm-wiki/config.toml
                 [--wiki <name>]     # write to per-wiki wiki.toml
-llm-wiki config list
+llm-wiki admin config list
              [--global]
              [--wiki <name>]
              [--format <fmt>]    # text | json (default: text)
@@ -46,11 +46,11 @@ Global-only keys (`index.*`, `serve.*`, `logging.*`) reject
 ### Examples
 
 ```bash
-llm-wiki config get defaults.search_top_k
-llm-wiki config set defaults.search_top_k 15 --global
-llm-wiki config set defaults.page_mode bundle --wiki research
-llm-wiki config list
-llm-wiki config list --global --format json
+llm-wiki admin config get defaults.search_top_k
+llm-wiki admin config set defaults.search_top_k 15 --global
+llm-wiki admin config set defaults.page_mode bundle --wiki research
+llm-wiki admin config list
+llm-wiki admin config list --global --format json
 ```
 
 ### config list output

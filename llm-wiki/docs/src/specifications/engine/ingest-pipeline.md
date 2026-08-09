@@ -18,7 +18,7 @@ For the CLI and MCP tool, see [ingest.md](../tools/ingest.md).
 
 ## Page Discovery
 
-The engine walks `wiki/` recursively. No exclusions needed — `raw/` and
+The engine walks the content root recursively. No exclusions needed — `raw/` and
 `inbox/` are outside the wiki root.
 
 - `.md` file named `index.md` → page at slug = parent directory path

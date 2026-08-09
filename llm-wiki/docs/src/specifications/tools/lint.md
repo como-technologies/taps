@@ -111,7 +111,7 @@ with no valid `last_updated` date is treated as infinitely old.
 
 ### unknown-type
 
-Checks the `type` field value against `SpaceTypeRegistry::is_known()`.
+Checks the `type` field value against `WikiTypeRegistry::is_known()`.
 Empty type fields are skipped.
 
 ### articulation-point

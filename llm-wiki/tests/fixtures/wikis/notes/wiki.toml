@@ -1,6 +1,6 @@
 [wiki]
 name = "notes"
-description = "Integration test wiki — notes space (cross-wiki target)"
+description = "Integration test wiki — notes wiki (cross-wiki target)"
 
 [ingest]
 auto_commit = true

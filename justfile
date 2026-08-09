@@ -66,8 +66,8 @@ integration:
     cargo build -p llm-wiki -p amaker-cli -p adroit
     TAPS_INTEGRATION=1 cargo test -p taps-tests
 
-# A KB for developing tools against: registers ~/spaces/NAME in your
-# registry (idempotent — spaces create no-ops if it exists) and serves
+# A KB for developing tools against: registers ~/wikis/NAME in your
+# registry (idempotent — admin create no-ops if it exists) and serves
 # the streamable-HTTP transport in the foreground, Ctrl-C to stop.
 # Harness authoring doesn't need this (a workspace's .mcp.json spawns
 # its own stdio serve); this is the stable endpoint for a tool under
@@ -77,14 +77,14 @@ kb-dev name="devkb":
     #!/usr/bin/env bash
     set -euo pipefail
     command -v llm-wiki >/dev/null || { echo "llm-wiki not on PATH — run 'just install' first" >&2; exit 1; }
-    llm-wiki spaces create "$HOME/spaces/{{name}}" --name "{{name}}" --set-default
+    llm-wiki admin create "$HOME/wikis/{{name}}" --name "{{name}}" --set-default
     exec llm-wiki serve --http
 
 # Stamps the kit template (posture CLAUDE.md, settings, skills) into DIR
 # and rewrites .mcp.json for local use — the shipped one is the guide's
 # incus bridge. transport=stdio (default) spawns a private serve per
 # session; transport=http points at a running `just kb-dev` (prefer this
-# when kb-dev is up: two engines on one space contend for index locks).
+# when kb-dev is up: two engines on one wiki contend for index locks).
 # Create a local authoring workspace (cd there and run your harness)
 kb-workspace dir="$HOME/kb-workspace" transport="stdio":
     #!/usr/bin/env bash

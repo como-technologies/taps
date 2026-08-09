@@ -578,7 +578,7 @@ fn forge_errors_exit_nonzero_with_a_message_on_stderr() {
 fn kb_writes_a_measure_report_page_into_a_space() {
     // Wave 4 (portfolio#7): --kb emits the month as a measure-report typed
     // page. End to end over the real binary and a stub forge: page lands at
-    // wiki/measures/<owner>-<YYYY-MM>.md, typed, deterministic, carrying the
+    // content/measures/<owner>-<YYYY-MM>.md, typed, deterministic, carrying the
     // adr_totals attribution the harness will query.
     let forge = stub_forge(pulls_body(&[
         pull(7, "Ship the widget", &["effort:3-average", "adr:ADR-0003"]),
@@ -589,19 +589,19 @@ fn kb_writes_a_measure_report_page_into_a_space() {
         ),
     ]));
 
-    let space = tempfile::tempdir().unwrap();
-    std::fs::write(space.path().join("wiki.toml"), "name = \"t\"\n").unwrap();
+    let wiki = tempfile::tempdir().unwrap();
+    std::fs::write(wiki.path().join("wiki.toml"), "name = \"t\"\n").unwrap();
 
     let mut args = gitea_args(&forge.base_url);
     args.push("--kb".into());
-    args.push(space.path().to_string_lossy().into_owned());
+    args.push(wiki.path().to_string_lossy().into_owned());
 
     let output = tuesday_report().args(&args).output().unwrap();
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(stderr.contains("kb: wrote"), "{stderr}");
 
-    let page_path = space.path().join("wiki/measures/como-2026-03.md");
+    let page_path = wiki.path().join("content/measures/como-2026-03.md");
     let page = std::fs::read_to_string(&page_path).unwrap();
     assert!(page.contains("type: measure-report\n"), "{page}");
     assert!(page.contains("period: \"2026-03\"\n"), "{page}");
@@ -630,8 +630,8 @@ fn kb_requires_a_space_and_names_the_bootstrap() {
     let output = tuesday_report().args(&args).output().unwrap();
     assert_eq!(output.status.code(), Some(1), "{output:?}");
     let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("not a KB space"), "{stderr}");
-    assert!(stderr.contains("llm-wiki spaces create"), "{stderr}");
+    assert!(stderr.contains("not a wiki"), "{stderr}");
+    assert!(stderr.contains("llm-wiki admin create"), "{stderr}");
 }
 
 #[test]
@@ -639,19 +639,19 @@ fn kb_is_skipped_when_strict_violations_exist() {
     // A contract-violating month doesn't enter the record: --strict + --kb
     // exits nonzero, says so, and writes no page.
     let forge = stub_forge(pulls_body(&[pull(9, "No labels at all", &[])]));
-    let space = tempfile::tempdir().unwrap();
-    std::fs::write(space.path().join("wiki.toml"), "name = \"t\"\n").unwrap();
+    let wiki = tempfile::tempdir().unwrap();
+    std::fs::write(wiki.path().join("wiki.toml"), "name = \"t\"\n").unwrap();
 
     let mut args = gitea_args(&forge.base_url);
     args.extend([
         "--strict".into(),
         "--kb".into(),
-        space.path().to_string_lossy().into_owned(),
+        wiki.path().to_string_lossy().into_owned(),
     ]);
 
     let output = tuesday_report().args(&args).output().unwrap();
     assert_eq!(output.status.code(), Some(1), "{output:?}");
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(stderr.contains("kb: not written"), "{stderr}");
-    assert!(!space.path().join("wiki/measures").exists());
+    assert!(!wiki.path().join("wiki/measures").exists());
 }

@@ -26,7 +26,7 @@ For the epistemic rationale behind types, see
 
 ## Built-in Types
 
-Shipped as default schema files by `llm-wiki spaces create`:
+Shipped as default schema files by `llm-wiki admin create`:
 
 | Type                                      | Schema         | Description                                                  |
 | ----------------------------------------- | -------------- | ------------------------------------------------------------ |
@@ -203,5 +203,5 @@ unknown or missing type. The engine enforces:
 3. A custom `base.json` must require at least `title` and `type`
    fields. It may add additional required or optional fields
    (superset is fine), but it cannot drop `title` or `type`.
-4. If these invariants are violated, `SpaceTypeRegistry::build()`
+4. If these invariants are violated, `WikiTypeRegistry::build()`
    returns an error.

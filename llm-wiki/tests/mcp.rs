@@ -82,7 +82,7 @@ fn tool_list_all_have_object_schema() {
 }
 
 #[test]
-fn spaces_create_requires_path_and_name() {
+fn admin_create_requires_path_and_name() {
     let tools = tools::tool_list();
     let tool = tools
         .iter()

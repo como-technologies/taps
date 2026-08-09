@@ -58,7 +58,7 @@ fn build_engine_with(
         .unwrap();
     mgr.open(&index_schema, None).unwrap();
 
-    let space = Arc::new(WikiContext {
+    let wiki = Arc::new(WikiContext {
         name: "test".to_string(),
         content_root: content_root.to_path_buf(),
         repo_root: dir.to_path_buf(),
@@ -71,14 +71,14 @@ fn build_engine_with(
         community_cache: petgraph_live::cache::GenerationCache::new(),
     });
 
-    let mut spaces = HashMap::new();
-    spaces.insert("test".to_string(), space);
+    let mut wikis = HashMap::new();
+    wikis.insert("test".to_string(), wiki);
 
     EngineState {
         config: GlobalConfig::default(),
         config_path: dir.join("config.toml"),
         state_dir: dir.to_path_buf(),
-        wikis: spaces,
+        wikis,
     }
 }
 
@@ -555,7 +555,7 @@ fn build_engine_with_name(dir: &Path, content_root: &Path, name: &str) -> Engine
         .unwrap();
     mgr.open(&schema(), None).unwrap();
 
-    let space = Arc::new(WikiContext {
+    let wiki = Arc::new(WikiContext {
         name: name.to_string(),
         content_root: content_root.to_path_buf(),
         repo_root: dir.to_path_buf(),
@@ -568,14 +568,14 @@ fn build_engine_with_name(dir: &Path, content_root: &Path, name: &str) -> Engine
         community_cache: petgraph_live::cache::GenerationCache::new(),
     });
 
-    let mut spaces = HashMap::new();
-    spaces.insert(name.to_string(), space);
+    let mut wikis = HashMap::new();
+    wikis.insert(name.to_string(), wiki);
 
     EngineState {
         config: GlobalConfig::default(),
         config_path: dir.join("config.toml"),
         state_dir: dir.to_path_buf(),
-        wikis: spaces,
+        wikis,
     }
 }
 

@@ -81,7 +81,7 @@ With type as the axis:
 - A wiki can organize by domain and still have clear epistemic
   distinctions via type
 
-The physical layers (`inbox/`, `evidence/`, `wiki/`) are structural, not
+The physical layers (`inbox/`, `evidence/`, `content/`) are structural, not
 epistemic. See [wiki-repository-layout.md](wiki-repository-layout.md).
 
 ## Why Separation Matters

@@ -1,6 +1,6 @@
 ---
 title: "Schema Management"
-summary: "wiki_schema MCP tool and llm-wiki schema CLI — list, show, add, remove, and validate type schemas."
+summary: "The schema surface, split by risk class — read-only llm-wiki schema / wiki_schema, and the write half under llm-wiki admin schema / wiki_admin_schema_*."
 read_when:
   - Understanding how to inspect type schemas
   - Adding or removing a custom type
@@ -12,8 +12,16 @@ last_updated: "2025-07-18"
 
 # Schema Management
 
-Introspect and manage the type schemas for a wiki. Available as both
-a CLI command (`llm-wiki schema`) and an MCP tool (`wiki_schema`).
+Introspect and manage the type schemas for a wiki. The surface splits
+by **risk class**, not audience — no tool mixes reads with destructive
+writes behind an action argument, so a harness can allowlist the read
+half outright:
+
+- **Read-only**: `llm-wiki schema` (CLI) and `wiki_schema` (MCP,
+  `readOnlyHint`) — `list`, `show` (± `--template`), `validate`.
+- **Vocabulary writes**: `llm-wiki admin schema` (CLI) and the
+  per-verb `wiki_admin_schema_register` / `wiki_admin_schema_remove`
+  MCP tools (remove carries `destructiveHint`).
 
 All operations target a specific wiki (`--wiki <name>` or the default).
 
@@ -21,9 +29,10 @@ All operations target a specific wiki (`--wiki <name>` or the default).
 llm-wiki schema list [--format text|json]                          List registered types
 llm-wiki schema show <type> [--format text|json]                   Print JSON Schema
 llm-wiki schema show <type> --template                             Print frontmatter template
-llm-wiki schema add <type> <schema-path>                           Register a custom type
-llm-wiki schema remove <type> [--delete] [--delete-pages] [--dry-run]  Unregister a type
 llm-wiki schema validate [<type>]                                  Validate schemas + index resolution
+llm-wiki admin schema register <type> <schema-path> [--template <md>]        Register a tool-owned type (idempotent)
+llm-wiki admin schema add <type> <schema-path>                               Register a custom type
+llm-wiki admin schema remove <type> [--delete] [--delete-pages] [--dry-run]  Unregister a type
 ```
 
 ## Operations
@@ -134,24 +143,44 @@ Template generation reads `required` and `properties` from the JSON
 Schema. Required fields are included with empty/default values.
 Optional fields may be included as comments or omitted.
 
-### add
+### register
 
-Register a custom type by copying a schema file into the wiki and
-optionally adding a `[types.*]` override to `wiki.toml`.
+Register a type schema idempotently — the door tools use on first
+contact. Identical content is a no-op (`unchanged`); different content
+under the same name is a named conflict, never an overwrite. The
+schema must declare its types in `x-wiki-types`; `x-owner` records the
+owning tool (the write boundary the kit enforces).
 
 **CLI:**
 ```
-llm-wiki schema add <type> <schema-path> [--wiki <name>]
+llm-wiki admin schema register <type> <schema-path> [--template <md-path>] [--wiki <name>]
 ```
 
-**MCP:**
+**MCP** (`wiki_admin_schema_register` — content travels in the call,
+no server-side paths):
 ```json
 {
-  "action": "add",
   "type": "<type>",
-  "schema_path": "<path>",
+  "schema": "<JSON Schema content>",
+  "body_template": "<Markdown template content, optional>",
   "wiki": "<name>"
 }
+```
+
+**Output:** `{ status: "registered" | "unchanged", ... }`. On a live
+server, `registered` remounts the wiki so the new type validates and
+indexes immediately.
+
+### add
+
+Register a custom type by copying a schema file into the wiki and
+optionally adding a `[types.*]` override to `wiki.toml`. CLI-only —
+it reads a path on the server, which a transport client doesn't have;
+transport clients use `wiki_admin_schema_register`.
+
+**CLI:**
+```
+llm-wiki admin schema add <type> <schema-path> [--wiki <name>]
 ```
 
 **Behavior:**
@@ -173,13 +202,12 @@ delete page files from disk.
 
 **CLI:**
 ```
-llm-wiki schema remove <type> [--delete] [--delete-pages] [--dry-run] [--wiki <name>]
+llm-wiki admin schema remove <type> [--delete] [--delete-pages] [--dry-run] [--wiki <name>]
 ```
 
-**MCP:**
+**MCP** (`wiki_admin_schema_remove`):
 ```json
 {
-  "action": "remove",
   "type": "<type>",
   "delete": true,
   "delete_pages": true,
@@ -242,7 +270,7 @@ llm-wiki schema validate [<type>] [--wiki <name>]
 4. Base schema invariant: `default` type requires `title` and `type`
 5. `x-index-aliases` targets are valid (no cycles, targets exist
    as properties in some schema)
-6. Index resolution: run `build_space()` as a dry-run — confirms
+6. Index resolution: run `build_wiki()` as a dry-run — confirms
    that the full set of schemas produces a valid tantivy schema
    with no field conflicts
 
@@ -254,33 +282,58 @@ validation misses:
 
 **Output:** ok or list of errors/warnings per schema file.
 
-## MCP Tool Definition
+## MCP Tool Definitions
 
 ```json
 {
   "name": "wiki_schema",
-  "description": "Inspect and manage type schemas",
+  "description": "Inspect type schemas (read-only)",
+  "annotations": { "readOnlyHint": true },
   "parameters": {
-    "action": "list | show | add | remove | validate",
-    "type": "(for show/add/remove/validate) type name",
+    "action": "list | show | validate",
+    "type": "(for show; optional for validate) type name",
     "template": "(for show) return frontmatter template instead of schema",
-    "schema_path": "(for add) path to schema file to copy",
-    "delete": "(for remove) also delete/modify the schema file",
-    "delete_pages": "(for remove) also delete page files from disk",
-    "dry_run": "(for remove) show what would be done without doing it",
-    "wiki": "target wiki name (required — uses default if omitted)"
+    "wiki": "target wiki name (uses default if omitted)"
+  }
+}
+```
+
+```json
+{
+  "name": "wiki_admin_schema_register",
+  "description": "Register a type schema (idempotent)",
+  "parameters": {
+    "type": "type name (declared in the schema's x-wiki-types)",
+    "schema": "JSON Schema content",
+    "body_template": "Markdown body template content (optional)",
+    "wiki": "target wiki name (uses default if omitted)"
+  }
+}
+```
+
+```json
+{
+  "name": "wiki_admin_schema_remove",
+  "description": "Unregister a type and remove its pages from the index",
+  "annotations": { "destructiveHint": true },
+  "parameters": {
+    "type": "type name",
+    "delete": "also delete/modify the schema file",
+    "delete_pages": "also delete page files from disk",
+    "dry_run": "show what would be done without doing it",
+    "wiki": "target wiki name (uses default if omitted)"
   }
 }
 ```
 
 ## Relationship to Other Tools
 
-- `wiki_config list` returns wiki identity and settings — not types.
+- `wiki_admin_config list` returns wiki identity and settings — not types.
   `wiki_schema list` returns the type registry.
 - `wiki_content_new` scaffolds a page with minimal frontmatter.
   `wiki_schema show --template` returns the full type-specific
   template without creating a file.
 - `wiki_ingest` validates against the schema. `wiki_schema show`
   lets you inspect what it validates against.
-- `wiki_index_rebuild` rebuilds the full index.
-  `wiki_schema remove` removes only pages of a specific type.
+- `wiki_admin_index_rebuild` rebuilds the full index.
+  `wiki_admin_schema_remove` removes only pages of a specific type.

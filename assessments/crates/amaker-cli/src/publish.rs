@@ -45,7 +45,7 @@ pub async fn publish_cmd(
         bail!(
             "no KB configured: set KB_URL to your appliance's MCP endpoint \
              (e.g. http://localhost:8080/mcp; `just kb-dev` serves one) and \
-             optionally KB_WIKI for the target space — in the environment, \
+             optionally KB_WIKI for the target wiki — in the environment, \
              a .env here, or ~/.config/taps/env"
         );
     };

@@ -12,7 +12,7 @@ llm-wiki uses two configuration files:
 | `config.toml` | `~/.llm-wiki/config.toml` | Global — all wikis | No (local to machine) |
 | `wiki.toml` | `<wiki>/wiki.toml` | Per-wiki — overrides global | Yes (shared via git) |
 
-Both are created automatically by `llm-wiki spaces create`. You
+Both are created automatically by `llm-wiki admin create`. You
 rarely need to edit them by hand — use `llm-wiki config` instead.
 
 ## Overriding the config path
@@ -21,11 +21,11 @@ By default llm-wiki reads `~/.llm-wiki/config.toml`. Override it with:
 
 ```bash
 # Flag (highest priority)
-llm-wiki --config /path/to/config.toml spaces list
+llm-wiki --config /path/to/config.toml admin list
 
 # Environment variable
 export LLM_WIKI_CONFIG=/path/to/config.toml
-llm-wiki spaces list
+llm-wiki admin list
 ```
 
 Useful for CI pipelines, integration tests, or running multiple isolated
@@ -44,24 +44,24 @@ Example: `defaults.search_top_k` is 10 by default. Set it to 20
 globally, then override to 5 for a specific wiki:
 
 ```bash
-llm-wiki config set defaults.search_top_k 20 --global
-llm-wiki config set defaults.search_top_k 5 --wiki research
+llm-wiki admin config set defaults.search_top_k 20 --global
+llm-wiki admin config set defaults.search_top_k 5 --wiki research
 ```
 
 ## Reading and changing settings
 
 ```bash
 # List all resolved settings
-llm-wiki config list
+llm-wiki admin config list
 
 # Get a specific value
-llm-wiki config get defaults.search_top_k
+llm-wiki admin config get defaults.search_top_k
 
 # Set globally
-llm-wiki config set defaults.search_top_k 20 --global
+llm-wiki admin config set defaults.search_top_k 20 --global
 
 # Set per-wiki
-llm-wiki config set defaults.search_top_k 5 --wiki research
+llm-wiki admin config set defaults.search_top_k 5 --wiki research
 ```
 
 ## Common tasks
@@ -71,7 +71,7 @@ llm-wiki config set defaults.search_top_k 5 --wiki research
 Default is 10. For wikis with lots of content:
 
 ```bash
-llm-wiki config set defaults.search_top_k 20 --global
+llm-wiki admin config set defaults.search_top_k 20 --global
 ```
 
 ### Use bundles by default
@@ -80,7 +80,7 @@ New pages are flat files by default. Switch to bundles (folder +
 index.md) for wikis with lots of assets:
 
 ```bash
-llm-wiki config set defaults.page_mode bundle --wiki research
+llm-wiki admin config set defaults.page_mode bundle --wiki research
 ```
 
 ### Disable auto-commit on ingest
@@ -89,7 +89,7 @@ By default, `wiki_ingest` commits to git automatically. Disable to
 review changes before committing:
 
 ```bash
-llm-wiki config set ingest.auto_commit false --wiki research
+llm-wiki admin config set ingest.auto_commit false --wiki research
 ```
 
 Then commit manually with `llm-wiki content commit --all`.
@@ -100,7 +100,7 @@ By default, unknown types produce a warning. Switch to strict mode
 to reject pages with unregistered types:
 
 ```bash
-llm-wiki config set validation.type_strictness strict --wiki research
+llm-wiki admin config set validation.type_strictness strict --wiki research
 ```
 
 ### Tune the filesystem watcher
@@ -109,7 +109,7 @@ The watcher debounces file events to avoid redundant ingests. Default
 is 500ms. Lower for faster feedback, higher for busy editors:
 
 ```bash
-llm-wiki config set watch.debounce_ms 300 --global
+llm-wiki admin config set watch.debounce_ms 300 --global
 ```
 
 ### Tune lint rules
@@ -163,7 +163,7 @@ for the full reference.
 Default is Mermaid. Switch to DOT for Graphviz:
 
 ```bash
-llm-wiki config set graph.format dot --global
+llm-wiki admin config set graph.format dot --global
 ```
 
 ### Disable graph snapshot warm-start
@@ -173,16 +173,16 @@ process restarts load from disk instead of rebuilding. Disable in CI or when
 snapshot files are undesirable:
 
 ```bash
-llm-wiki config set graph.snapshot false --wiki research
+llm-wiki admin config set graph.snapshot false --wiki research
 ```
 
 Control how many snapshots are kept per wiki (default 3) and the encoding format:
 
 ```bash
-llm-wiki config set graph.snapshot_keep 5 --global
-llm-wiki config set graph.snapshot_format bincode --global
+llm-wiki admin config set graph.snapshot_keep 5 --global
+llm-wiki admin config set graph.snapshot_format bincode --global
 # Use Zstd compression instead of LZ4 (smaller files, slower compression)
-llm-wiki config set graph.snapshot_format bincode+zstd --global
+llm-wiki admin config set graph.snapshot_format bincode+zstd --global
 ```
 
 ### Disable structural topology in stats
@@ -191,7 +191,7 @@ By default `wiki_stats` computes diameter, radius, and center when the graph is 
 `graph.max_nodes_for_diameter`. Disable entirely:
 
 ```bash
-llm-wiki config set graph.structural_algorithms false --wiki large-wiki
+llm-wiki admin config set graph.structural_algorithms false --wiki large-wiki
 ```
 
 The `articulation-point`, `bridge`, and `periphery` lint rules are unaffected — use
@@ -204,10 +204,10 @@ Skipped above the threshold:
 
 ```bash
 # Lower threshold — skip on wikis with more than 500 pages
-llm-wiki config set graph.max_nodes_for_diameter 500 --wiki large-wiki
+llm-wiki admin config set graph.max_nodes_for_diameter 500 --wiki large-wiki
 
 # Raise threshold — always compute
-llm-wiki config set graph.max_nodes_for_diameter 10000 --global
+llm-wiki admin config set graph.max_nodes_for_diameter 10000 --global
 ```
 
 ### Disable rename tracking in history
@@ -216,7 +216,7 @@ llm-wiki config set graph.max_nodes_for_diameter 10000 --global
 causes issues:
 
 ```bash
-llm-wiki config set history.follow false --wiki research
+llm-wiki admin config set history.follow false --wiki research
 ```
 
 ### Enable auto-rebuild on stale index
@@ -225,7 +225,7 @@ By default, a stale index produces a warning. Enable auto-rebuild
 so search/list always use a fresh index:
 
 ```bash
-llm-wiki config set index.auto_rebuild true --global
+llm-wiki admin config set index.auto_rebuild true --global
 ```
 
 ### Set the ACP session cap
@@ -235,7 +235,7 @@ cap is 20 concurrent sessions, which is generous for single-user IDE
 use. Lower it for resource-constrained environments:
 
 ```bash
-llm-wiki config set serve.acp_max_sessions 5 --global
+llm-wiki admin config set serve.acp_max_sessions 5 --global
 ```
 
 This is a global-only key — it applies to the server process, not
@@ -247,13 +247,13 @@ For debugging `llm-wiki serve`:
 
 ```bash
 # JSON logs for machine parsing
-llm-wiki config set logging.log_format json --global
+llm-wiki admin config set logging.log_format json --global
 
 # Keep more log files
-llm-wiki config set logging.log_max_files 30 --global
+llm-wiki admin config set logging.log_max_files 30 --global
 
 # Disable file logging (stderr only)
-llm-wiki config set logging.log_path "" --global
+llm-wiki admin config set logging.log_path "" --global
 ```
 
 ## Global-only vs overridable
@@ -262,7 +262,7 @@ Some settings only make sense globally (server ports, index recovery,
 logging). Setting them in `wiki.toml` produces an error:
 
 ```
-$ llm-wiki config set serve.http_port 9090 --wiki research
+$ llm-wiki admin config set serve.http_port 9090 --wiki research
 error: serve.http_port is a global-only key — use --global
 ```
 
@@ -279,10 +279,10 @@ The index is out of date. Either:
 
 ```bash
 # Rebuild manually
-llm-wiki index rebuild
+llm-wiki admin index rebuild
 
 # Or enable auto-rebuild
-llm-wiki config set index.auto_rebuild true --global
+llm-wiki admin config set index.auto_rebuild true --global
 
 # Or use --watch for live indexing
 llm-wiki serve --watch
@@ -304,8 +304,8 @@ Check the resolution order — a per-wiki override may be shadowing
 your global setting:
 
 ```bash
-llm-wiki config list              # resolved (global + per-wiki)
-llm-wiki config list --global     # global only
+llm-wiki admin config list              # resolved (global + per-wiki)
+llm-wiki admin config list --global     # global only
 ```
 
 ## Full reference

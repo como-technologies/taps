@@ -138,7 +138,7 @@ review = 1.0
 
 ## Note: config set cannot reach map entries
 
-`llm-wiki config set` handles scalar keys only. Status multipliers must
+`llm-wiki admin config set` handles scalar keys only. Status multipliers must
 be edited by hand in `config.toml` or `wiki.toml`:
 
 ```toml

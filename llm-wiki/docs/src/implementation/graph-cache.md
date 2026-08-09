@@ -37,7 +37,7 @@ pub struct CommunityData {
 `local_count` stores local node count at build time — avoids re-traversal on the hot path.
 Community and graph caches share the same generation key.
 
-Both caches live in `SpaceContext`:
+Both caches live in `WikiContext`:
 
 ```rust
 // src/engine.rs
@@ -51,7 +51,7 @@ calls `builder()` → `Result<T>` on miss, caches and returns `Arc<T>`.
 
 ## Cache key: `AtomicU64` generation counter
 
-`IndexInner` in `SpaceIndexManager` holds a `generation: AtomicU64` starting
+`IndexInner` in `WikiIndexManager` holds a `generation: AtomicU64` starting
 at 0. Every successful `reload_reader()` call does:
 
 ```rust
@@ -79,7 +79,7 @@ invalidates the cache on the next graph request.
 ## Public accessors
 
 All live in `src/graph.rs`. Callers pass individual fields rather than
-`&SpaceContext` to avoid a circular dependency between `graph.rs` and
+`&WikiContext` to avoid a circular dependency between `graph.rs` and
 `engine.rs`.
 
 ### `get_or_build_graph`
@@ -87,8 +87,8 @@ All live in `src/graph.rs`. Callers pass individual fields rather than
 ```rust
 pub fn get_or_build_graph(
     index_schema:  &IndexSchema,
-    type_registry: &SpaceTypeRegistry,
-    index_manager: &SpaceIndexManager,
+    type_registry: &WikiTypeRegistry,
+    index_manager: &WikiIndexManager,
     graph_cache:   &WikiGraphCache,
     searcher:      &Searcher,
     filter:        &GraphFilter,
@@ -160,15 +160,15 @@ cached graph; the caller extracts a subgraph via BFS post-cache.
 | `ops/graph.rs` — single-wiki path | `get_or_build_graph` |
 | `ops/stats.rs` | `get_or_build_graph` + `get_cached_community_stats` |
 | `ops/suggest.rs` | `get_or_build_graph` + `get_cached_community_map` |
-| `ops/graph.rs` — cross-wiki path | `get_or_build_graph` per space + `merge_cached_graphs` |
+| `ops/graph.rs` — cross-wiki path | `get_or_build_graph` per wiki + `merge_cached_graphs` |
 
 ## Cross-wiki caching
 
 `build_graph_cross_wiki` takes raw `(searcher, schema, registry)` tuples and
-calls `build_graph` directly — it cannot use the per-space cache.
+calls `build_graph` directly — it cannot use the per-wiki cache.
 
 The cross-wiki path in `ops/graph.rs` works around this by pre-building each
-per-space graph via `get_or_build_graph` (cache-aware), then passing the
+per-wiki graph via `get_or_build_graph` (cache-aware), then passing the
 resulting `Arc<WikiGraph>` slices to `merge_cached_graphs`:
 
 ```rust
@@ -188,7 +188,7 @@ accepts pre-built graphs rather than raw index handles.
 
 ## Snapshot warm-start (v0.4.0 Phase 2)
 
-`SpaceContext.graph_cache` is now a `WikiGraphCache` enum:
+`WikiContext.graph_cache` is now a `WikiGraphCache` enum:
 
 ```rust
 pub enum WikiGraphCache {
@@ -202,7 +202,7 @@ pub enum WikiGraphCache {
 - Match → load from disk, skip cold build.
 - Miss → cold build, save snapshot, return graph.
 
-After `wiki_index_rebuild`, `WikiGraphCache::rebuild()` forces a new snapshot for the updated generation key.
+After `wiki_admin_index_rebuild`, `WikiGraphCache::rebuild()` forces a new snapshot for the updated generation key.
 
 `graph.snapshot = false` constructs `NoSnapshot` — identical to Phase 1 behaviour. Use in CI and integration tests to avoid snapshot files in tempdir.
 

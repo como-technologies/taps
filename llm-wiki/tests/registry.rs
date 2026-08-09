@@ -43,7 +43,7 @@ fn create_builds_wiki_structure() {
     assert!(wiki_path.join("evidence").is_dir());
     assert!(
         !wiki_path.join("raw").exists(),
-        "new spaces use evidence/, not raw/"
+        "new wikis use evidence/, not raw/"
     );
     assert!(wiki_path.join("schemas").is_dir());
     assert!(wiki_path.join("README.md").is_file());
@@ -422,7 +422,7 @@ fn validate_content_root_rejects_dot() {
 #[test]
 fn validate_content_root_rejects_reserved_dirs() {
     let dir = tempfile::tempdir().unwrap();
-    // `raw` remains reserved for backward compatibility with spaces created
+    // `raw` remains reserved for backward compatibility with wikis created
     // before the capture layer was renamed to `evidence/`.
     for reserved in &["inbox", "evidence", "raw", "schemas"] {
         let err = llm_wiki::registry::validate_content_root(dir.path(), reserved).unwrap_err();
@@ -709,7 +709,7 @@ fn create_installs_engine_schema_library() {
     for schema in ["decision.json", "plan.json", "measure-report.json"] {
         assert!(
             !wiki_path.join("schemas").join(schema).exists(),
-            "ghost schema {schema} stamped into a fresh space"
+            "ghost schema {schema} stamped into a fresh wiki"
         );
     }
 }
@@ -726,7 +726,7 @@ fn create_provisions_strict_validation_and_search_weights() {
     assert_eq!(
         wiki_cfg.validation.as_ref().unwrap().type_strictness,
         "strict",
-        "provisioned spaces pin strict admission (kb-spec §3)"
+        "provisioned wikis pin strict admission (kb-spec §3)"
     );
 
     // Both status vocabularies (kb-spec §4): decision lifecycle + content.

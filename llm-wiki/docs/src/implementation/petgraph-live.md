@@ -60,7 +60,7 @@ let graph = cache.get_or_build(current_gen, builder)?;
 ```
 
 `get_or_build` is synchronous. The closure is called only on miss.
-The generation counter (`u64`) comes from `SpaceIndexManager::generation()` —
+The generation counter (`u64`) comes from `WikiIndexManager::generation()` —
 incremented on every successful `reload_reader()` call (after any index write).
 
 ## `GraphState<T>` — construction
@@ -102,7 +102,7 @@ produces incorrect behaviour. Always `None`.
 let graph: Arc<WikiGraph> = state.get_fresh()
     .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-// Force rebuild regardless of key (e.g. after wiki_index_rebuild):
+// Force rebuild regardless of key (e.g. after wiki_admin_index_rebuild):
 let graph: Arc<WikiGraph> = state.rebuild()
     .map_err(|e| anyhow::anyhow!("{e}"))?;
 ```
@@ -120,16 +120,16 @@ Both `key_fn` and `build_fn` must be `Fn() + Send + Sync + 'static`.
 This means:
 
 - No captures of `RwLock` guards (they hold borrows — E0521)
-- No captures of `&SpaceTypeRegistry` (not Clone — cannot be moved)
-- Use `Arc<T>` for shared ownership: `Arc<SpaceIndexManager>` and `Arc<SpaceTypeRegistry>` clone cheaply
+- No captures of `&WikiTypeRegistry` (not Clone — cannot be moved)
+- Use `Arc<T>` for shared ownership: `Arc<WikiIndexManager>` and `Arc<WikiTypeRegistry>` clone cheaply
 - `IndexSchema` derives `Clone` — captured by value at construction time
 
 Pattern for `build_fn` in llm-wiki (current — no disk re-derivation):
 
 ```rust
-let im = Arc::clone(&index_manager);  // Arc<SpaceIndexManager>
+let im = Arc::clone(&index_manager);  // Arc<WikiIndexManager>
 let is = index_schema.clone();         // IndexSchema: Clone
-let tr = Arc::clone(&type_registry);   // Arc<SpaceTypeRegistry>: Clone
+let tr = Arc::clone(&type_registry);   // Arc<WikiTypeRegistry>: Clone
 
 let build_fn = move || {
     let searcher = im.searcher()
@@ -140,7 +140,7 @@ let build_fn = move || {
 ```
 
 `IndexSchema` derives `Clone` — captured at `GraphState` construction.
-`SpaceTypeRegistry` is `Arc`-wrapped in `SpaceContext` — `Arc::clone` is free.
+`WikiTypeRegistry` is `Arc`-wrapped in `WikiContext` — `Arc::clone` is free.
 No disk I/O on cold build beyond the graph construction itself.
 
 ## Error type mapping

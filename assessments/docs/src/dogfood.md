@@ -33,7 +33,7 @@ root (`cargo build -p adroit` → `target/debug/adroit`).
    cargo run -p amaker-cli -- validate /tmp/como-dogfood/assessment.yaml
    ```
 
-3. **Import** — against a fresh, empty KB space (adroit is KB-only, its
+3. **Import** — against a fresh, empty wiki (adroit is KB-only, its
    ADR-0020: `ADROIT_DIR` must name a directory holding `wiki.toml`):
 
    ```bash
@@ -206,7 +206,7 @@ The loop line's `just seam-check` recipe (a jq join of `validate -o json`
 against a dry-run import's seed summary) has not been ported to main's
 justfile; the golden-export test is the seam gate `just ci` actually
 runs. ADR-corpus validation — this book's corpus included — is on demand
-with the in-tree adroit (seed into an ephemeral space, `adroit check`);
+with the in-tree adroit (seed into an ephemeral wiki, `adroit check`);
 the former resolution chain is retired.
 
 ## Where the loop goes next

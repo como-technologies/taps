@@ -137,8 +137,8 @@ pub struct Args {
     pub strict: bool,
 
     /// Also write each month's report as a measure-report typed page into
-    /// this KB space (the directory holding wiki.toml), at
-    /// wiki/measures/<owner>-<YYYY-MM>.md. Deterministic — same forge data
+    /// this wiki (the directory holding wiki.toml), at
+    /// content/measures/<owner>-<YYYY-MM>.md. Deterministic — same forge data
     /// and arguments, byte-identical page. Admission (llm-wiki ingest) and
     /// committing stay with the caller; with --strict, pages are skipped
     /// when violations are found (a contract-violating month doesn't enter

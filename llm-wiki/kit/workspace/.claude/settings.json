@@ -13,11 +13,12 @@
       "mcp__kb__wiki_graph",
       "mcp__kb__wiki_stats",
       "mcp__kb__wiki_history",
-      "mcp__kb__wiki_index_status",
-      "mcp__kb__wiki_index_rebuild",
+      "mcp__kb__wiki_admin_index_status",
+      "mcp__kb__wiki_admin_index_rebuild",
       "mcp__kb__wiki_export",
       "mcp__kb__wiki_resolve",
-      "mcp__kb__wiki_spaces_list"
+      "mcp__kb__wiki_admin_list",
+      "mcp__kb__wiki_schema"
     ],
     "deny": [
       "Bash(incus exec kb:*)",

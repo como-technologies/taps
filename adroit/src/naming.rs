@@ -16,7 +16,7 @@ use time::Date;
 /// A scheme-agnostic display / reference identity for a decision.
 ///
 /// `Number` backs the sequential scheme (`ADR-0007`, allocated next-number:
-/// max existing in the space + 1); `Slug` backs the date (`YYYYMMDD-title`)
+/// max existing in the wiki + 1); `Slug` backs the date (`YYYYMMDD-title`)
 /// and uuid schemes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AdrRef {
@@ -76,12 +76,12 @@ impl NamingScheme {
     }
 
     /// Assign a fresh reference for a new decision, given the references
-    /// already present in the space. `today` / `id_slug` are passed in so
+    /// already present in the wiki. `today` / `id_slug` are passed in so
     /// this stays pure (and unit-testable); schemes that don't need them
     /// ignore them.
     pub fn assign(&self, existing: &[AdrRef], title: &str, today: Date, id_slug: &str) -> AdrRef {
         match self {
-            // Sequential: max existing in the space + 1.
+            // Sequential: max existing in the wiki + 1.
             NamingScheme::Sequential => {
                 let max = existing
                     .iter()

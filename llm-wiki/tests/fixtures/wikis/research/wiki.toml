@@ -1,6 +1,6 @@
 [wiki]
 name = "research"
-description = "Integration test wiki — research space"
+description = "Integration test wiki — research wiki"
 
 [ingest]
 auto_commit = true

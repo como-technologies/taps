@@ -15,9 +15,9 @@ fn ingest_validates_and_indexes() {
     // Write a new page
     {
         let engine = manager.state.read().unwrap();
-        let space = engine.wiki("test").unwrap();
+        let wiki = engine.wiki("test").unwrap();
         fs::write(
-            space.content_root.join("concepts/rag.md"),
+            wiki.content_root.join("concepts/rag.md"),
             "---\ntitle: \"RAG\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\nRetrieval-augmented generation.\n",
         )
         .unwrap();
@@ -45,14 +45,14 @@ fn ingest_indexes_synchronously_and_advances_state() {
 
     {
         let engine = manager.state.read().unwrap();
-        let space = engine.wiki("test").unwrap();
+        let wiki = engine.wiki("test").unwrap();
         fs::write(
-            space.content_root.join("concepts/seed-one.md"),
+            wiki.content_root.join("concepts/seed-one.md"),
             "---\ntitle: \"Seed One\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\nFirst seeded page.\n",
         )
         .unwrap();
         fs::write(
-            space.content_root.join("concepts/seed-two.md"),
+            wiki.content_root.join("concepts/seed-two.md"),
             "---\ntitle: \"Seed Two\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\nSecond seeded page.\n",
         )
         .unwrap();
@@ -71,9 +71,9 @@ fn ingest_indexes_synchronously_and_advances_state() {
     );
 
     let engine = manager.state.read().unwrap();
-    let space = engine.wiki("test").unwrap();
+    let wiki = engine.wiki("test").unwrap();
     assert_eq!(
-        space.index_manager.last_commit().as_deref(),
+        wiki.index_manager.last_commit().as_deref(),
         Some(report.commit.as_str()),
         "index baseline must advance to the ingest commit"
     );
@@ -90,8 +90,8 @@ fn ingest_dry_run_does_not_commit() {
 
     let head_before = {
         let engine = manager.state.read().unwrap();
-        let space = engine.wiki("test").unwrap();
-        git::current_head(&space.repo_root)
+        let wiki = engine.wiki("test").unwrap();
+        git::current_head(&wiki.repo_root)
     };
 
     let report = {
@@ -103,8 +103,8 @@ fn ingest_dry_run_does_not_commit() {
 
     let head_after = {
         let engine = manager.state.read().unwrap();
-        let space = engine.wiki("test").unwrap();
-        git::current_head(&space.repo_root)
+        let wiki = engine.wiki("test").unwrap();
+        git::current_head(&wiki.repo_root)
     };
     assert_eq!(head_before, head_after);
 }

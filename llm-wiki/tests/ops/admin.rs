@@ -1,10 +1,10 @@
 use super::helpers::setup_wiki;
 use llm_wiki::ops;
 
-// ── Spaces ────────────────────────────────────────────────────────────────────
+// ── Admin ─────────────────────────────────────────────────────────────────────
 
 #[test]
-fn spaces_create_and_list() {
+fn admin_create_and_list() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
 
@@ -15,7 +15,7 @@ fn spaces_create_and_list() {
 }
 
 #[test]
-fn spaces_list_filters_by_name() {
+fn admin_list_filters_by_name() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "alpha");
     let beta_path = dir.path().join("beta");
@@ -38,7 +38,7 @@ fn spaces_list_filters_by_name() {
 }
 
 #[test]
-fn spaces_list_unknown_name_returns_empty() {
+fn admin_list_unknown_name_returns_empty() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");
 
@@ -48,7 +48,7 @@ fn spaces_list_unknown_name_returns_empty() {
 }
 
 #[test]
-fn spaces_set_default_and_remove() {
+fn admin_set_default_and_remove() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "alpha");
 

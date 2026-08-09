@@ -112,7 +112,7 @@ Options:
           Enforce the dogfood contract: exit nonzero unless every merged PR has exactly one effort label and a category or adr:* label
 
       --kb <SPACE_DIR>
-          Also write each month's report as a measure-report typed page into this KB space (the directory holding wiki.toml), at wiki/measures/<owner>-<YYYY-MM>.md. Deterministic — same forge data and arguments, byte-identical page. Admission (llm-wiki ingest) and committing stay with the caller; with --strict, pages are skipped when violations are found (a contract-violating month doesn't enter the record)
+          Also write each month's report as a measure-report typed page into this wiki (the directory holding wiki.toml), at content/measures/<owner>-<YYYY-MM>.md. Deterministic — same forge data and arguments, byte-identical page. Admission (llm-wiki ingest) and committing stay with the caller; with --strict, pages are skipped when violations are found (a contract-violating month doesn't enter the record)
 
   -h, --help
           Print help (see a summary with '-h')
@@ -124,14 +124,14 @@ Options:
 ## Emit into the knowledge base — `--kb`
 
 tuesday is a Measure head of the Como knowledge base (portfolio ADR-0010 /
-portfolio#7 wave 4): `--kb <space-dir>` writes each month's report as a
+portfolio#7 wave 4): `--kb <wiki-dir>` writes each month's report as a
 `measure-report` **typed page** — frontmatter carrying the period,
 instrument, totals, and the `adr_hours` attribution map; body carrying the
-by-decision and by-category tables — into the space's `wiki/measures/`, so
+by-decision and by-category tables — into the wiki's `content/measures/`, so
 a harness answers "what did ADR-N cost last month?" from KB pages alone.
 
 The head writes and stops, per the kb-spec admission model: strict schema
-validation is the space's ingest gate, and committing stays with the
+validation is the wiki's ingest gate, and committing stays with the
 caller. Pages are deterministic (sorted maps, no emission timestamp), so a
 re-run over the same forge data converges byte-identically; under
 `--strict`, a violating month writes no page — a broken contract doesn't
@@ -140,7 +140,7 @@ enter the record.
 ```sh
 tuesday-report --source gitea --owner como --repo conduit-dogfood \
     --year 2026 --month 6 --strict -o json \
-    --kb ../team-space          # + wiki/measures/como-2026-06.md
+    --kb ../team-wiki           # + content/measures/como-2026-06.md
 llm-wiki ingest . --wiki team   # admit it through the strict gate
 ```
 

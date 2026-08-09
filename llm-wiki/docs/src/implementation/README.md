@@ -8,7 +8,7 @@ not ground truth. For design contracts see [specifications/](../specifications/R
 
 | Document                                 | Description                                       |
 | ---------------------------------------- | ------------------------------------------------- |
-| [engine.md](engine.md)                   | EngineState, WikiEngine, space mounting           |
+| [engine.md](engine.md)                   | EngineState, WikiEngine, wiki mounting           |
 | [manager-pattern.md](manager-pattern.md) | Shared pattern: detect, refresh, cascade          |
 | [lock-patterns.md](lock-patterns.md)     | RwLock acquisition rules, two-phase pattern, 'static closures |
 
@@ -16,9 +16,9 @@ not ground truth. For design contracts see [specifications/](../specifications/R
 
 | Document                                                 | Description                                         |
 | -------------------------------------------------------- | --------------------------------------------------- |
-| [type-registry.md](type-registry.md)                     | SpaceTypeRegistry, validators, caching              |
+| [type-registry.md](type-registry.md)                     | WikiTypeRegistry, validators, caching              |
 | [schema-change-detection.md](schema-change-detection.md) | Schema hash, staleness, per-wiki registry           |
-| [index-manager.md](index-manager.md)                     | SpaceIndexManager, rebuild, staleness, recovery     |
+| [index-manager.md](index-manager.md)                     | WikiIndexManager, rebuild, staleness, recovery     |
 | [tantivy.md](tantivy.md)                                 | Dynamic schema, TopDocs, index writer, tokenizer    |
 | [graph-cache.md](graph-cache.md)                         | WikiGraphCache, generation counter, snapshot lifecycle |
 | [petgraph-live.md](petgraph-live.md)                     | GraphState, SnapshotConfig, 'static closure constraints, pitfalls |

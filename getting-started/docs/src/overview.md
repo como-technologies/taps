@@ -23,7 +23,7 @@ sense.
 | ----------------------------------------------------- | ---------------------------------------------------- | ----------------------------- |
 | [0 — A clean room (optional)](./clean-room.md)         | Stand up a disposable container to walk in           | incus                         |
 | [1 — Get the software](./install.md)                   | Clone the suite, install the tools                   | `just`                        |
-| [2 — Create your knowledge base](./create-your-kb.md)  | Stand up the space every stage writes to             | `llm-wiki`, the authoring kit |
+| [2 — Create your knowledge base](./create-your-kb.md)  | Stand up the wiki every stage writes to              | `llm-wiki`, the authoring kit |
 | [3 — Assess](./assess.md)                              | Turn what you know into a structured assessment      | amaker                        |
 | [4 — Prescribe](./prescribe.md)                        | Seed and accept the decisions the assessment implies | `adroit`                      |
 | [5 — Adopt](./adopt.md)                                | Turn an accepted decision into a reviewed, merged PR | conduit                       |
@@ -53,7 +53,7 @@ Every command is paste-and-go with three concrete names:
 
 - **`~/taps`** — where Step 1 clones the suite
 - **`kb`** — the appliance container holding your knowledge base,
-  launched in Step 2 (your space lives inside it as `myproject`)
+  launched in Step 2 (your wiki lives inside it as `myproject`)
 - **`~/kb-workspace`** — the authoring workspace your AI sessions run
   in, made in Step 2
 

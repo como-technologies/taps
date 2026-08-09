@@ -12,15 +12,15 @@ last_updated: "2025-07-17"
 
 | Command | MCP tool | Description |
 |---------|----------|-------------|
-| `index rebuild` | `wiki_index_rebuild` | Rebuild index from committed files |
-| `index status` | `wiki_index_status` | Check index health |
+| `index rebuild` | `wiki_admin_index_rebuild` | Rebuild index from committed files |
+| `index status` | `wiki_admin_index_status` | Check index health |
 
 ## index rebuild
 
-MCP tool: `wiki_index_rebuild`
+MCP tool: `wiki_admin_index_rebuild`
 
 ```
-llm-wiki index rebuild
+llm-wiki admin index rebuild
               [--wiki <name>]
               [--format <fmt>]          # text | json (default: from config)
               [--dry-run]
@@ -59,10 +59,10 @@ JSON (`--format json`):
 
 ## index status
 
-MCP tool: `wiki_index_status`
+MCP tool: `wiki_admin_index_status`
 
 ```
-llm-wiki index status
+llm-wiki admin index status
               [--wiki <name>]
               [--format <fmt>]          # text | json (default: from config)
 ```

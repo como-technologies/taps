@@ -1,41 +1,42 @@
 ---
-title: "Space Management"
-summary: "llm-wiki spaces — create, list, remove, and set-default."
+title: "Wiki Administration"
+summary: "llm-wiki admin — the wiki registry: create, list, remove, and set-default."
 read_when:
   - Setting up a new wiki
-  - Managing registered wiki spaces
+  - Managing registered wikis
 status: ready
 last_updated: "2025-07-21"
 ---
 
-# Space Management
+# Wiki Administration
 
-All space operations live under `llm-wiki spaces`. When called from a
-running server, create, remove, and set-default take effect immediately
-— no restart needed. See [server.md](../engine/server.md#hot-reload).
+Everything that operates the machinery — as opposed to working *in* a
+wiki — lives under `llm-wiki admin`: the wiki registry (this page),
+[vocabulary writes](schema-management.md), [engine
+configuration](config-management.md), the [search
+index](index.md), and server logs. When called from a running server,
+create, remove, and set-default take effect immediately — no restart
+needed. See [server.md](../engine/server.md#hot-reload).
 
 | Subcommand           | MCP tool                  | Description                                  |
 | -------------------- | ------------------------- | -------------------------------------------- |
-| `spaces create`      | `wiki_spaces_create`      | Create a new wiki repo + register            |
-| `spaces register`    | `wiki_spaces_register`    | Register an existing repo without creating files |
-| `spaces list`        | `wiki_spaces_list`        | List all registered wikis                    |
-| `spaces remove`      | `wiki_spaces_remove`      | Remove a wiki from the registry              |
-| `spaces set-default` | `wiki_spaces_set_default` | Set the default wiki                         |
+| `admin create`      | `wiki_admin_create`      | Create a new wiki repo + register            |
+| `admin register`    | `wiki_admin_register`    | Register an existing repo without creating files |
+| `admin list`        | `wiki_admin_list`        | List all registered wikis                    |
+| `admin remove`      | `wiki_admin_remove`      | Remove a wiki from the registry              |
+| `admin set-default` | `wiki_admin_set_default` | Set the default wiki                         |
 
-For configuration (`wiki_config`), see
-[config-management.md](config-management.md).
+## admin create
 
-## spaces create
-
-MCP tool: `wiki_spaces_create`
+MCP tool: `wiki_admin_create`
 
 ```
-llm-wiki spaces create <path>
+llm-wiki admin create <path>
           --name <name>              # required — used in wiki:// URIs
           [--description <text>]
-          [--force]                  # update space entry if name differs
+          [--force]                  # update wiki entry if name differs
           [--set-default]            # set as default_wiki
-          [--wiki-root <dir>]        # content dir name (default: wiki)
+          [--content-root <dir>]        # content dir name (default: content)
 ```
 
 Creates the following structure (see
@@ -59,34 +60,34 @@ Creates the following structure (see
 │   └── plan.json
 ├── inbox/
 ├── evidence/
-└── wiki/              ← or the value of --wiki-root
+└── content/           ← or the value of --content-root
 ```
 
 Initial git commit: `create: <name>`.
 
 ### Admission provisioning
 
-`spaces create` provisions the git-native admission model (llm-wiki#14,
+`admin create` provisions the git-native admission model (llm-wiki#14,
 kb-spec §3/§4/§7). Idempotent on every path, including re-create of an
-already-registered space:
+already-registered wiki:
 
 - **Git hooks** — `pre-commit` runs `ingest . --dry-run` (strict validation;
   an invalid page fails the commit), `post-commit` runs `ingest .` (indexes
   the committed delta). The hooks embed the creating binary's path and the
   registry config, so a bare `git commit` works from any shell. A hook file
-  without the `managed by \`llm-wiki spaces create\`` marker is user-owned
+  without the `managed by \`llm-wiki admin create\`` marker is user-owned
   and never overwritten; delete a managed hook to opt out. Hooks fire only
   for real `git` invocations — the engine's own libgit2 commits (`ingest`,
   `content commit`) never execute them, so the chain terminates by
   construction.
 - **`wiki.toml` defaults** — `[validation] type_strictness = "strict"` and
   `[search.status]` weights for both status vocabularies (decision lifecycle
-  and content), written per-space so the admission contract travels with the
+  and content), written per-wiki so the admission contract travels with the
   data. Only written when `wiki.toml` does not already exist.
 - **Global config** — `index.auto_rebuild = true` (catch-up-on-read), set
   once in the registry config.
 
-`spaces register` performs none of this — an existing space's configuration
+`admin register` performs none of this — an existing wiki's configuration
 is its own.
 
 On first run, the wiki becomes the default one. Also ensures
@@ -104,43 +105,43 @@ immediately — searchable and indexable without restart.
 | Path exists, registered, same name      | Skip silently                   |
 | Path exists, registered, different name | Error (use `--force` to rename) |
 
-## spaces register
+## admin register
 
-MCP tool: `wiki_spaces_register`
+MCP tool: `wiki_admin_register`
 
 ```
-llm-wiki spaces register <path>
+llm-wiki admin register <path>
           --name <name>              # required
           [--description <text>]
-          [--wiki-root <dir>]        # override wiki_root (errors if conflicts with wiki.toml)
+          [--content-root <dir>]        # override content_root (errors if conflicts with wiki.toml)
 ```
 
 Registers an existing git repository without creating any files or
 making any git commits. Use this to adopt a repo that already has
 content (e.g. a `docs/` repo, a Hugo site, or any repo where pages
-already exist in a subdirectory other than `wiki/`).
+already exist in a subdirectory other than `content/`).
 
 The command reads `wiki.toml` from `<path>` to determine the effective
-`wiki_root`. If `--wiki-root` is given and `wiki.toml` already declares
+`content_root`. If `--content-root` is given and `wiki.toml` already declares
 a different value, the command errors — edit `wiki.toml` manually instead.
 
-If the directory named by `wiki_root` does not exist, the command errors.
+If the directory named by `content_root` does not exist, the command errors.
 
 | Condition                                     | Behavior                                       |
 | --------------------------------------------- | ---------------------------------------------- |
 | `<path>` does not exist                       | Error                                          |
-| `wiki.toml` absent, no `--wiki-root`          | `wiki_root` defaults to `"wiki"`               |
-| `wiki.toml` has `wiki_root`, no flag          | Uses value from `wiki.toml`                    |
-| `--wiki-root` matches `wiki.toml`             | OK                                             |
-| `--wiki-root` conflicts with `wiki.toml`      | Error — edit `wiki.toml` first                 |
+| `wiki.toml` absent, no `--content-root`          | `content_root` defaults to `"content"`               |
+| `wiki.toml` has `content_root`, no flag          | Uses value from `wiki.toml`                    |
+| `--content-root` matches `wiki.toml`             | OK                                             |
+| `--content-root` conflicts with `wiki.toml`      | Error — edit `wiki.toml` first                 |
 | Already registered under same name            | Skip silently                                  |
 
-## spaces list
+## admin list
 
-MCP tool: `wiki_spaces_list`
+MCP tool: `wiki_admin_list`
 
 ```
-llm-wiki spaces list
+llm-wiki admin list
              [<name>]             # omit for all, provide to filter
              [--format <fmt>]     # text | json (default: text)
 ```
@@ -177,12 +178,12 @@ JSON (`--format json`):
 ]
 ```
 
-## spaces remove
+## admin remove
 
-MCP tool: `wiki_spaces_remove`
+MCP tool: `wiki_admin_remove`
 
 ```
-llm-wiki spaces remove <name>
+llm-wiki admin remove <name>
                    [--delete]     # also delete local directory
 ```
 
@@ -191,14 +192,14 @@ Refuses if the wiki is the current default — set a new default first.
 When called from a running server, the wiki is unmounted immediately.
 In-flight requests complete normally.
 
-## spaces set-default
+## admin set-default
 
-MCP tool: `wiki_spaces_set_default`
+MCP tool: `wiki_admin_set_default`
 
 ```
-llm-wiki spaces set-default <name>
+llm-wiki admin set-default <name>
 ```
 
-Alias for `wiki_config set global.default_wiki <name>`.
+Alias for `wiki_admin_config set global.default_wiki <name>`.
 
 When called from a running server, the default updates immediately.

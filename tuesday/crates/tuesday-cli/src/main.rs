@@ -51,7 +51,7 @@ async fn main() -> ExitCode {
             // --kb (portfolio#7 wave 4): emit each month as a measure-report
             // typed page. Skipped when strict violations exist — a
             // contract-violating month doesn't enter the record.
-            if let Some(space) = kb {
+            if let Some(wiki) = kb {
                 if outcome.violations.is_empty() {
                     let pages: Vec<_> = outcome
                         .reports
@@ -63,7 +63,7 @@ async fn main() -> ExitCode {
                             )
                         })
                         .collect();
-                    match tuesday_cli::kb::write_pages(&space, &owner, &pages) {
+                    match tuesday_cli::kb::write_pages(&wiki, &owner, &pages) {
                         Ok(written) => {
                             for path in written {
                                 eprintln!("kb: wrote {}", path.display());

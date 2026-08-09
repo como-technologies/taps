@@ -24,7 +24,7 @@ optional `[types.*]` entries in `wiki.toml` as overrides.
 
 ```rust
 /// Per-wiki type registry
-pub struct SpaceTypeRegistry {
+pub struct WikiTypeRegistry {
     /// type name → compiled type
     types: HashMap<String, RegisteredType>,
     /// SHA-256 hash of all type inputs (for change detection)
@@ -68,7 +68,7 @@ pub struct RegisteredType {
    b. Compile validator, compute content hash, extract aliases
    c. Replace or add the entry in the registry
 5. Compute per-type hashes and global `schema_hash` (SHA-256)
-6. Store in `SpaceTypeRegistry`
+6. Store in `WikiTypeRegistry`
 
 ### Fallback behavior
 
@@ -126,7 +126,7 @@ building petgraph from the index.
 
 Built once at startup. Lives for the process lifetime. If `schemas/`
 files change on disk, the server doesn't detect it automatically —
-run `llm-wiki index rebuild` or restart.
+run `llm-wiki admin index rebuild` or restart.
 
 ### CLI commands
 
@@ -171,11 +171,11 @@ these hashes from disk without building a full registry. Used by
 
 ## Relationship to Index Schema
 
-The tantivy `IndexSchema` is built from the `SpaceTypeRegistry`:
+The tantivy `IndexSchema` is built from the `WikiTypeRegistry`:
 
 ```
 schemas/*.json + wiki.toml overrides
-    → SpaceTypeRegistry (validators, aliases, edges)
+    → WikiTypeRegistry (validators, aliases, edges)
         → IndexSchema (tantivy Schema, field handles)
             → tantivy Index
 ```

@@ -107,7 +107,7 @@ The MCP response is JSON (not plain text):
   "uri":       "wiki://research/concepts/new-page",
   "slug":      "concepts/new-page",
   "path":      "/path/to/wiki/concepts/new-page.md",
-  "wiki_root": "/path/to/wiki",
+  "content_root": "/path/to/wiki",
   "bundle":    false
 }
 ```
@@ -146,7 +146,7 @@ wiki_resolve(uri: "concepts/mixture-of-experts", wiki?: "research")
 → {
     "slug":      "concepts/mixture-of-experts",
     "wiki":      "research",
-    "wiki_root": "/path/to/wiki",
+    "content_root": "/path/to/wiki",
     "path":      "/path/to/wiki/concepts/mixture-of-experts.md",
     "exists":    true,
     "bundle":    false
@@ -160,16 +160,16 @@ the file. Use before writing content directly to disk.
 |-------|-------------|
 | `slug` | Canonical slug (no extension) |
 | `wiki` | Wiki name |
-| `wiki_root` | Absolute path to the wiki directory |
+| `content_root` | Absolute path to the wiki directory |
 | `path` | Absolute path to the file (flat `.md` or `index.md` for bundles) |
 | `exists` | `true` if the file exists on disk |
 | `bundle` | `true` if the page is a bundle (`path` ends with `index.md`) |
 
 For a not-yet-existing slug, `exists` is `false` and `path` is the would-be
-flat path (`<wiki_root>/<slug>.md`). The direct write pattern:
+flat path (`<content_root>/<slug>.md`). The direct write pattern:
 
 ```
-1. wiki_resolve(uri)                      → get local path + wiki_root
+1. wiki_resolve(uri)                      → get local path + content_root
 2. Write / Edit file at path directly     → no MCP content round-trip
 3. wiki_ingest(path: "<slug>", dry_run: true)  → validate frontmatter
 4. wiki_ingest(path: "<slug>")            → commit

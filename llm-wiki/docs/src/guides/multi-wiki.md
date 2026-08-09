@@ -18,15 +18,15 @@ Each wiki has its own type schemas, search index, and git history.
 ## Create Multiple Wikis
 
 ```bash
-llm-wiki spaces create ~/wikis/research --name research
-llm-wiki spaces create ~/wikis/work --name work
-llm-wiki spaces create ~/wikis/personal --name personal
+llm-wiki admin create ~/wikis/research --name research
+llm-wiki admin create ~/wikis/work --name work
+llm-wiki admin create ~/wikis/personal --name personal
 ```
 
 The first wiki created becomes the default. Check:
 
 ```bash
-llm-wiki spaces list
+llm-wiki admin list
 ```
 
 ```
@@ -42,7 +42,7 @@ Every command accepts `--wiki <name>`:
 ```bash
 llm-wiki search "scaling laws" --wiki research
 llm-wiki list --type concept --wiki work
-llm-wiki ingest wiki/ --wiki personal
+llm-wiki ingest . --wiki personal
 ```
 
 Without `--wiki`, the default wiki is used.
@@ -50,7 +50,7 @@ Without `--wiki`, the default wiki is used.
 ## Change the Default
 
 ```bash
-llm-wiki spaces set-default work
+llm-wiki admin set-default work
 ```
 
 ## wiki:// URIs
@@ -159,10 +159,10 @@ override global ones.
 
 ```bash
 # Set per-wiki
-llm-wiki config set validation.type_strictness strict --wiki research
+llm-wiki admin config set validation.type_strictness strict --wiki research
 
 # Set global default
-llm-wiki config set defaults.search_top_k 20 --global
+llm-wiki admin config set defaults.search_top_k 20 --global
 ```
 
 ## Per-Wiki Schemas
@@ -177,10 +177,10 @@ Custom types are per-wiki — they don't leak across wikis.
 
 ```bash
 # Unregister (keeps files)
-llm-wiki spaces remove personal
+llm-wiki admin remove personal
 
 # Unregister and delete files
-llm-wiki spaces remove personal --delete
+llm-wiki admin remove personal --delete
 ```
 
 Cannot remove the default wiki — set a new default first.
@@ -190,8 +190,8 @@ Cannot remove the default wiki — set a new default first.
 All wikis are mounted at engine startup. The MCP server exposes all
 wikis through the same tool surface. Each wiki has its own:
 
-- `SpaceTypeRegistry` (schemas + validators)
-- `SpaceIndexManager` (tantivy index)
+- `WikiTypeRegistry` (schemas + validators)
+- `WikiIndexManager` (tantivy index)
 - Git repository
 
 They share the same `WikiEngine` process and the same transports

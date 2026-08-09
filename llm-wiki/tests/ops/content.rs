@@ -381,9 +381,9 @@ fn content_commit_all() {
     // the baseline advances with it — no stale index, no silent skip.
     assert!(report.indexed >= 1, "committed page should be indexed");
     assert!(report.warnings.is_empty());
-    let space = engine.wiki("test").unwrap();
+    let wiki = engine.wiki("test").unwrap();
     assert_eq!(
-        space.index_manager.last_commit().as_deref(),
+        wiki.index_manager.last_commit().as_deref(),
         Some(report.commit.as_str())
     );
 }

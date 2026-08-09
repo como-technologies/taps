@@ -1,6 +1,6 @@
 ---
 name: author-glossary
-description: Author glossary-entry pages in a Como KB space - one term per page, defined once, linked from birth. Use when a conversation surfaces a shared term worth pinning down, or the user asks to define terms.
+description: Author glossary-entry pages in a Como KB wiki - one term per page, defined once, linked from birth. Use when a conversation surfaces a shared term worth pinning down, or the user asks to define terms.
 ---
 
 # Author a glossary entry

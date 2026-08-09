@@ -1,6 +1,6 @@
 ---
 name: author-guide
-description: Author a guide page in a Como KB space from the current conversation - research first, typed frontmatter, linked at birth, gate-clean. Use when the user asks to write up a how-to, runbook, or practice guide.
+description: Author a guide page in a Como KB wiki from the current conversation - research first, typed frontmatter, linked at birth, gate-clean. Use when the user asks to write up a how-to, runbook, or practice guide.
 ---
 
 # Author a guide

@@ -2,8 +2,8 @@
 //!
 //! A tool finds the KB one way: you tell it the door. `KB_URL` is the
 //! appliance's streamable-HTTP MCP endpoint (e.g. `http://kb:8080/mcp`);
-//! `KB_WIKI` optionally names the target space (omitted → the appliance's
-//! default). Nothing here reads the engine's registry or touches a space's
+//! `KB_WIKI` optionally names the target wiki (omitted → the appliance's
+//! default). Nothing here reads the engine's registry or touches a wiki's
 //! filesystem — the transport surface is the only door.
 //!
 //! Where the pair *lives* is one suite-wide discovery order, owned here so
@@ -18,12 +18,12 @@ use rmcp::model::CallToolRequestParams;
 use rmcp::service::{RoleClient, RunningService};
 use rmcp::transport::StreamableHttpClientTransport;
 
-/// Where the KB is: endpoint URL plus optional target space name.
+/// Where the KB is: endpoint URL plus optional target wiki name.
 #[derive(Debug, Clone)]
 pub struct KbTarget {
     /// Streamable-HTTP MCP endpoint, e.g. `http://localhost:8080/mcp`.
     pub url: String,
-    /// Target space name; `None` uses the appliance's default space.
+    /// Target wiki name; `None` uses the appliance's default wiki.
     pub wiki: Option<String>,
 }
 
@@ -89,7 +89,7 @@ impl KbClient {
     }
 
     /// Call a wiki tool with JSON arguments; returns the joined text content.
-    /// The target space (when set) is injected as the `wiki` argument unless
+    /// The target wiki (when set) is injected as the `wiki` argument unless
     /// the caller already provided one. Tool-level errors become `Err`.
     pub async fn call(&self, tool: &str, args: serde_json::Value) -> Result<String> {
         let mut arguments = match args {

@@ -29,7 +29,7 @@ Data model and knowledge structure.
 | [page-identity.md](model/page-identity.md)                      | Stable page ids (ULID) — declaration, resolution order, uniqueness |
 | [epistemic-model.md](model/epistemic-model.md)                  | Why types carry epistemic distinctions                         |
 | [wiki-toml.md](model/wiki-toml.md)                              | wiki.toml reference — identity, type registry, per-wiki settings |
-| [global-config.md](model/global-config.md)                      | config.toml reference — space registry, defaults, global-only settings |
+| [global-config.md](model/global-config.md)                      | config.toml reference — wiki registry, defaults, global-only settings |
 | [type-system.md](model/type-system.md)                          | Type system mechanism, built-in types index                    |
 | [types/base.md](model/types/base.md)                            | Base schema and default fallback type                          |
 | [types/concept.md](model/types/concept.md)                      | concept and query-result types                                 |
@@ -43,8 +43,8 @@ Data model and knowledge structure.
 | Spec                                                   | Description                                                        |
 | ------------------------------------------------------ | ------------------------------------------------------------------ |
 | [overview.md](tools/overview.md)                       | Tool surface summary, design principle, global flags               |
-| [space-management.md](tools/space-management.md)       | init, spaces list/remove/set-default (4 tools)                     |
-| [config-management.md](tools/config-management.md)     | wiki_config tool — get/set/list                                    |
+| [wiki-administration.md](tools/wiki-administration.md)       | create/register/list/remove/set-default (4 tools)                     |
+| [config-management.md](tools/config-management.md)     | wiki_admin_config tool — get/set/list                                    |
 | [content-operations.md](tools/content-operations.md)   | read, write, new-page, new-section, commit (5 tools)               |
 | [search.md](tools/search.md)                           | Full-text search with optional type filter and `format: "llms"`    |
 | [list.md](tools/list.md)                               | Paginated page listing with type and status filters and `format: "llms"` |
@@ -97,7 +97,7 @@ How external tools connect.
 | `model/types/doc.md`                | ready    |
 | `model/types/section.md`            | ready    |
 | `tools/overview.md`                 | ready    |
-| `tools/space-management.md`         | ready    |
+| `tools/wiki-administration.md`         | ready    |
 | `tools/config-management.md`        | ready    |
 | `tools/content-operations.md`       | ready    |
 | `tools/search.md`                   | ready    |

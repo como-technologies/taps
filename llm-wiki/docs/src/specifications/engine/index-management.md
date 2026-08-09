@@ -109,7 +109,7 @@ Drops all documents and re-indexes the entire wiki tree:
 
 ```
 delete_all_documents()
-walk wiki/ -> parse each .md -> add_document()
+walk content/ -> parse each .md -> add_document()
 writer.commit()
 update state.toml
 ```
@@ -117,7 +117,7 @@ update state.toml
 Cost: O(n) where n = total pages.
 
 Triggered by:
-- `llm-wiki index rebuild` (explicit)
+- `llm-wiki admin index rebuild` (explicit)
 - First index creation
 - Index corruption (auto-recovery)
 - Schema hash mismatch (type registry changed)
@@ -231,7 +231,7 @@ currently any mismatch triggers a full rebuild.
 
 ## IndexReader Lifecycle
 
-The `IndexReader` is created once per wiki space in `SpaceIndexManager::open()`
+The `IndexReader` is created once per wiki in `WikiIndexManager::open()`
 and held for the engine's lifetime. All search operations call
 `index_manager.searcher()` which is a cheap arc-clone of the current segment set.
 

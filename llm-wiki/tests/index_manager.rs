@@ -1156,7 +1156,7 @@ fn rebuild_crosses_a_schema_change() {
     // The engine's index schema evolves (a field reclassifies, a tokenizer
     // changes) — the canonical reason to rebuild. Rebuild must replace the
     // mismatched index, not refuse to open it ("An index exists but the
-    // schema does not match"), or every existing space bricks on upgrade.
+    // schema does not match"), or every existing wiki bricks on upgrade.
     let dir = tempfile::tempdir().unwrap();
     let content_root = setup_repo(dir.path());
     write_page(
@@ -1169,7 +1169,7 @@ fn rebuild_crosses_a_schema_change() {
     let mgr = build_index(dir.path(), &content_root);
     drop(mgr);
 
-    // The "new engine": same space, different compiled schema.
+    // The "new engine": same wiki, different compiled schema.
     let (registry, schema) = wiki_builder::build_wiki_from_embedded("default");
     let mgr = make_manager(dir.path());
     let report = mgr

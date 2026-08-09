@@ -1,6 +1,6 @@
 # llm-wiki
 
-A headless wiki engine for agents. 23 MCP tools. One Rust binary. No LLM inside.
+A headless wiki engine for agents. 25 MCP tools. One Rust binary. No LLM inside.
 
 **Build knowledge that compounds — not answers that evaporate.**
 
@@ -12,11 +12,11 @@ the command line, from any MCP-compatible agent, or from any IDE via ACP.
 
 llm-wiki is the **Como KB product** — the knowledge-base substrate of the
 Como suite. It ships the engine-owned content-class schemas and zero-flag
-admission provisioning in `spaces create` (tools register their own
-artifact classes over the transport via `wiki_schema register`), and the
+admission provisioning in `admin create` (tools register their own
+artifact classes over the transport via `wiki_admin_schema_register`), and the
 **[Como authoring kit](kit/README.md)** — skills, harness configs, the
 [authoring contract](docs/src/guides/como-authoring.md), and a captured
-worked example — for pointing an AI harness at a space and authoring
+worked example — for pointing an AI harness at a wiki and authoring
 content that lands in the right shape. The KB contract itself is specified
 in [docs/src/specifications/como-kb-spec.md](docs/src/specifications/como-kb-spec.md).
 
@@ -109,14 +109,14 @@ run it in place with `cargo run -p llm-wiki --`.
 ## Quick start
 
 ```bash
-# Create a wiki space
-llm-wiki spaces create ~/wikis/research --name research
+# Create a wiki
+llm-wiki admin create ~/wikis/research --name research
 
 # Start the MCP server
 llm-wiki serve
 ```
 
-Connect your agent or editor via its MCP config. The 23 tools are
+Connect your agent or editor via its MCP config. The 25 tools are
 immediately available.
 
 → [Getting started guide](docs/src/guides/getting-started.md)
@@ -164,10 +164,10 @@ llm-wiki serve --acp --http :18765
 | `wiki_suggest` | Find pages worth linking by tag overlap, graph distance, BM25 similarity |
 | `wiki_stats` | Wiki health: page counts, type distribution, staleness, graph density |
 | `wiki_lint` | Deterministic quality rules: orphans, broken links, missing fields, stale pages |
-| `wiki_export` | Write full wiki to `llms.txt` at wiki root — for ecosystem publishing or audit |
+| `wiki_export` | Write full wiki to `llms.txt` at the content root — for ecosystem publishing or audit |
 | `wiki_history` | Git commit history for a page, with rename following |
-| `wiki_schema` | Show, validate, or template a type schema |
-| `wiki_spaces_*` | Create, register, list, remove wiki spaces; supports custom `wiki_root` |
+| `wiki_schema` | Show, validate, or template a type schema (read-only) |
+| `wiki_admin_*` | The machinery: wiki registry, schema register/remove, config, index — destructive tools carry `destructiveHint` |
 
 Full tool reference: [`docs/src/specifications/tools/`](docs/src/specifications/tools/)
 
@@ -202,7 +202,7 @@ unaffected. Full contract:
 The engine exposes tools. Skills tell agents how to use them.
 
 The [Como authoring kit](kit/README.md) ships the skills, harness configs,
-and authoring contract used to point an AI harness at a wiki space. Skills
+and authoring contract used to point an AI harness at a wiki. Skills
 are plain Markdown files — readable by the LLM, replaceable, forkable.
 Write your own for your own workflows. The engine has no opinions about
 workflows, LLM providers, or interfaces: every LLM call happens outside

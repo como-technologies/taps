@@ -59,15 +59,15 @@ what to do next — rebuild an index, reload config, etc.
 
 | Manager                    | Wraps               | Source of truth          | Cascades to                    |
 | -------------------------- | ------------------- | ------------------------ | ------------------------------ |
-| `SpaceTypeRegistryManager` | `SpaceTypeRegistry` | `wiki.toml` + `schemas/` | `IndexSchema` -> tantivy index |
+| `WikiTypeRegistryManager` | `WikiTypeRegistry` | `wiki.toml` + `schemas/` | `IndexSchema` -> tantivy index |
 | `WikiEngine`               | `EngineState`       | all sources              | all components                 |
 
 ## Dependency Chain
 
 ```
 WikiEngine
-    -> SpaceTypeRegistryManager (per wiki)
-        -> SpaceTypeRegistry
+    -> WikiTypeRegistryManager (per wiki)
+        -> WikiTypeRegistry
             -> IndexSchema
                 -> tantivy Index
     -> IndexRegistry
@@ -107,7 +107,7 @@ brief and infrequent.
 ## Initial Scope
 
 - `WikiEngine` with `refresh_index` (incremental index update)
-- `SpaceTypeRegistryManager` with `build` and `has_changed`
+- `WikiTypeRegistryManager` with `build` and `has_changed`
 - `refresh` returns "restart required" for type changes
 
 Full `refresh` with partial rebuilds and file watcher integration come

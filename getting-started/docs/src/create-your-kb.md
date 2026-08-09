@@ -2,12 +2,14 @@
 
 Everything the loop produces — the assessment's findings, the decisions,
 the plans, the measurements — lands in one place:
-[the knowledge base](../portfolio/knowledge-base.html). It lives in an
-**appliance**: a small container whose only job is holding your spaces
-and answering through `llm-wiki serve`. Your AI harness — and, as the
-loop grows, every taps tool — reaches a space only through that
-server's tools. Nothing else touches a space's files. The validation
-gates aren't a convention in this setup; they're the topology.
+[the knowledge base](../portfolio/knowledge-base.html). A knowledge
+base has one or more **wikis** — each one a git repository with a
+`content/` directory of pages — and it lives in an **appliance**: a
+small container whose only job is holding your wikis and answering
+through `llm-wiki serve`. Your AI harness — and, as the loop grows,
+every taps tool — reaches a wiki only through that server's tools.
+Nothing else touches a wiki's files. The validation gates aren't a
+convention in this setup; they're the topology.
 
 ## Launch the appliance
 
@@ -24,10 +26,10 @@ incus launch images:ubuntu/24.04 kb
 until incus list kb -c4 -f csv | grep -q '\.'; do sleep 1; done
 incus exec kb -- systemctl is-system-running --wait >/dev/null 2>&1 || true
 
-# an unprivileged user to own the spaces
+# an unprivileged user to own the wikis
 incus exec kb -- adduser --disabled-password --gecos "" kb
 
-# git: the engine embeds its own git for versioning spaces, but page
+# git: the engine embeds its own git for versioning wikis, but page
 # history (wiki_history) shells out to the real thing
 incus exec kb -- sh -c 'apt-get update -qq && apt-get install -y -qq git'
 
@@ -36,23 +38,23 @@ incus file push ~/.cargo/bin/llm-wiki kb/usr/local/bin/llm-wiki --mode 0755
 ```
 
 That's the whole appliance: one unprivileged user, one binary (plus
-git, its one external dependency), your spaces. It's deliberately boring — `llm-wiki serve` runs identically as
+git, its one external dependency), your wikis. It's deliberately boring — `llm-wiki serve` runs identically as
 a bare terminal process, a systemd unit, or a pod; a container is just
 the deployment this guide walks. The kit's
 [README](https://github.com/como-technologies/taps/tree/main/llm-wiki/kit)
 covers the variants, including the team-shared HTTP endpoint.
 
-## Create the space
+## Create the wiki
 
 One command, run on the appliance — the operator's console:
 
 ```sh
-incus exec kb -- su - kb -c 'llm-wiki spaces create ~/spaces/myproject --name myproject --set-default'
+incus exec kb -- su - kb -c 'llm-wiki admin create ~/wikis/myproject --name myproject --set-default'
 ```
 
 That provisions the whole thing: the engine's content-class schemas,
 strict validation, admission hooks, and search weights. No flags to
-remember — a fresh space is born ready. (Born knowing only *content*
+remember — a fresh wiki is born ready. (Born knowing only *content*
 classes, deliberately: tools bring their own page classes with them,
 registered the first time each one connects.)
 
@@ -81,9 +83,9 @@ UNIT
 systemctl enable --now llm-wiki'
 ```
 
-The engine mounts its spaces at boot — the door stands up *after* the
-space exists so it opens already knowing `myproject`. Create more
-spaces later and they mount live when made through the tools; spaces
+The engine mounts its wikis at boot — the door stands up *after* the
+wiki exists so it opens already knowing `myproject`. Create more
+wikis later and they mount live when made through the tools; wikis
 made on the operator console need a `systemctl restart llm-wiki` to
 appear.
 
@@ -104,7 +106,7 @@ KB_WIKI=myproject
 EOF
 ```
 
-No tool ever touches a space's filesystem — the transport is the only
+No tool ever touches a wiki's filesystem — the transport is the only
 door, and this file is only the address of it. Need one tool aimed
 somewhere else? A `.env` next to it, or a variable in its
 environment, outranks this file for that tool alone.
@@ -113,7 +115,7 @@ environment, outranks this file for that tool alone.
 
 Your sessions run in an **authoring workspace** — a thin directory
 holding only harness config from the shipped kit. No corpus lives
-here; one workspace reaches every space the appliance hosts.
+here; one workspace reaches every wiki the appliance hosts.
 
 ```sh
 cp -r ~/taps/llm-wiki/kit/workspace ~/kb-workspace
@@ -149,7 +151,7 @@ claude
 `/mcp` should show the `kb` server connected — over the appliance's
 HTTP door. One engine serves every client, so a second session (or a
 teammate, or a tool) can work alongside without stepping on this one.
-Then talk: search, draft, ask it what spaces it can reach. (The kit
+Then talk: search, draft, ask it what wikis it can reach. (The kit
 also documents a stdio variant that spawns a private engine per
 session — the no-appliance solo path; this guide walks the door.)
 
@@ -162,12 +164,12 @@ design.
 ## Verify
 
 ```sh
-incus exec kb -- su - kb -c 'llm-wiki spaces list && llm-wiki lint --wiki myproject'
+incus exec kb -- su - kb -c 'llm-wiki admin list && llm-wiki lint --wiki myproject'
 ```
 
-Your space: registered, default; an empty lint is fine — zero errors is
+Your wiki: registered, default; an empty lint is fine — zero errors is
 the bar. (Same answers through the other door: ask your session to list
-its spaces and lint `myproject`.)
+its wikis and lint `myproject`.)
 
 Provisioned and validated — a blank canvas, on purpose. Step 3 adds
 the first artifact to it, and it's genuinely yours: the assessment.

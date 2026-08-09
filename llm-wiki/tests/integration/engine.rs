@@ -799,7 +799,7 @@ fn search_json_has_results() {
     assert!(!data["results"].as_array().unwrap().is_empty());
 }
 
-// ── spaces (test_spaces.py) ───────────────────────────────────────────────────
+// ── wikis (test_spaces.py) ───────────────────────────────────────────────────
 
 #[test]
 fn admin_list_returns_both_wikis() {

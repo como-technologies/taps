@@ -1,11 +1,11 @@
 //! `--kb`: emit each month's report as a `measure-report` typed page into a
-//! Como KB space (portfolio#7 wave 4; the class ships in llm-wiki's Como
+//! wiki (portfolio#7 wave 4; the class ships in llm-wiki's Como
 //! schema library). tuesday is a structured writer in the kb-spec sense: it
-//! writes the typed page into `wiki/measures/` and stops — validation is the
-//! space's admission gate (`llm-wiki ingest`), and committing stays with the
-//! caller. The page is **deterministic**: same forge data and arguments,
-//! byte-identical bytes (maps render sorted; no emission timestamp), so a
-//! re-run converges instead of churning history.
+//! writes the typed page into `<content_root>/measures/` and stops —
+//! validation is the wiki's admission gate (`llm-wiki ingest`), and
+//! committing stays with the caller. The page is **deterministic**: same
+//! forge data and arguments, byte-identical bytes (maps render sorted; no
+//! emission timestamp), so a re-run converges instead of churning history.
 
 use std::path::{Path, PathBuf};
 
@@ -105,22 +105,34 @@ pub fn page(period: YearMonth, report: &MonthlyReport, source: &str, repos: &[St
     out
 }
 
-/// Write one page per month into `<space>/wiki/measures/<owner>-<YYYY-MM>.md`.
-/// The target must be a KB space (a directory holding `wiki.toml`) — the
-/// same hard-error convention adroit uses, naming the bootstrap.
+/// Write one page per month into `<wiki>/<content_root>/measures/<owner>-<YYYY-MM>.md`.
+/// The target must be a wiki (a directory holding `wiki.toml`) — the
+/// same hard-error convention adroit uses, naming the bootstrap. The
+/// content directory comes from `wiki.toml`'s `content_root` (default
+/// `content`).
 pub fn write_pages(
-    space: &Path,
+    wiki: &Path,
     owner: &str,
     pages: &[(YearMonth, String)],
 ) -> Result<Vec<PathBuf>, String> {
-    if !space.join("wiki.toml").is_file() {
+    let wiki_toml = wiki.join("wiki.toml");
+    if !wiki_toml.is_file() {
         return Err(format!(
-            "{} is not a KB space (no wiki.toml): create one with `llm-wiki spaces create` \
-             (or scaffold wiki.toml + wiki/) and re-run",
-            space.display()
+            "{} is not a wiki (no wiki.toml): create one with `llm-wiki admin create` \
+             (or scaffold wiki.toml + content/) and re-run",
+            wiki.display()
         ));
     }
-    let measures = space.join("wiki").join("measures");
+    let content_root = std::fs::read_to_string(&wiki_toml)
+        .ok()
+        .and_then(|raw| raw.parse::<toml::Table>().ok())
+        .and_then(|t| {
+            t.get("content_root")
+                .and_then(|v| v.as_str())
+                .map(String::from)
+        })
+        .unwrap_or_else(|| "content".into());
+    let measures = wiki.join(content_root).join("measures");
     std::fs::create_dir_all(&measures)
         .map_err(|e| format!("creating {}: {e}", measures.display()))?;
     let mut written = Vec::with_capacity(pages.len());
@@ -187,22 +199,35 @@ mod tests {
     }
 
     #[test]
-    fn write_pages_requires_a_space_and_converges() {
+    fn write_pages_requires_a_wiki_and_converges() {
         let tmp = tempfile::tempdir().unwrap();
-        // Not a space: hard error naming the bootstrap.
+        // Not a wiki: hard error naming the bootstrap.
         let err = write_pages(tmp.path(), "como", &[]).unwrap_err();
-        assert!(err.contains("not a KB space"), "{err}");
-        assert!(err.contains("llm-wiki spaces create"), "{err}");
+        assert!(err.contains("not a wiki"), "{err}");
+        assert!(err.contains("llm-wiki admin create"), "{err}");
 
         std::fs::write(tmp.path().join("wiki.toml"), "name = \"t\"\n").unwrap();
         let body = page(period(), &report(), "gitea", &["r".into()]);
         let pages = vec![(period(), body.clone())];
         let written = write_pages(tmp.path(), "como", &pages).unwrap();
         assert_eq!(written.len(), 1);
-        assert!(written[0].ends_with("wiki/measures/como-2026-06.md"));
+        assert!(written[0].ends_with("content/measures/como-2026-06.md"));
         assert_eq!(std::fs::read_to_string(&written[0]).unwrap(), body);
         // Re-run: byte-identical, no churn.
         write_pages(tmp.path(), "como", &pages).unwrap();
         assert_eq!(std::fs::read_to_string(&written[0]).unwrap(), body);
+    }
+
+    #[test]
+    fn write_pages_honors_custom_content_root() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("wiki.toml"),
+            "name = \"t\"\ncontent_root = \"pages\"\n",
+        )
+        .unwrap();
+        let body = page(period(), &report(), "gitea", &["r".into()]);
+        let written = write_pages(tmp.path(), "como", &[(period(), body)]).unwrap();
+        assert!(written[0].ends_with("pages/measures/como-2026-06.md"));
     }
 }

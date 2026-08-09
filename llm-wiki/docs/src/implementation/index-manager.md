@@ -1,6 +1,6 @@
 ---
 title: "Index Manager Implementation"
-summary: "SpaceIndexManager — incremental update, full rebuild, staleness detection, corruption recovery."
+summary: "WikiIndexManager — incremental update, full rebuild, staleness detection, corruption recovery."
 status: ready
 last_updated: "2026-04-28"
 ---
@@ -16,36 +16,36 @@ Follows the [manager pattern](manager-pattern.md).
 ## Core Struct
 
 ```rust
-struct SpaceIndexManager {
+struct WikiIndexManager {
     wiki_name: String,
-    wiki_root: PathBuf,
+    content_root: PathBuf,
     index_root: PathBuf,       // ~/.llm-wiki/indexes/<name>/
-    state: SpaceIndex,
+    state: WikiIndex,
 }
 
-impl SpaceIndexManager {
+impl WikiIndexManager {
     /// Build from committed files (startup or full rebuild)
-    fn build(wiki_name: &str, wiki_root: &Path, index_root: &Path,
+    fn build(wiki_name: &str, content_root: &Path, index_root: &Path,
              schema: &IndexSchema) -> Result<Self>;
 
     /// Check if index is stale (commit or schema_hash mismatch)
     fn has_changed(&self, repo_root: &Path) -> Result<bool>;
 
     /// Incremental update from git diffs
-    fn update(&mut self, registry: &SpaceTypeRegistry) -> Result<UpdateReport>;
+    fn update(&mut self, registry: &WikiTypeRegistry) -> Result<UpdateReport>;
 
     /// Full rebuild from committed files
-    fn rebuild(&mut self, registry: &SpaceTypeRegistry) -> Result<RebuildReport>;
+    fn rebuild(&mut self, registry: &WikiTypeRegistry) -> Result<RebuildReport>;
 
     /// Partial rebuild — re-index pages of specific types only
     fn rebuild_types(&mut self, types: &[String],
-                     registry: &SpaceTypeRegistry) -> Result<RebuildReport>;
+                     registry: &WikiTypeRegistry) -> Result<RebuildReport>;
 
     /// Try to open, recover if corrupt
-    fn open_or_recover(&mut self, registry: &SpaceTypeRegistry) -> Result<()>;
+    fn open_or_recover(&mut self, registry: &WikiTypeRegistry) -> Result<()>;
 
     /// Get the current index (read-only)
-    fn state(&self) -> &SpaceIndex;
+    fn state(&self) -> &WikiIndex;
 }
 ```
 
@@ -65,7 +65,7 @@ struct RebuildReport {
 }
 
 enum RebuildReason {
-    Explicit,           // llm-wiki index rebuild
+    Explicit,           // llm-wiki admin index rebuild
     FirstBuild,         // no state.toml
     SchemaChange,       // schema_hash mismatch
     Corruption,         // Index::open() failed
@@ -95,11 +95,11 @@ writer.commit()
 ### Full rebuild
 
 Called when `schema_hash` mismatches, on corruption recovery, or
-explicitly via `llm-wiki index rebuild`:
+explicitly via `llm-wiki admin index rebuild`:
 
 ```
 delete_all_documents()
-walk wiki/ -> parse each .md -> add_document()
+walk content/ -> parse each .md -> add_document()
 writer.commit()
 writer.wait_merging_threads()
 update state.toml
@@ -107,14 +107,14 @@ update state.toml
 
 ### Partial rebuild
 
-Called when `SpaceTypeRegistryManager.refresh()` reports some types
+Called when `WikiTypeRegistryManager.refresh()` reports some types
 changed but not all:
 
 ```
 for each changed type:
     collect all pages with that type from the index
     delete each
-    re-walk wiki/ -> re-parse pages of that type -> add_document()
+    re-walk content/ -> re-parse pages of that type -> add_document()
 writer.commit()
 update state.toml
 ```
@@ -167,10 +167,10 @@ Updated after every successful rebuild or update.
 
 ```
 WikiEngine.refresh_index(wiki)
-    -> SpaceIndexManager.update(registry)
+    -> WikiIndexManager.update(registry)
 
 WikiEngine.rebuild_index(wiki)
-    -> SpaceIndexManager.rebuild(registry)
+    -> WikiIndexManager.rebuild(registry)
 ```
 
 ## Initial Scope

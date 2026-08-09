@@ -148,8 +148,8 @@ fn schema_template_passes_own_validation() {
         let fm: std::collections::BTreeMap<String, serde_yaml::Value> =
             serde_yaml::from_str(yaml_content).unwrap_or_default();
 
-        let space = eng.wiki("test").unwrap();
-        let result = space.type_registry.validate(&fm, "loose");
+        let wiki = eng.wiki("test").unwrap();
+        let result = wiki.type_registry.validate(&fm, "loose");
         assert!(
             result.is_ok(),
             "template for '{type_name}' failed validation: {:?}",
@@ -178,8 +178,8 @@ fn roundtrip_template_write_ingest() {
 
     let content = format!("{filled}\n\n## Body\n\nSome content.\n");
 
-    let space = eng.wiki("test").unwrap();
-    let page_path = space.content_root.join("concepts/test.md");
+    let wiki = eng.wiki("test").unwrap();
+    let page_path = wiki.content_root.join("concepts/test.md");
     fs::create_dir_all(page_path.parent().unwrap()).unwrap();
     fs::write(&page_path, &content).unwrap();
 
@@ -227,8 +227,8 @@ fn schema_add_registers_custom_type() {
     assert!(msg.contains("copied to"));
 
     // Verify the schema file was copied
-    let space = eng.wiki("test").unwrap();
-    assert!(space.repo_root.join("schemas/meeting.json").exists());
+    let wiki = eng.wiki("test").unwrap();
+    assert!(wiki.repo_root.join("schemas/meeting.json").exists());
 }
 
 #[test]
@@ -299,10 +299,10 @@ fn schema_add_from_inside_schemas_dir_does_not_truncate() {
 
     // Author the schema directly inside schemas/ — src == dest.
     let (repo_root, in_place) = {
-        let space = eng.wiki("test").unwrap();
-        let in_place = space.repo_root.join("schemas/meeting.json");
+        let wiki = eng.wiki("test").unwrap();
+        let in_place = wiki.repo_root.join("schemas/meeting.json");
         fs::write(&in_place, schema_json).unwrap();
-        (space.repo_root.clone(), in_place)
+        (wiki.repo_root.clone(), in_place)
     };
 
     ops::schema_add(&eng, "test", "meeting", &in_place).unwrap();
@@ -316,7 +316,7 @@ fn schema_add_from_inside_schemas_dir_does_not_truncate() {
     let parsed: serde_json::Value = serde_json::from_str(&after).unwrap();
     assert_eq!(parsed["x-wiki-types"]["meeting"], "Meeting notes");
 
-    // And the type registers when the space is rebuilt from disk.
+    // And the type registers when the wiki is rebuilt from disk.
     let (registry, _) = llm_wiki::wiki_builder::build_wiki(&repo_root, "en_stem").unwrap();
     assert!(registry.is_known("meeting"), "meeting type should register");
 }
@@ -342,9 +342,9 @@ fn schema_validate_catches_invalid_json() {
     let eng = mgr.state.read().unwrap();
 
     // Write an invalid JSON file to schemas/
-    let space = eng.wiki("test").unwrap();
+    let wiki = eng.wiki("test").unwrap();
     fs::write(
-        space.repo_root.join("schemas/broken.json"),
+        wiki.repo_root.join("schemas/broken.json"),
         "not valid json {{{",
     )
     .unwrap();
@@ -397,16 +397,16 @@ fn schema_change_makes_index_stale() {
     // Index is current after build
     {
         let eng = mgr.state.read().unwrap();
-        let space = eng.wiki("test").unwrap();
-        let status = space.index_manager.status(&space.repo_root).unwrap();
+        let wiki = eng.wiki("test").unwrap();
+        let status = wiki.index_manager.status(&wiki.repo_root).unwrap();
         assert!(!status.stale, "index should not be stale after build");
     }
 
     // Modify a schema file
     {
         let eng = mgr.state.read().unwrap();
-        let space = eng.wiki("test").unwrap();
-        let schema_path = space.repo_root.join("schemas/concept.json");
+        let wiki = eng.wiki("test").unwrap();
+        let schema_path = wiki.repo_root.join("schemas/concept.json");
         let mut content = fs::read_to_string(&schema_path).unwrap();
         content = content.replace(
             "\"Synthesized knowledge",

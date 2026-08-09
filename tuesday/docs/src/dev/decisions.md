@@ -3,17 +3,17 @@
 tuesday's architectural decisions live in the committed `docs/src/adr/`
 corpus, managed with [adroit](https://github.com/como-technologies/taps/tree/main/adroit) —
 the portfolio's own Prescribe-stage tool (dogfooding is the point). adroit is
-KB-only (adroit ADR-0020): it operates against an ephemeral KB space seeded
+KB-only (adroit ADR-0020): it operates against an ephemeral wiki seeded
 from the committed corpus, which stays canonical:
 
 ```sh
 tmp=$(mktemp -d)
 printf 'name = "adrs"
 ' > $tmp/wiki.toml && mkdir -p $tmp/wiki/decisions
-adroit seed --from docs/src/adr --dir $tmp   # bootstrap the space
+adroit seed --from docs/src/adr --dir $tmp   # bootstrap the wiki
 adroit list --dir $tmp                       # what has been decided
 adroit show 5 --dir $tmp -o json             # one decision, machine-readable
-adroit check --dir $tmp                      # validate the seeded space
+adroit check --dir $tmp                      # validate the seeded wiki
 ```
 
 New decisions are authored as legacy-shape files in `docs/src/adr/`

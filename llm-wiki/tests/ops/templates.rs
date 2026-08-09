@@ -24,8 +24,8 @@ fn content_new_concept_has_body_template() {
     )
     .unwrap();
 
-    let space = engine.wiki("test").unwrap();
-    let content = fs::read_to_string(space.content_root.join("concepts/new-one.md")).unwrap();
+    let wiki = engine.wiki("test").unwrap();
+    let content = fs::read_to_string(wiki.content_root.join("concepts/new-one.md")).unwrap();
     assert!(
         content.contains("## Overview"),
         "concept template should have Overview section"
@@ -45,8 +45,8 @@ fn content_new_section_has_body_template() {
 
     ops::content_new(&engine, "topics", None, true, false, None, None, None).unwrap();
 
-    let space = engine.wiki("test").unwrap();
-    let content = fs::read_to_string(space.content_root.join("topics/index.md")).unwrap();
+    let wiki = engine.wiki("test").unwrap();
+    let content = fs::read_to_string(wiki.content_root.join("topics/index.md")).unwrap();
     assert!(
         content.contains("## Overview"),
         "section template should have Overview section"
@@ -81,8 +81,8 @@ fn custom_template_overrides_embedded() {
     )
     .unwrap();
 
-    let space = engine.wiki("test").unwrap();
-    let content = fs::read_to_string(space.content_root.join("concepts/custom-tmpl.md")).unwrap();
+    let wiki = engine.wiki("test").unwrap();
+    let content = fs::read_to_string(wiki.content_root.join("concepts/custom-tmpl.md")).unwrap();
     assert!(
         content.contains("## Custom Section"),
         "custom template should override embedded"
@@ -113,15 +113,15 @@ fn missing_template_falls_back_to_empty_body() {
     )
     .unwrap();
 
-    let space = engine.wiki("test").unwrap();
-    let content = fs::read_to_string(space.content_root.join("skills/test-skill.md")).unwrap();
+    let wiki = engine.wiki("test").unwrap();
+    let content = fs::read_to_string(wiki.content_root.join("skills/test-skill.md")).unwrap();
     // Should have frontmatter but no body sections
     assert!(content.contains("type: skill"));
     assert!(!content.contains("## "), "no body template for skill type");
 }
 
 #[test]
-fn spaces_create_writes_template_files() {
+fn admin_create_writes_template_files() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = dir.path().join("state").join("config.toml");
     let wiki_path = dir.path().join("content");

@@ -66,7 +66,7 @@ fn default_format() -> DataFormat {
 pub struct PublishParams {
     /// Project ID (UUID) under DATA_DIR/projects/
     pub project_id: ProjectId,
-    /// Target space name (overrides KB_WIKI)
+    /// Target wiki name (overrides KB_WIKI)
     #[arg(long)]
     pub wiki: Option<String>,
 }

@@ -83,7 +83,7 @@ How content enters the wiki.
 
 ```mermaid
 flowchart LR
-    A[Author writes file\ninto wiki/ tree] --> B{wiki ingest}
+    A[Author writes file\ninto content/ tree] --> B{wiki ingest}
     B --> C[Validate frontmatter]
     C -->|valid| D[Update tantivy index]
     C -->|invalid| E[Error — file rejected]
@@ -122,7 +122,7 @@ sequenceDiagram
     Note over LLM: reads inbox file<br/>synthesizes pages<br/>plans extraction
 
     LLM->>Engine: wiki_content_new("concepts/topic")
-    Engine-->>LLM: { uri, slug, path, wiki_root, bundle }
+    Engine-->>LLM: { uri, slug, path, content_root, bundle }
 
     LLM->>Disk: write content to path
     Disk-->>LLM: ok
@@ -345,9 +345,9 @@ How `WikiEngine::build` mounts wikis.
 flowchart TD
     A[Load config.toml] --> B[For each registered wiki]
     B --> C[mount_wiki]
-    C --> D[Build SpaceTypeRegistry\nfrom schemas/ + wiki.toml]
+    C --> D[Build WikiTypeRegistry\nfrom schemas/ + wiki.toml]
     C --> E[Build IndexSchema\nfrom type registry]
-    C --> F[Create SpaceIndexManager]
+    C --> F[Create WikiIndexManager]
     F --> G{Staleness?}
     G -->|Current| H[Open index]
     G -->|CommitChanged| I[Incremental update]
@@ -356,7 +356,7 @@ flowchart TD
     I --> H
     J --> H
     K --> H
-    H --> L[SpaceContext ready]
+    H --> L[WikiContext ready]
 
     style A fill:#ffeeba
     style L fill:#d4edda

@@ -13,13 +13,13 @@ For the spec, see
 ## Per-Wiki Type Registry
 
 Each wiki has its own `schemas/` directory and `wiki.toml`. The engine
-builds a `SpaceTypeRegistry` and `IndexSchema` per wiki via
-`build_space()` in `space_builder.rs`.
+builds a `WikiTypeRegistry` and `IndexSchema` per wiki via
+`build_wiki()` in `wiki_builder.rs`.
 
 ```
 EngineState {
-    spaces: { name → SpaceState {
-        type_registry: SpaceTypeRegistry,
+    wikis: { name → WikiState {
+        type_registry: WikiTypeRegistry,
         index_schema: IndexSchema,
     }}
 }
@@ -27,9 +27,9 @@ EngineState {
 
 ## Shared Builder
 
-`build_space(repo_root, tokenizer)` reads each schema file once and
-produces both `SpaceTypeRegistry` and `IndexSchema`. No raw JSON is
-kept after construction. See `space_builder.rs`.
+`build_wiki(repo_root, tokenizer)` reads each schema file once and
+produces both `WikiTypeRegistry` and `IndexSchema`. No raw JSON is
+kept after construction. See `wiki_builder.rs`.
 
 ## Hash Computation
 
@@ -37,7 +37,7 @@ Two functions compute hashes using SHA-256:
 
 ### `compute_hashes` (build time)
 
-Called inside `build_space()` when constructing the type registry.
+Called inside `build_wiki()` when constructing the type registry.
 Each `RegisteredType` carries a `content_hash` (SHA-256 of the schema
 file bytes, computed at parse time).
 
@@ -53,7 +53,7 @@ Global hash:
 schema_hash = SHA-256(all type_hashes sorted by type name)
 ```
 
-The result is stored in `SpaceTypeRegistry` and written to
+The result is stored in `WikiTypeRegistry` and written to
 `state.toml` after rebuild.
 
 ### `compute_disk_hashes` (staleness check)
@@ -108,13 +108,13 @@ full rebuild on first run. This is expected and correct.
 ## Startup Sequence Per Wiki
 
 ```
-1. build_space(repo_root, tokenizer) → (type_registry, index_schema)
+1. build_wiki(repo_root, tokenizer) → (type_registry, index_schema)
 2. index_status() → calls compute_disk_hashes() internally
    - Missing state.toml → full rebuild
    - schema_hash mismatch → full rebuild
    - commit != HEAD → stale (rebuild if auto_rebuild)
    - All match → current
-3. Store SpaceState { type_registry, index_schema, ... }
+3. Store WikiState { type_registry, index_schema, ... }
 ```
 
 ## What Triggers a Rebuild

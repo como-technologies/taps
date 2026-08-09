@@ -153,7 +153,7 @@ fn print_human(command: &Command, r: &Value) {
         Command::List(_) => {
             let rows = r["decisions"].as_array().cloned().unwrap_or_default();
             if rows.is_empty() {
-                println!("no decisions in the space yet — start one with `adroit new`");
+                println!("no decisions in the wiki yet — start one with `adroit new`");
             }
             for row in rows {
                 let due = if row["review_due"].as_bool().unwrap_or(false) {

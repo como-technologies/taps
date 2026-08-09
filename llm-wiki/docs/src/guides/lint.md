@@ -173,7 +173,7 @@ llm-wiki lint --wiki research
 llm-wiki lint --severity error && echo "wiki is clean"
 ```
 
-Add to your CI pipeline after `llm-wiki index rebuild` to catch regressions
+Add to your CI pipeline after `llm-wiki admin index rebuild` to catch regressions
 on every push.
 
 ## Tuning the stale rule

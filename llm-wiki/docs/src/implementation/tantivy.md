@@ -132,7 +132,7 @@ Native string sort — no encoding, no tie-breaking needed.
 
 ## IndexReader and ReloadPolicy
 
-The `IndexReader` is held in `SpaceIndexManager::inner.index_reader` for the
+The `IndexReader` is held in `WikiIndexManager::inner.index_reader` for the
 lifetime of the engine process. All `searcher()` calls are cheap arc-clones of
 the current segment set from this single reader.
 

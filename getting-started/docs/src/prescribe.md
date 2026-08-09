@@ -1,12 +1,12 @@
 # Step 4 — Prescribe
 
 An assessment that stays a scorecard changes nothing. This step turns
-Step 3's report into a backlog of **proposed decisions** in your space —
+Step 3's report into a backlog of **proposed decisions** in your wiki —
 decision records your team refines, debates, and accepts. The tool is
 [adroit](../portfolio/loop/prescribe.html), and it works the way every
 taps tool now does: the KB is the state store, reached over the
 appliance's transport. adroit owns two page classes, `decision` and
-`plan`; your space learns them the moment adroit first writes, and only
+`plan`; your wiki learns them the moment adroit first writes, and only
 adroit writes them.
 
 Prescribing is judgment. Nothing in this step parses the report or
@@ -62,7 +62,7 @@ with adroit's list so I can see the backlog.
 
 Watch the first `new` land: adroit registers its two schemas on first
 contact (`registered`, then `unchanged` ever after), allocates the
-reference (`ADR-0001` — max existing in the space + 1), and every page
+reference (`ADR-0001` — max existing in the wiki + 1), and every page
 enters through the same admission gates as everything else. The
 `relates` link is a real graph edge from each decision back to the
 report — provenance the engine's lint keeps honest, not import
@@ -97,7 +97,7 @@ The lifecycle is deliberately narrow: a proposal is decided
 (`accepted` / `rejected`), an accepted decision can age out
 (`deprecated`), and replacement is one atomic verb —
 `adroit supersede <new> <old>` links both sides' frontmatter in a
-single stroke and lands as a single commit in your space's history.
+single stroke and lands as a single commit in your wiki's history.
 Terminal states don't come back: reopening a question is a *new*
 decision that `--relates` to the old one.
 
@@ -124,6 +124,6 @@ incus exec kb -- su - kb -c 'llm-wiki schema list --wiki myproject'
 ```
 
 `decision` and `plan` now sit beside amaker's classes, each carrying
-`x-owner: adroit` — the space learned them at first contact. Your
+`x-owner: adroit` — the wiki learned them at first contact. Your
 backlog is real, your acceptances are recorded, and the loop moves on:
 Step 5 turns accepted decisions into adopted change.

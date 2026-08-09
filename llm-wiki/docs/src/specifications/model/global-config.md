@@ -1,6 +1,6 @@
 ---
 title: "config.toml"
-summary: "Global engine config at ~/.llm-wiki/config.toml — space registry, defaults, and global-only settings."
+summary: "Global engine config at ~/.llm-wiki/config.toml — wiki registry, defaults, and global-only settings."
 read_when:
   - Understanding what config.toml contains
   - Looking up a config key and its default
@@ -11,7 +11,7 @@ last_updated: "2026-05-03"
 
 # config.toml
 
-The global engine configuration holds the space registry and all global
+The global engine configuration holds the wiki registry and all global
 defaults. Local to the machine, never committed.
 
 **Location resolution order:**
@@ -22,7 +22,7 @@ defaults. Local to the machine, never committed.
 ## Example
 
 ```toml
-# ── Spaces ─────────────────────────────────────────────────────────────────────
+# ── Wikis ─────────────────────────────────────────────────────────────────────
 
 [global]
 default_wiki = "research"
@@ -114,9 +114,9 @@ debounce_ms = 500
 | -------------- | ------- | ------------------------------------------ |
 | `default_wiki` | —       | Wiki name used when no `--wiki` flag given |
 
-### `[[wikis]]` — Space Registry
+### `[[wikis]]` — Wiki Registry
 
-Each entry registers a wiki. Created by `llm-wiki spaces create`.
+Each entry registers a wiki. Created by `llm-wiki admin create`.
 
 | Field         | Required | Description                          |
 | ------------- | -------- | ------------------------------------ |
@@ -155,7 +155,7 @@ These keys can appear in both `config.toml` (global) and `wiki.toml`
 | `graph.min_nodes_for_communities` | `30` | Suppress community detection below this node count |
 | `graph.community_suggestions_limit` | `2` | Max extra results from community strategy in `wiki_suggest` |
 | `graph.snapshot`             | `true`    | Enable snapshot warm-start for the graph cache; `false` = in-memory only (Phase 1 behaviour) |
-| `graph.snapshot_keep`        | `3`       | Number of graph snapshots to retain per wiki space |
+| `graph.snapshot_keep`        | `3`       | Number of graph snapshots to retain per wiki |
 | `graph.snapshot_format`      | `bincode+lz4` | Snapshot encoding: `bincode+lz4`, `bincode+zstd`, or `bincode` |
 | `graph.structural_algorithms` | `true`       | Enable diameter/radius/center fields in `wiki_stats`; set `false` to skip entirely |
 | `graph.max_nodes_for_diameter` | `2000`      | Skip O(n²) diameter/radius/center/periphery above this local node count |

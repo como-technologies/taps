@@ -11,7 +11,7 @@ last_updated: "2026-07-09"
 
 # Page Identity
 
-A page's default identity is its **slug** — the wiki-root-relative path
+A page's default identity is its **slug** — the content-root-relative path
 without extension (see [page-content.md](page-content.md)). A slug is a
 good address but a fragile identity: moving or renaming the file changes
 the slug, and every inbound link to the old slug dangles (`lint` reports
@@ -36,7 +36,7 @@ type: doc
   `auto_id`), never hand-authored or meaningful.
 - An id is **stable across file moves and renames**. Reorganizing pages
   on disk requires zero link rewrites when links target ids.
-- Ids must be **unique within a space**. The filesystem no longer
+- Ids must be **unique within a wiki**. The filesystem no longer
   guarantees uniqueness once identity is declared, so the engine does:
   `lint` reports `duplicate-id` at error severity.
 - Everything is **opt-in by presence** — a wiki with no `id` frontmatter
@@ -57,7 +57,7 @@ declared via `x-graph-edges` — resolution is:
 Parsing is case-insensitive (`01arz…` resolves), but the index stores
 and queries the canonical uppercase form. If the index maps an id to a
 file that no longer exists, resolution fails with an explicit
-stale-index error advising `llm-wiki index rebuild`. Under duplicate ids
+stale-index error advising `llm-wiki admin index rebuild`. Under duplicate ids
 resolution deterministically picks the lexicographically smallest slug
 (and `lint` flags the duplication).
 
@@ -69,8 +69,8 @@ resolution deterministically picks the lexicographically smallest slug
 - **Outputs:** `search`, `list`, `export` entries, graph nodes, and MCP
   `wiki_resolve`/`wiki_content_new` responses carry an `id` field when
   the page declares one; the field is omitted otherwise.
-- **Emitted URIs stay slug-based** (`wiki://<space>/<slug>`);
-  `wiki://<space>/<id>` is accepted as input but never emitted.
+- **Emitted URIs stay slug-based** (`wiki://<wiki>/<slug>`);
+  `wiki://<wiki>/<id>` is accepted as input but never emitted.
 - **Sections do not carry ids** — they are structural, addressed by
   their place in the tree.
 

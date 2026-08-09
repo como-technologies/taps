@@ -102,27 +102,27 @@ fn engine_mounts_wiki_without_schemas_dir() {
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
-    let space = engine.wiki("test").unwrap();
-    assert!(space.type_registry.is_known("concept"));
+    let wiki = engine.wiki("test").unwrap();
+    assert!(wiki.type_registry.is_known("concept"));
 }
 
-// ── space access ──────────────────────────────────────────────────────────────
+// ── wiki access ──────────────────────────────────────────────────────────────
 
 #[test]
-fn engine_space_returns_mounted_wiki() {
+fn engine_wiki_returns_mounted_wiki() {
     let dir = tempfile::tempdir().unwrap();
     let (config_path, _) = setup_wiki(dir.path(), "research");
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
 
-    let space = engine.wiki("research").unwrap();
-    assert_eq!(space.name, "research");
-    assert!(space.content_root.ends_with("content"));
+    let wiki = engine.wiki("research").unwrap();
+    assert_eq!(wiki.name, "research");
+    assert!(wiki.content_root.ends_with("content"));
 }
 
 #[test]
-fn engine_space_errors_on_unknown() {
+fn engine_wiki_errors_on_unknown() {
     let dir = tempfile::tempdir().unwrap();
     let (config_path, _) = setup_wiki(dir.path(), "test");
 
@@ -219,10 +219,10 @@ fn engine_mounts_wiki_with_custom_content_root() {
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine = manager.state.read().unwrap();
-    let space = engine.wiki("skills").unwrap();
+    let wiki = engine.wiki("skills").unwrap();
 
     let expected_content_root = wiki_path.canonicalize().unwrap().join("skills");
-    assert_eq!(space.content_root, expected_content_root);
+    assert_eq!(wiki.content_root, expected_content_root);
 }
 
 #[test]
@@ -236,9 +236,9 @@ fn engine_indexes_custom_content_root_fixture() {
 
     let manager = WikiEngine::build(&config_path).unwrap();
     let engine_guard = manager.state.read().unwrap();
-    let space = engine_guard.wiki("alt-root").unwrap();
+    let wiki = engine_guard.wiki("alt-root").unwrap();
 
-    assert!(space.content_root.ends_with("content"));
+    assert!(wiki.content_root.ends_with("content"));
 }
 
 #[test]

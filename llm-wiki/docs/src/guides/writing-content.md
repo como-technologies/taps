@@ -19,7 +19,7 @@ writing the file directly to disk using the path returned by
 
 ```
 1. wiki_content_new(uri: "concepts/my-topic", name: "My Topic")
-   → returns { uri, slug, path, wiki_root, bundle }
+   → returns { uri, slug, path, content_root, bundle }
 
 2. Write content directly to `path`
    (Bash write, Edit, or any file write tool)
@@ -40,7 +40,7 @@ round-trip to confirm the path.
   "uri": "wiki://research/concepts/my-topic",
   "slug": "concepts/my-topic",
   "path": "/home/user/wikis/research/wiki/concepts/my-topic.md",
-  "wiki_root": "/home/user/wikis/research/wiki",
+  "content_root": "/home/user/wikis/research/wiki",
   "bundle": false
 }
 ```
@@ -58,7 +58,7 @@ wiki_resolve(uri: "concepts/scaling-laws", wiki: "research")
 → {
     "slug": "concepts/scaling-laws",
     "wiki": "research",
-    "wiki_root": "/home/user/wikis/research/wiki",
+    "content_root": "/home/user/wikis/research/wiki",
     "path": "/home/user/wikis/research/wiki/concepts/scaling-laws.md",
     "exists": true,
     "bundle": false
@@ -181,7 +181,7 @@ to the old path dangle.
 
 To adopt an id on an existing page, add the `id` field to its
 frontmatter (generate one with `--id` on a scratch page or any ULID
-tool), then re-ingest. Ids must be unique per space (`duplicate-id` lint
+tool), then re-ingest. Ids must be unique per wiki (`duplicate-id` lint
 error) and are always opaque ULIDs — never hand-authored, meaningful
 identifiers. Ids also work as addresses everywhere a slug is accepted:
 `wiki_content_read(uri: "01ARZ…")`, `wiki_resolve`, `history`, and

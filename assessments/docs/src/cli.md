@@ -35,7 +35,7 @@ analysis (scorecard, definite gaps, prioritized roadmap) in the KB as
 two typed pages — `assessment` and `assessment-report`, classes amaker
 owns and registers on first contact (`x-owner: amaker`). Needs `KB_URL`
 (the appliance's streamable-HTTP MCP endpoint; `KB_WIKI` optionally
-names the space — the suite-wide pair, honored from `.env`). The pages
+names the wiki — the suite-wide pair, honored from `.env`). The pages
 enter through the KB's admission gates; the printed report carries the
 gate's verdict, including how many pages the search index picked up.
 Repeatable: schemas come back `unchanged`, pages refresh.

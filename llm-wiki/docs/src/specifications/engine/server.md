@@ -12,7 +12,7 @@ last_updated: "2025-07-21"
 
 `llm-wiki serve` starts the engine server. It mounts all registered
 wikis at startup and exposes them via MCP tools. Wikis can be added
-or removed at runtime via space management tools. stdio is always
+or removed at runtime via wiki management tools. stdio is always
 active. SSE and ACP are opt-in and can run simultaneously.
 
 
@@ -24,7 +24,7 @@ active. SSE and ACP are opt-in and can run simultaneously.
 | HTTP      | MCP      | Remote agents, multi-client access (Streamable HTTP)    |
 | ACP       | ACP      | Zed / VS Code agent panel — streaming, session-oriented |
 
-All active transports share the same wiki engine and spaces. A request
+All active transports share the same wiki engine and wikis. A request
 on any transport sees the same pages and state.
 
 
@@ -56,7 +56,7 @@ All wikis registered in `~/.llm-wiki/config.toml` are mounted at
 startup. Wikis can be added or removed at runtime — see
 [Hot Reload](#hot-reload). See [engine-state.md](engine-state.md)
 for the engine state layout and
-[global-config.md](../model/global-config.md) for the space registry.
+[global-config.md](../model/global-config.md) for the wiki registry.
 MCP resources are namespaced by wiki name:
 
 ```
@@ -71,7 +71,7 @@ wiki is used.
 ## Startup Sequence
 
 ```
-1. Load ~/.llm-wiki/config.toml — spaces + global config
+1. Load ~/.llm-wiki/config.toml — wikis + global config
 2. Create wiki map: RwLock<HashMap<String, Arc<WikiHandle>>>
 3. Mount all registered wikis into the map
 4. Check index staleness for each wiki (warn or auto-rebuild per config)
@@ -231,14 +231,14 @@ are dropped (best-effort, no grace period).
 
 ## Hot Reload
 
-Space management tools update the wiki map at runtime. No server
+Wiki-registry admin tools update the wiki map at runtime. No server
 restart needed.
 
 | Tool | Runtime effect |
 |------|----------------|
-| `wiki_spaces_create` | Mounts the new wiki immediately |
-| `wiki_spaces_remove` | Unmounts the wiki immediately |
-| `wiki_spaces_set_default` | Updates the default immediately |
+| `wiki_admin_create` | Mounts the new wiki immediately |
+| `wiki_admin_remove` | Unmounts the wiki immediately |
+| `wiki_admin_set_default` | Updates the default immediately |
 
 ### Shared state
 
@@ -250,9 +250,9 @@ lock.
 
 ### Mount
 
-On `wiki_spaces_create`:
+On `wiki_admin_create`:
 
-1. Write `config.toml` (register the space)
+1. Write `config.toml` (register the wiki)
 2. Open or create the tantivy index at `~/.llm-wiki/indexes/<name>/`
 3. Run staleness check (same rules as startup)
 4. Insert into wiki map under write lock
@@ -261,12 +261,12 @@ On `wiki_spaces_create`:
 
 ### Unmount
 
-On `wiki_spaces_remove`:
+On `wiki_admin_remove`:
 
 1. Refuse if the wiki is the current default (same rule as the CLI)
 2. Remove from wiki map under write lock
 3. Close index reader/writer handles (do not delete index files)
-4. Write `config.toml` (unregister the space)
+4. Write `config.toml` (unregister the wiki)
 5. If `--delete`: also delete index files at
    `~/.llm-wiki/indexes/<name>/`
 6. Emit `notifications/resources/list_changed`

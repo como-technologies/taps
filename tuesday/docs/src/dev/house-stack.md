@@ -44,7 +44,7 @@ ever changes.
 
 Validation is on demand with the in-tree adroit: build it
 (`cargo build -p adroit`), seed `docs/src/adr` into an ephemeral KB
-space, and run `adroit check` on it (see Decision Records for the exact
+wiki, and run `adroit check` on it (see Decision Records for the exact
 commands). The per-product adroit-resolution chain retired with the move
 to the single workspace.
 

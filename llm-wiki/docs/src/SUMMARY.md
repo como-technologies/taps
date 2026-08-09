@@ -52,7 +52,7 @@
     - [History](./specifications/tools/history.md)
     - [Index](./specifications/tools/index.md)
     - [Export](./specifications/tools/export.md)
-    - [Space Management](./specifications/tools/space-management.md)
+    - [Wiki Administration](./specifications/tools/wiki-administration.md)
     - [Schema Management](./specifications/tools/schema-management.md)
     - [Config Management](./specifications/tools/config-management.md)
   - [MCP Clients](./specifications/integrations/mcp-clients.md)

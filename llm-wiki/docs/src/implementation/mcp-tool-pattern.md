@@ -120,8 +120,8 @@ or create a new one and declare it in `src/ops/mod.rs`.
 
 ```rust
 pub fn my_operation(engine: &EngineState, wiki_name: &str, param: &str) -> Result<MyResult> {
-    let space = engine.space(wiki_name)?;
-    // ... business logic using space.type_registry, space.index_schema, etc.
+    let wiki = engine.wiki(wiki_name)?;
+    // ... business logic using wiki.type_registry, wiki.index_schema, etc.
     Ok(result)
 }
 ```
@@ -129,12 +129,12 @@ pub fn my_operation(engine: &EngineState, wiki_name: &str, param: &str) -> Resul
 ### Accessing per-wiki state
 
 ```rust
-let space = engine.space(wiki_name)?;
-space.type_registry   // SpaceTypeRegistry — validators, aliases
-space.index_schema    // IndexSchema — tantivy field handles
-space.wiki_root       // PathBuf — wiki/ directory
-space.repo_root       // PathBuf — repository root
-space.index_path      // PathBuf — ~/.llm-wiki/indexes/<name>/
+let wiki = engine.wiki(wiki_name)?;
+wiki.type_registry   // WikiTypeRegistry — validators, aliases
+wiki.index_schema    // IndexSchema — tantivy field handles
+wiki.content_root       // PathBuf — content/ directory
+wiki.repo_root       // PathBuf — repository root
+wiki.index_path      // PathBuf — ~/.llm-wiki/indexes/<name>/
 ```
 
 ## 5. Update tool count test

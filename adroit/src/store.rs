@@ -1,4 +1,4 @@
-//! The KB door: decision pages live in a space, reached over the transport.
+//! The KB door: decision pages live in a wiki, reached over the transport.
 //!
 //! The KB is the state store — there is no filesystem mode; local dev is a
 //! local appliance (`just kb-dev`). [`PageStore`] is the narrow set of
@@ -18,7 +18,7 @@ use serde_json::json;
 use crate::naming::{AdrRef, NamingScheme};
 use crate::page::{self, Decision, DecisionId};
 
-/// The space section adroit's pages live under.
+/// The wiki section adroit's pages live under.
 pub const DECISIONS_ROOT: &str = "decisions";
 
 const DECISION_SCHEMA: &str = include_str!("../schemas/decision.json");
@@ -32,7 +32,7 @@ pub trait PageStore: Send + Sync {
     /// `unchanged`); a conflict (someone else's type under our name) is
     /// fatal.
     async fn ensure_schemas(&self) -> Result<Vec<String>>;
-    /// Slugs of every `decision` page in the space.
+    /// Slugs of every `decision` page in the wiki.
     async fn decision_slugs(&self) -> Result<Vec<String>>;
     /// Raw page content (frontmatter + body) by slug.
     async fn read(&self, slug: &str) -> Result<String>;
@@ -58,7 +58,7 @@ impl KbStore {
             bail!(
                 "no KB configured: set KB_URL to your appliance's MCP endpoint \
                  (e.g. http://localhost:8080/mcp; `just kb-dev` serves one) and \
-                 optionally KB_WIKI for the target space — in the environment, \
+                 optionally KB_WIKI for the target wiki — in the environment, \
                  a .env here, or ~/.config/taps/env"
             );
         };
@@ -179,7 +179,7 @@ impl Entry {
     }
 }
 
-/// Every decision page in the space, loaded through the store.
+/// Every decision page in the wiki, loaded through the store.
 #[derive(Debug, Default)]
 pub struct Corpus {
     pub entries: Vec<Entry>,
@@ -274,7 +274,7 @@ impl Corpus {
 
     fn known_references(&self) -> String {
         if self.entries.is_empty() {
-            return "none — the space has no decisions yet".into();
+            return "none — the wiki has no decisions yet".into();
         }
         self.entries
             .iter()
