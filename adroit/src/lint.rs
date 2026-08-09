@@ -270,11 +270,16 @@ fn warn(message: String) -> LintFinding {
 }
 
 /// The text under `heading`, up to the next heading of the same-or-higher
-/// level. `None` if the heading is absent.
+/// level. `None` if the heading is absent. Case-insensitive on the heading
+/// text — `## Negative consequences` is `## Negative Consequences`; case is
+/// shape, not substance, like depth (the Step 4 walk's first real corpus
+/// failed all four decisions on sentence-case headings).
 fn section(body: &str, heading: &str) -> Option<String> {
     let level = heading.bytes().take_while(|b| *b == b'#').count();
     let mut lines = body.lines();
-    lines.by_ref().find(|l| l.trim() == heading)?;
+    lines
+        .by_ref()
+        .find(|l| l.trim().eq_ignore_ascii_case(heading))?;
     let mut content = String::new();
     for line in lines {
         let t = line.trim_start();
@@ -398,6 +403,19 @@ mod tests {
             ### Negative Consequences\n\n- A real downside here.\n";
         let f = lint(body);
         assert!(f.iter().any(|x| x.message.contains("two options")));
+    }
+
+    #[test]
+    fn heading_case_is_shape_not_substance() {
+        // The Step 4 walk's first real corpus wrote `## Negative
+        // consequences` (sentence case) and lint flagged all four decisions
+        // as missing the section. Case is shape, like depth — both
+        // spellings are honest documentation.
+        let body = "## Context and Problem Statement\n\nReal context.\n\n\
+            ## Considered options\n\n1. A\n2. B\n\n\
+            ## Decision outcome\n\nChosen: A, for reasons.\n\n\
+            ## Negative consequences\n\n- A real downside.\n";
+        assert_eq!(lint(body), Vec::new());
     }
 
     #[test]
