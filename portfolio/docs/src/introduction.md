@@ -33,7 +33,7 @@ flowchart LR
 1. **[Assess](./loop/assess.md)** — structured interviews become a
    schema-validated maturity assessment, not a deck.
 2. **[Prescribe](./loop/prescribe.md)** — the assessment seeds a knowledge
-   base of decisions and guidance your team actually accepts.
+   base of decisions your team actually accepts.
 3. **[Adopt](./loop/adopt.md)** — accepted decisions become reviewable
    pull requests in your own forge, with humans holding every gate.
 4. **[Measure](./loop/measure.md)** — capacity and sentiment data show

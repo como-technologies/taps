@@ -1,9 +1,9 @@
 # Prescribe
 
 The assessment drives an opinionated knowledge base: *decisions* recorded
-as ADRs (Architecture Decision Records) and *guidance* as step-by-step
-guides — typed, validated pages in [the knowledge base](../knowledge-base.md),
-not prose in a wiki nobody trusts.
+as ADRs (Architecture Decision Records) — typed, validated pages in
+[the knowledge base](../knowledge-base.md), not prose in a wiki nobody
+trusts.
 
 ## adroit
 
