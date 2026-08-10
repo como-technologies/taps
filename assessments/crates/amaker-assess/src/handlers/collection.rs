@@ -57,6 +57,17 @@ pub struct ProgressBadgeTemplate {
     pub total: usize,
 }
 
+/// Submit button + hint text. Rendered inside the form and OOB-swapped on
+/// every answer change so the button's disabled state tracks the live
+/// answer count, not the count at page load.
+#[derive(Template)]
+#[template(path = "partials/collection/response_footer.html")]
+pub struct ResponseFooterTemplate {
+    pub project_id: ProjectId,
+    pub answered: usize,
+    pub submitted: bool,
+}
+
 /// Form payload from the per-question HTMX PATCH. Uses the html-form parser
 /// (axum-extra) so repeated checkbox keys hydrate into a Vec.
 #[derive(Debug, Deserialize)]
@@ -191,6 +202,11 @@ pub async fn submit_response(
     if response.submitted_at.is_none() {
         response.submitted_at = Some(Utc::now());
         state.responses.save_primary(project_id, &response).await?;
+        tracing::info!(
+            %project_id,
+            answered = response.answers.len(),
+            "response submitted"
+        );
     }
 
     let mut headers = HeaderMap::new();
@@ -335,7 +351,20 @@ async fn render_row_and_progress(
         "<span id=\"response-progress\" hx-swap-oob=\"true\"",
     );
 
-    Ok(Html(format!("{}\n{}", row, oob_progress)).into_response())
+    let submitted = response.as_ref().and_then(|r| r.submitted_at).is_some();
+    let footer = ResponseFooterTemplate {
+        project_id,
+        answered,
+        submitted,
+    }
+    .render()
+    .map_err(|e| AppError::Internal(e.to_string()))?;
+    let oob_footer = footer.replace(
+        "<div id=\"response-footer\"",
+        "<div id=\"response-footer\" hx-swap-oob=\"true\"",
+    );
+
+    Ok(Html(format!("{}\n{}\n{}", row, oob_progress, oob_footer)).into_response())
 }
 
 #[cfg(test)]

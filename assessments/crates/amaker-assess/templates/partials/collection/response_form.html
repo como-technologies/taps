@@ -38,25 +38,7 @@
     </section>
     {% endfor %}
 
-    <div class="mt-8 pt-6 border-t border-current/20 flex items-center justify-between">
-        <div class="text-sm text-foreground-secondary">
-            {% if submitted %}
-            Submitted. View the analysis below or in the Analysis phase.
-            {% else %}
-            When you're done answering, submit to move to Analysis.
-            {% endif %}
-        </div>
-        {% if !submitted %}
-        <button type="button"
-                hx-post="/api/projects/{{ project_id }}/response/submit"
-                hx-target="#preview-panel"
-                hx-swap="innerHTML"
-                class="px-4 py-2 bg-primary text-primary-fg rounded-lg hover:bg-primary-hv disabled:opacity-50"
-                {% if answered == 0 %} disabled{% endif %}>
-            Submit Response
-        </button>
-        {% endif %}
-    </div>
+    {% include "partials/collection/response_footer.html" %}
 </article>
 {% else %}
 <div class="text-center text-foreground-muted py-12">
