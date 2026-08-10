@@ -49,8 +49,14 @@ The three web apps are *your* seats — browser, human judgment. Your
 session gets amaker another way: the `amaker` binary you built in
 Step 1 serves its whole command surface over MCP (`amaker mcp`), so the
 agent drives the same commands a terminal would — validate, import,
-status, publish — as typed tools, never through a shell. Add it beside
-`kb`:
+status, publish — as typed tools, never through a shell.
+
+Your current terminal is busy holding the three apps up — leave it
+running. Open a fresh one where you work (clean room: `incus exec
+walk -- su - dev` from the host, same as Step 0); the rest of this
+step lives there. Paste this block — it rewrites your workspace's
+`.mcp.json` whole: the same `kb` entry you wrote in Step 2, plus the
+new `amaker` one:
 
 ```sh
 KB_ADDR=$(incus list kb -c4 -f csv | cut -d" " -f1)
@@ -87,7 +93,7 @@ cat > ~/kb-workspace/.claude/settings.local.json <<'EOF'
   "enableAllProjectMcpServers": true,
   "permissions": {
     "additionalDirectories": ["~/taps"],
-    "allow": ["mcp__kb", "mcp__amaker", "Edit(~/**)"]
+    "allow": ["mcp__kb", "mcp__amaker", "Edit(~/kb-workspace/**)"]
   }
 }
 EOF
@@ -96,8 +102,9 @@ EOF
 `additionalDirectories` opens `~/taps` to the session; the `mcp__`
 entries trust every tool the appliance and amaker serve; the `Edit`
 grant covers every file-editing tool for the files this step's prompts
-create (the assessment draft lives in your home, not the KB — it
-enters the wiki only through amaker's publish). On a
+create, and reaches no further than the workspace itself (the
+assessment draft lives here, not in the KB — it enters the wiki only
+through amaker's publish). On a
 production workspace you'd grant
 narrowly and answer prompts as they come; this rig is a throwaway, and
 pre-granting makes every session in the walk paste-and-go. (Prefer the
@@ -107,18 +114,29 @@ you watch.)
 ## Author your assessment
 
 Authoring is judgment work you can delegate to your assistant — the
-agent is the assist. Paste this into your **workspace session**
-(`~/kb-workspace`, from Step 2):
+agent is the assist. It happens back in your **authoring workspace** —
+the thin directory you made in Step 2. In your fresh terminal:
+
+```sh
+cd ~/kb-workspace
+claude
+```
+
+Then paste:
 
 ```text
 Author a maturity assessment of this project's delivery practice as an
-amaker assessment file at ~/assessment.yaml. Ground it in the myproject
-wiki: search and read what we know before drafting. Shape: 2-3
-domains, each with 1-2 practices, each practice with 2-4 yes/no
-questions — set each question's polarity, and give negative findings a
-remediation and roles. Then check it with amaker's validate tool and
-fix what it reports until the file validates, and finish with amaker's
-import tool — tell me the project_id it reports.
+amaker assessment file at ~/kb-workspace/assessment.yaml — this
+workspace. Search the myproject wiki
+first and ground the draft in anything you find — but expect it to be
+empty (it's freshly created); where it's silent, draft from standard
+delivery practice without stopping to ask, and we'll tailor on later
+trips around the loop. Shape: 2-3 domains, each with 1-2 practices,
+each practice with 2-4 yes/no questions — set each question's
+polarity, and give negative findings a remediation and roles. Then
+check it with amaker's validate tool and fix what it reports until the
+file validates, and finish with amaker's import tool — tell me the
+project_id it reports.
 ```
 
 `import` is the headless authoring door: your drafted file becomes a
@@ -167,10 +185,10 @@ boundary. Then look at what first contact did to your wiki's
 vocabulary:
 
 ```sh
-incus exec kb -- su - kb -c 'llm-wiki schema list --wiki myproject'
+incus exec kb -- su - kb -c 'llm-wiki schema list --wiki myproject && llm-wiki schema show assessment --wiki myproject'
 ```
 
-`assessment` and `assessment-report` are registered now, each carrying
-`x-owner: amaker` — your wiki learned amaker's classes when amaker
-showed up, not a moment earlier. Step 4 picks the loop up from these
-pages.
+`assessment` and `assessment-report` are in the vocabulary now, and
+the `show` output carries the proof — `"x-owner": "amaker"` — your
+wiki learned amaker's classes when amaker showed up, not a moment
+earlier. Step 4 picks the loop up from these pages.
