@@ -12,7 +12,6 @@
 # The foundation
 
 - [The knowledge base](./knowledge-base.md)
-- [Starter content](./starter-content.md)
 
 # Working with Como
 

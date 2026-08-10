@@ -47,9 +47,8 @@ is why the thread never gets dropped between stages.
 ## How we work
 
 **Opinionated, not dogmatic.** We ship defaults because most organizations
-need a jumpstart — a fresh knowledge base starts from
-[working content](./starter-content.md), not a blank page — and every
-piece is built for bring-your-own when you already have your own shape.
+need a jumpstart, and every piece is built for bring-your-own when you
+already have your own shape.
 
 **AI as leverage, not theater.** An assistant helps at every stage — in
 the interview, at the keyboard, behind the pull request — and every AI
@@ -64,7 +63,6 @@ review your team's.
 | [assessments](./loop/assess.md) | AI-assisted maturity assessments | Assess |
 | [adroit](./loop/prescribe.md) | Decision authoring and management | Prescribe |
 | [The knowledge base](./knowledge-base.md) | The shared substrate | every stage |
-| [Starter content](./starter-content.md) | Day-one knowledge base content | every stage |
 | [conduit](./loop/adopt.md) | Agentic delivery engine | Adopt |
 | [tuesday](./loop/measure.md) | Capacity measurement | Measure |
 | [pulse](./loop/measure.md) | Anonymous sentiment | Measure |

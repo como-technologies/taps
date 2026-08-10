@@ -19,9 +19,8 @@ in a review process the knowledge base itself documents. The corpus you
 end up with is the set of decisions your people actually made.
 
 **What you get.** A living knowledge base tailored to your context —
-opinionated where you need a jumpstart (a fresh space starts from the
-shipped [starter content](../starter-content.md)), flexible where you
-have your own shape — and machine-readable to every downstream stage.
+opinionated where you need a jumpstart, flexible where you have your
+own shape — and machine-readable to every downstream stage.
 
 Details live in the
 [adroit repo](https://github.com/como-technologies/taps/tree/main/adroit).

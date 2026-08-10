@@ -1,5 +1,10 @@
 # Services
 
+> 🚧 **Aspirational.** This chapter describes the engagement layer as we
+> intend it, not as it exists today. The tools are real; the services
+> around them are mostly undefined and will firm up as real engagements
+> do.
+
 The tools carry the mechanics; the services carry the people. What turns
 the portfolio into an engagement is Como's services layer — facilitation,
 authoring, enablement, and the occasional hard conversation with a

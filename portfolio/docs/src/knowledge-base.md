@@ -20,8 +20,8 @@ page either validates and lands, or it doesn't.
 
 You work with the knowledge base from your own AI harness — Claude Code,
 Claude Desktop, or any MCP-capable client — configured from the shipped
-**authoring kit**: instructions, skills, reference configs, and
-[starter content](./starter-content.md). Ask questions over the corpus,
+**authoring kit**: instructions, skills, and reference configs. Ask
+questions over the corpus,
 draft a decision in conversation, file guidance as you learn it — every
 write goes through the same validation gates regardless of who (or what)
 authored it. The CLIs remain first-class doors for people and pipelines
