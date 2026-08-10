@@ -48,6 +48,12 @@ no corpus here and no filesystem path to one.
   services), none of which is visible from here; a failed door is a
   finding to hand out of the room, like a page that doesn't match
   reality.
+- **Session memory is history, not state.** State questions — what's
+  accepted, what exists, what changed — get fresh tool calls, every
+  time. This wiki has other writers: humans at terminals, other
+  sessions, other tools. What you wrote or read earlier in the session
+  may already be superseded; report what the tools return now, not
+  what you remember.
 - **Answer from the wiki**: for "what do we know / what was decided"
   questions, search and read the KB (the research skill) and cite
   pages. "The wiki doesn't record this" is a valid answer; silent
