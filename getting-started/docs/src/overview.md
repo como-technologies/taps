@@ -17,6 +17,10 @@ sense.
 > guide or in the products. Steps marked 🚧 haven't survived a clean
 > walkthrough yet. The markers disappear as the walks complete.
 
+> 🤝 **Using Claude Code?** The taps repo ships **`/walk-the-guide`** —
+> open a session in your clone and it walks these steps *with* you, from
+> Step 0, handing you the parts only a human can do.
+
 ## The journey
 
 | Step                                                  | You will                                             | Tool                          |
@@ -46,21 +50,3 @@ harness** (Claude Code or any MCP client — Step 2's conversational door
 to the KB), and an **Anthropic API key or local
 [ollama](https://ollama.com)** for the AI-assisted lanes (Step 3 —
 every mechanical gate in the tutorial works without a model).
-
-## Conventions
-
-Every command is paste-and-go with three concrete names:
-
-- **`~/taps`** — where Step 1 clones the suite
-- **`kb`** — the appliance container holding your knowledge base,
-  launched in Step 2 (your wiki lives inside it as `myproject`)
-- **`~/kb-workspace`** — the authoring workspace your AI sessions run
-  in, made in Step 2
-
-Prefer different locations or a real project name? Substitute as you
-paste — the names appear literally in every command, so there's nothing
-to set up first and nothing to forget.
-
-Using Claude Code? The taps repo ships **`/walk-the-guide`** — open a
-session in your clone and it walks these steps *with* you, from Step 0,
-handing you the parts only a human can do.
