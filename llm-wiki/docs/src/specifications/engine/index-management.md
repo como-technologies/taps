@@ -12,7 +12,7 @@ last_updated: "2026-04-28"
 # Index Management
 
 The search index is a tantivy BM25 index stored at
-`~/.llm-wiki/indexes/<name>/search-index/`. It is a local build
+`$XDG_STATE_HOME/llm-wiki/indexes/<name>/search-index/`. It is a local build
 artifact — never committed, never shared. Rebuildable from committed
 files at any time.
 
@@ -36,7 +36,7 @@ engine reads each page's type, loads the JSON Schema, applies
 `x-index-aliases`, and indexes fields by role.
 
 The computed schema is stored at
-`~/.llm-wiki/indexes/<name>/schema.json` alongside the search index.
+`$XDG_STATE_HOME/llm-wiki/indexes/<name>/schema.json` alongside the search index.
 It is regenerated from the type registry on rebuild.
 
 Three index roles:
@@ -125,7 +125,7 @@ Triggered by:
 
 ## State Tracking
 
-Stored at `~/.llm-wiki/indexes/<name>/state.toml`:
+Stored at `$XDG_STATE_HOME/llm-wiki/indexes/<name>/state.toml`:
 
 ```toml
 schema_hash = "a1b2c3d4..."

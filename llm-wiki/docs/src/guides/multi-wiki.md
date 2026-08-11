@@ -154,7 +154,7 @@ auto_commit = true
 type_strictness = "strict"
 ```
 
-Global defaults live in `~/.llm-wiki/config.toml`. Per-wiki settings
+Global defaults live in `$XDG_CONFIG_HOME/llm-wiki/config.toml`. Per-wiki settings
 override global ones.
 
 ```bash

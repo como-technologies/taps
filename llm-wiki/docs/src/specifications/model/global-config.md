@@ -1,6 +1,6 @@
 ---
 title: "config.toml"
-summary: "Global engine config at ~/.llm-wiki/config.toml — wiki registry, defaults, and global-only settings."
+summary: "Global engine config at $XDG_CONFIG_HOME/llm-wiki/config.toml — wiki registry, defaults, and global-only settings."
 read_when:
   - Understanding what config.toml contains
   - Looking up a config key and its default
@@ -17,7 +17,7 @@ defaults. Local to the machine, never committed.
 **Location resolution order:**
 1. `--config <path>` CLI flag
 2. `LLM_WIKI_CONFIG` environment variable
-3. `~/.llm-wiki/config.toml` (default)
+3. `$XDG_CONFIG_HOME/llm-wiki/config.toml` (default)
 
 ## Example
 
@@ -96,7 +96,7 @@ heartbeat_secs  = 60
 acp_max_sessions = 20
 
 [logging]
-log_path      = "~/.llm-wiki/logs"
+log_path      = "$XDG_STATE_HOME/llm-wiki/logs"
 log_rotation  = "daily"
 log_max_files = 7
 log_format    = "text"
@@ -180,7 +180,7 @@ is rejected.
 | `serve.heartbeat_secs`  | `60`               | Heartbeat interval; `0` = disabled        |
 | `serve.acp_max_sessions` | `20`              | Max concurrent ACP sessions; `NewSession` returns an error when reached |
 | `watch.debounce_ms`    | `500`              | Filesystem watcher debounce interval in ms |
-| `logging.log_path`      | `~/.llm-wiki/logs` | Log file directory; empty = stderr only   |
+| `logging.log_path`      | `$XDG_STATE_HOME/llm-wiki/logs` | Log file directory; empty = stderr only   |
 | `logging.log_rotation`  | `daily`            | `daily`, `hourly`, `never`                |
 | `logging.log_max_files` | `7`                | Max rotated files; `0` = unlimited        |
 | `logging.log_format`    | `text`             | `text` or `json`                          |

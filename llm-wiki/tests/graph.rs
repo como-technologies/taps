@@ -276,7 +276,10 @@ fn render_mermaid_ids_are_valid_identifiers() {
         output.contains("concepts_start_here -->|links-to| concepts_moe"),
         "{output}"
     );
-    assert!(!output.contains("Start Here["), "title leaked into an id: {output}");
+    assert!(
+        !output.contains("Start Here["),
+        "title leaked into an id: {output}"
+    );
 
     // Every declared id is a plain identifier.
     for line in output.lines() {

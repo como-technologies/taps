@@ -49,7 +49,7 @@ in its frontmatter also matches this entry, which is intentional.
 ## Set globally in config.toml
 
 ```toml
-# ~/.llm-wiki/config.toml
+# $XDG_CONFIG_HOME/llm-wiki/config.toml
 [search.status]
 active   = 1.0
 draft    = 0.8

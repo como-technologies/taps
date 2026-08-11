@@ -16,7 +16,7 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub wiki: Option<String>,
 
-    /// Path to global config file (default: ~/.llm-wiki/config.toml).
+    /// Path to global config file (default: $XDG_CONFIG_HOME/llm-wiki/config.toml).
     /// Overrides the LLM_WIKI_CONFIG environment variable.
     #[arg(long, global = true)]
     pub config: Option<std::path::PathBuf>,

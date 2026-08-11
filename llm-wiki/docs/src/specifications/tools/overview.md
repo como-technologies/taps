@@ -150,5 +150,5 @@ These commands are available via CLI only (no MCP/ACP equivalent).
 |---------|-------------|
 | `llm-wiki watch [--wiki <name>]` | Auto-ingest on file save (standalone mode) |
 
-Operates on `~/.llm-wiki/logs/`. Only useful when `llm-wiki serve`
+Operates on `$XDG_STATE_HOME/llm-wiki/logs/`. Only useful when `llm-wiki serve`
 has file logging enabled (see [server.md](../engine/server.md)).

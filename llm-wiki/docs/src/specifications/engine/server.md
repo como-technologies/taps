@@ -52,7 +52,7 @@ llm-wiki serve --http --watch      # stdio + HTTP + watcher
 
 ## Multi-Wiki
 
-All wikis registered in `~/.llm-wiki/config.toml` are mounted at
+All wikis registered in `$XDG_CONFIG_HOME/llm-wiki/config.toml` are mounted at
 startup. Wikis can be added or removed at runtime — see
 [Hot Reload](#hot-reload). See [engine-state.md](engine-state.md)
 for the engine state layout and
@@ -71,7 +71,7 @@ wiki is used.
 ## Startup Sequence
 
 ```
-1. Load ~/.llm-wiki/config.toml — wikis + global config
+1. Load $XDG_CONFIG_HOME/llm-wiki/config.toml — wikis + global config
 2. Create wiki map: RwLock<HashMap<String, Arc<WikiHandle>>>
 3. Mount all registered wikis into the map
 4. Check index staleness for each wiki (warn or auto-rebuild per config)
@@ -143,7 +143,7 @@ for the full key reference.
 
 Structured logging via `tracing` and `tracing-subscriber`. All
 operational logs go to stderr. Long-running `llm-wiki serve` also
-writes to rotating log files under `~/.llm-wiki/logs/`.
+writes to rotating log files under `$XDG_STATE_HOME/llm-wiki/logs/`.
 
 ### Two channels
 
@@ -176,7 +176,7 @@ only.
 
 | Setting                 | Default            | Description                        |
 | ----------------------- | ------------------ | ---------------------------------- |
-| `logging.log_path`      | `~/.llm-wiki/logs` | Directory; empty = stderr only     |
+| `logging.log_path`      | `$XDG_STATE_HOME/llm-wiki/logs` | Directory; empty = stderr only     |
 | `logging.log_rotation`  | `daily`            | `daily`, `hourly`, `never`         |
 | `logging.log_max_files` | `7`                | Max rotated files; `0` = unlimited |
 | `logging.log_format`    | `text`             | `text` (human) or `json` (machine) |
@@ -253,7 +253,7 @@ lock.
 On `wiki_admin_create`:
 
 1. Write `config.toml` (register the wiki)
-2. Open or create the tantivy index at `~/.llm-wiki/indexes/<name>/`
+2. Open or create the tantivy index at `$XDG_STATE_HOME/llm-wiki/indexes/<name>/`
 3. Run staleness check (same rules as startup)
 4. Insert into wiki map under write lock
 5. Emit `notifications/resources/list_changed` (MCP notification)
@@ -268,7 +268,7 @@ On `wiki_admin_remove`:
 3. Close index reader/writer handles (do not delete index files)
 4. Write `config.toml` (unregister the wiki)
 5. If `--delete`: also delete index files at
-   `~/.llm-wiki/indexes/<name>/`
+   `$XDG_STATE_HOME/llm-wiki/indexes/<name>/`
 6. Emit `notifications/resources/list_changed`
 7. Log: `reload: unmounted <name>`
 

@@ -107,7 +107,10 @@ fn schema_show_template_validates_against_its_own_schema() {
         .iter_errors(&value)
         .map(|e| e.to_string())
         .collect();
-    assert!(errors.is_empty(), "template fails its own schema: {errors:?}");
+    assert!(
+        errors.is_empty(),
+        "template fails its own schema: {errors:?}"
+    );
 }
 
 #[test]

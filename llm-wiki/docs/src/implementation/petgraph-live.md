@@ -198,10 +198,11 @@ from appearing in `tempfile::TempDir` directories.
 ## Snapshot file location
 
 ```
-~/.llm-wiki/snapshots/<wiki-name>/wiki-graph-<generation-key>.bin.lz4
+$XDG_STATE_HOME/llm-wiki/snapshots/<wiki-name>/wiki-graph-<generation-key>.bin.lz4
 ```
 
-`state_dir` is `EngineState.state_dir` — typically `~/.llm-wiki`. Never
+`state_dir` is `EngineState.state_dir` — `$XDG_STATE_HOME/llm-wiki` by
+default, the config file's parent when `--config` is explicit. Never
 hardcode this path.
 
 Old snapshots are rotated by petgraph-live when `keep` is exceeded. No manual

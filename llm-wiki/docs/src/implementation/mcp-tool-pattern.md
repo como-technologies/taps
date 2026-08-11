@@ -134,7 +134,7 @@ wiki.type_registry   // WikiTypeRegistry — validators, aliases
 wiki.index_schema    // IndexSchema — tantivy field handles
 wiki.content_root       // PathBuf — content/ directory
 wiki.repo_root       // PathBuf — repository root
-wiki.index_path      // PathBuf — ~/.llm-wiki/indexes/<name>/
+wiki.index_path      // PathBuf — $XDG_STATE_HOME/llm-wiki/indexes/<name>/
 ```
 
 ## 5. Update tool count test

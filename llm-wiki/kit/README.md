@@ -48,7 +48,7 @@ corpus starts empty; test data lives with tests, never in the kit.
 
 1. Stand up an appliance: `llm-wiki serve` wherever you deploy it —
    terminal process, systemd unit, incus container, k8s pod. The engine
-   is topology-agnostic; its registry is `~/.llm-wiki/config.toml` (or
+   is topology-agnostic; its registry is `$XDG_CONFIG_HOME/llm-wiki/config.toml` (or
    `$LLM_WIKI_CONFIG`) *where the appliance runs*. The Getting Started
    guide's walked path is an incus container named `kb`.
 2. Create the wiki on the appliance:

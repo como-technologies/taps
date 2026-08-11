@@ -368,7 +368,13 @@ fn index_config_defaults() {
 #[test]
 fn logging_config_defaults() {
     let cfg = LoggingConfig::default();
-    assert!(cfg.log_path.ends_with(".llm-wiki/logs"));
+    // Logs default under the XDG state home (taps #101).
+    assert_eq!(
+        cfg.log_path,
+        llm_wiki::config::default_state_dir()
+            .join("logs")
+            .to_string_lossy()
+    );
     assert_eq!(cfg.log_rotation, "daily");
     assert_eq!(cfg.log_max_files, 7);
     assert_eq!(cfg.log_format, "text");

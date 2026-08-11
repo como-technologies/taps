@@ -249,7 +249,7 @@ impl Default for ValidationConfig {
 /// `[logging]` section — structured log file configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoggingConfig {
-    /// Directory where log files are written (default: `~/.llm-wiki/logs`).
+    /// Directory where log files are written (default: `$XDG_STATE_HOME/llm-wiki/logs`).
     #[serde(default = "default_log_path")]
     pub log_path: String,
     /// Log rotation policy: `"daily"` or `"never"` (default: `"daily"`).
@@ -413,7 +413,8 @@ pub struct RedactConfig {
 
 // ── Composite configs ─────────────────────────────────────────────────────────
 
-/// Root structure for `~/.llm-wiki/config.toml` — the global configuration file.
+/// Root structure for the global configuration file
+/// (default: `$XDG_CONFIG_HOME/llm-wiki/config.toml`).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GlobalConfig {
     /// `[global]` section.
@@ -604,12 +605,31 @@ fn default_type_strictness() -> String {
     "loose".into()
 }
 fn default_log_path() -> String {
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-    std::path::PathBuf::from(home)
-        .join(".llm-wiki")
-        .join("logs")
-        .to_string_lossy()
-        .into()
+    default_state_dir().join("logs").to_string_lossy().into()
+}
+
+/// Default location of the global config registry:
+/// `$XDG_CONFIG_HOME/llm-wiki/config.toml`. `--config` / `LLM_WIKI_CONFIG`
+/// override it — and an explicit config file also pins the state dir to its
+/// parent (the hermetic-world trick tests and nested appliances rely on).
+pub fn default_config_path() -> std::path::PathBuf {
+    match directories::ProjectDirs::from("", "", "llm-wiki") {
+        Some(dirs) => dirs.config_dir().join("config.toml"),
+        None => std::path::PathBuf::from(".llm-wiki").join("config.toml"),
+    }
+}
+
+/// Default home for derived, rebuildable state (indexes, graph snapshots,
+/// logs): `$XDG_STATE_HOME/llm-wiki`. Used only when the config path itself
+/// resolved to its default — an explicit config keeps state beside it.
+pub fn default_state_dir() -> std::path::PathBuf {
+    match directories::ProjectDirs::from("", "", "llm-wiki") {
+        Some(dirs) => dirs
+            .state_dir()
+            .unwrap_or_else(|| dirs.data_local_dir())
+            .to_path_buf(),
+        None => std::path::PathBuf::from(".llm-wiki"),
+    }
 }
 fn default_log_rotation() -> String {
     "daily".into()

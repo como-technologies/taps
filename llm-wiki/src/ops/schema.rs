@@ -60,7 +60,10 @@ fn levenshtein(a: &str, b: &str) -> usize {
 /// "type 'X' is not registered", with a did-you-mean when the registry
 /// holds a near miss — the registry is right there; suggesting is the
 /// standard kindness, for humans and agents alike.
-fn unknown_type_error(registry: &crate::type_registry::WikiTypeRegistry, type_name: &str) -> anyhow::Error {
+fn unknown_type_error(
+    registry: &crate::type_registry::WikiTypeRegistry,
+    type_name: &str,
+) -> anyhow::Error {
     let suggestion = registry
         .list_types()
         .into_iter()
@@ -608,17 +611,14 @@ fn format_template_field(name: &str, prop: &serde_json::Value, type_name: &str) 
             } else if name == "status" {
                 // Status vocabularies differ per class — read the schema's own
                 // enum, preferring the authoring contract's born state.
-                let from_enum = prop
-                    .get("enum")
-                    .and_then(|e| e.as_array())
-                    .and_then(|arr| {
-                        let vals: Vec<&str> = arr.iter().filter_map(|v| v.as_str()).collect();
-                        if vals.contains(&"generated") {
-                            Some("generated")
-                        } else {
-                            vals.first().copied()
-                        }
-                    });
+                let from_enum = prop.get("enum").and_then(|e| e.as_array()).and_then(|arr| {
+                    let vals: Vec<&str> = arr.iter().filter_map(|v| v.as_str()).collect();
+                    if vals.contains(&"generated") {
+                        Some("generated")
+                    } else {
+                        vals.first().copied()
+                    }
+                });
                 match from_enum {
                     Some(v) => format!("status: {v}"),
                     None => "status: \"\"".to_string(),

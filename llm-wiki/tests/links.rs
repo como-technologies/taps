@@ -209,7 +209,8 @@ fn wikilink_in_tilde_fence_is_not_extracted() {
 
 #[test]
 fn commonmark_link_in_inline_code_is_not_extracted() {
-    let links = extract_body_wikilinks("Write `[text](some-target)` to link; [live](concepts/real).");
+    let links =
+        extract_body_wikilinks("Write `[text](some-target)` to link; [live](concepts/real).");
     assert!(!links.contains(&"some-target".to_string()), "{links:?}");
     assert!(links.contains(&"concepts/real".to_string()));
 }

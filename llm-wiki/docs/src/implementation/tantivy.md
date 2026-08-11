@@ -58,7 +58,7 @@ struct IndexSchema {
 ### Caching
 
 The computed schema is stored as `schema.json` at
-`~/.llm-wiki/indexes/<name>/schema.json`. CLI commands load it from
+`$XDG_STATE_HOME/llm-wiki/indexes/<name>/schema.json`. CLI commands load it from
 cache instead of re-deriving from all schema files. `schema_hash` in
 `state.toml` detects when the cache is stale.
 

@@ -145,7 +145,13 @@ impl WikiEngine {
     /// Build a `WikiEngine` from the global config at `config_path`, mounting all registered wikis.
     pub fn build(config_path: &Path) -> Result<Self> {
         let config = config::load_global(config_path)?;
-        let state_dir = config_path.parent().unwrap_or(Path::new(".")).to_path_buf();
+        // Default-resolved config → XDG state home. An explicit config file
+        // pins state to its parent instead — one flag, one hermetic world.
+        let state_dir = if config_path == config::default_config_path() {
+            config::default_state_dir()
+        } else {
+            config_path.parent().unwrap_or(Path::new(".")).to_path_buf()
+        };
 
         let mut wikis = HashMap::new();
 

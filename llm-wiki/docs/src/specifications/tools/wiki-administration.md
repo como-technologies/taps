@@ -90,8 +90,10 @@ already-registered wiki:
 `admin register` performs none of this — an existing wiki's configuration
 is its own.
 
-On first run, the wiki becomes the default one. Also ensures
-`~/.llm-wiki/` infrastructure exists (config.toml, indexes/, logs/).
+On first run, the wiki becomes the default one. Also ensures the
+engine-state infrastructure exists (config.toml under XDG config;
+indexes/ and logs/ under XDG state — see
+[engine-state](../engine/engine-state.md)).
 
 When called from a running server, the new wiki is mounted
 immediately — searchable and indexable without restart.

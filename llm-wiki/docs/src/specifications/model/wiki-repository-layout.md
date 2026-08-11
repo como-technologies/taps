@@ -15,7 +15,7 @@ The vocabulary, in one line: **a knowledge base has one or more wikis,
 and a wiki has a `content/` directory of pages.**
 
 - **Knowledge base (KB)** — the appliance: one engine process and its
-  registry (`~/.llm-wiki/config.toml`). `KB_URL` points at it.
+  registry (`$XDG_CONFIG_HOME/llm-wiki/config.toml`). `KB_URL` points at it.
 - **Wiki** — the corpus: one git repository, one `[[wikis]]` registry
   entry, strictly 1:1. `KB_WIKI` names it.
 - **`content/`** — the pages directory inside a wiki (the

@@ -9,7 +9,7 @@ llm-wiki uses two configuration files:
 
 | File | Location | Scope | Committed? |
 |------|----------|-------|------------|
-| `config.toml` | `~/.llm-wiki/config.toml` | Global — all wikis | No (local to machine) |
+| `config.toml` | `$XDG_CONFIG_HOME/llm-wiki/config.toml` | Global — all wikis | No (local to machine) |
 | `wiki.toml` | `<wiki>/wiki.toml` | Per-wiki — overrides global | Yes (shared via git) |
 
 Both are created automatically by `llm-wiki admin create`. You
@@ -17,7 +17,7 @@ rarely need to edit them by hand — use `llm-wiki config` instead.
 
 ## Overriding the config path
 
-By default llm-wiki reads `~/.llm-wiki/config.toml`. Override it with:
+By default llm-wiki reads `$XDG_CONFIG_HOME/llm-wiki/config.toml`. Override it with:
 
 ```bash
 # Flag (highest priority)
@@ -168,7 +168,7 @@ llm-wiki admin config set graph.format dot --global
 
 ### Disable graph snapshot warm-start
 
-By default the graph cache is persisted to `~/.llm-wiki/snapshots/<wiki>/` so
+By default the graph cache is persisted to `$XDG_STATE_HOME/llm-wiki/snapshots/<wiki>/` so
 process restarts load from disk instead of rebuilding. Disable in CI or when
 snapshot files are undesirable:
 

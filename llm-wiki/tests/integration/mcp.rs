@@ -6,7 +6,6 @@
 //! are folded into single tests; every distinct behavior is preserved.
 
 use std::io::{BufRead, BufReader, Write};
-use std::path::Path;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
 use serde_json::{Value, json};
@@ -239,7 +238,10 @@ fn content_new_creates_page() {
         "wiki_content_read",
         json!({"uri": "concepts/test-new-page", "wiki": SPACE_NAME}),
     );
-    assert!(text.contains("---"), "created page should read back: {text}");
+    assert!(
+        text.contains("---"),
+        "created page should read back: {text}"
+    );
 }
 
 #[test]

@@ -66,7 +66,7 @@ See [graph-cache.md](graph-cache.md) and [petgraph-live.md](petgraph-live.md).
 `WikiEngine::build` loads config, then calls `mount_wiki` per entry:
 
 ```
-1. Load GlobalConfig from ~/.llm-wiki/config.toml
+1. Load GlobalConfig from $XDG_CONFIG_HOME/llm-wiki/config.toml
 2. For each registered wiki → mount_wiki():
    a. Build WikiTypeRegistry from schemas/ + wiki.toml overrides
    b. Build IndexSchema from the type registry

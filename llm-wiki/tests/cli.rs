@@ -31,8 +31,40 @@ fn llm_wiki_config_env_var_overrides_default_path() {
 
     let out = binary()
         .env("LLM_WIKI_CONFIG", config.to_str().unwrap())
-        // Ensure HOME doesn't accidentally point to a real config
+        // Ensure the host's real default config can't leak in
         .env("HOME", dir.path())
+        .env("XDG_CONFIG_HOME", dir.path())
+        .args(["admin", "list"])
+        .output()
+        .unwrap();
+
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+}
+
+#[test]
+fn default_config_path_is_xdg() {
+    let dir = tempfile::tempdir().unwrap();
+    // No --config, no LLM_WIKI_CONFIG: the registry resolves to
+    // $XDG_CONFIG_HOME/llm-wiki/config.toml (taps #101 — `~/.llm-wiki` dies).
+    let xdg = dir.path().join("xdg-config");
+    std::fs::create_dir_all(xdg.join("llm-wiki")).unwrap();
+    std::fs::write(xdg.join("llm-wiki").join("config.toml"), "").unwrap();
+    // A legacy dotdir config that must NOT be read.
+    std::fs::create_dir_all(dir.path().join(".llm-wiki")).unwrap();
+    std::fs::write(
+        dir.path().join(".llm-wiki").join("config.toml"),
+        "not toml — reading this file is the bug",
+    )
+    .unwrap();
+
+    let out = binary()
+        .env("HOME", dir.path())
+        .env("XDG_CONFIG_HOME", &xdg)
+        .env_remove("LLM_WIKI_CONFIG")
         .args(["admin", "list"])
         .output()
         .unwrap();

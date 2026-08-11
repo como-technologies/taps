@@ -19,7 +19,7 @@ Follows the [manager pattern](manager-pattern.md).
 struct WikiIndexManager {
     wiki_name: String,
     content_root: PathBuf,
-    index_root: PathBuf,       // ~/.llm-wiki/indexes/<name>/
+    index_root: PathBuf,       // $XDG_STATE_HOME/llm-wiki/indexes/<name>/
     state: WikiIndex,
 }
 
@@ -146,7 +146,7 @@ fn has_changed(&self, repo_root: &Path) -> Result<bool> {
 
 ## State File
 
-Reads and writes `~/.llm-wiki/indexes/<name>/state.toml`:
+Reads and writes `$XDG_STATE_HOME/llm-wiki/indexes/<name>/state.toml`:
 
 ```toml
 schema_hash = "a1b2c3d4..."

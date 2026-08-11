@@ -63,7 +63,7 @@ Engine behavior contracts.
 
 | Spec                                              | Description                                                          |
 | ------------------------------------------------- | -------------------------------------------------------------------- |
-| [engine-state.md](engine/engine-state.md)         | Engine state at ~/.llm-wiki/ — config, indexes, logs                 |
+| [engine-state.md](engine/engine-state.md)         | Engine state — config under XDG config, indexes/logs under XDG state |
 | [index-management.md](engine/index-management.md) | Tantivy schema, field mapping, staleness, versioning, rebuild        |
 | [graph.md](engine/graph.md)                       | Petgraph: typed nodes, labeled edges, rendering                      |
 | [ingest-pipeline.md](engine/ingest-pipeline.md)   | Page discovery, validate → alias → index → commit flow               |

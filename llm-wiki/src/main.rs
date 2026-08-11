@@ -19,8 +19,7 @@ fn global_config_path(cli_override: Option<&Path>) -> PathBuf {
     if let Ok(p) = std::env::var("LLM_WIKI_CONFIG") {
         return PathBuf::from(p);
     }
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-    PathBuf::from(home).join(".llm-wiki").join("config.toml")
+    config::default_config_path()
 }
 
 fn main() -> Result<()> {

@@ -17,7 +17,7 @@ MCP tool: `wiki_admin_config`
 | `config set <key> <value>` | Write a config value     |
 | `config list`              | List all resolved config |
 
-Operates on `wiki.toml` (per-wiki) or `~/.llm-wiki/config.toml`
+Operates on `wiki.toml` (per-wiki) or `$XDG_CONFIG_HOME/llm-wiki/config.toml`
 (global). For the file formats and full key reference, see
 [wiki-toml.md](../model/wiki-toml.md) and
 [global-config.md](../model/global-config.md).
@@ -28,7 +28,7 @@ Operates on `wiki.toml` (per-wiki) or `~/.llm-wiki/config.toml`
 ```
 llm-wiki admin config get <key>
 llm-wiki admin config set <key> <value>
-                [--global]          # write to ~/.llm-wiki/config.toml
+                [--global]          # write to $XDG_CONFIG_HOME/llm-wiki/config.toml
                 [--wiki <name>]     # write to per-wiki wiki.toml
 llm-wiki admin config list
              [--global]
@@ -38,7 +38,7 @@ llm-wiki admin config list
 
 `set` without `--global` writes to the per-wiki `wiki.toml` of the
 default wiki (or `--wiki <name>` target). With `--global` it writes to
-`~/.llm-wiki/config.toml`.
+`$XDG_CONFIG_HOME/llm-wiki/config.toml`.
 
 Global-only keys (`index.*`, `serve.*`, `logging.*`) reject
 `--wiki` with an error.
