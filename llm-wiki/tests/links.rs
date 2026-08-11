@@ -175,3 +175,62 @@ fn commonmark_image_link_filtered() {
     let links = extract_body_wikilinks("![alt](image.png)");
     assert!(links.is_empty());
 }
+
+// ── code spans and fences shield their contents (taps #59) ────────────────────
+
+#[test]
+fn wikilink_in_inline_code_is_not_extracted() {
+    let links = extract_body_wikilinks(
+        "Link pages with `[[not-a-real-page]]` syntax; see [[concepts/moe]] for a live one.",
+    );
+    assert!(
+        !links.contains(&"not-a-real-page".to_string()),
+        "example in backticks extracted as a link: {links:?}"
+    );
+    assert!(links.contains(&"concepts/moe".to_string()));
+}
+
+#[test]
+fn wikilink_in_fenced_block_is_not_extracted() {
+    let body = "Prose with [[concepts/real]].\n\n```markdown\nA worked example:\n[[fence-example]] and [also](fence-target).\n```\n\nMore prose.\n";
+    let links = extract_body_wikilinks(body);
+    assert!(!links.contains(&"fence-example".to_string()), "{links:?}");
+    assert!(!links.contains(&"fence-target".to_string()), "{links:?}");
+    assert!(links.contains(&"concepts/real".to_string()));
+}
+
+#[test]
+fn wikilink_in_tilde_fence_is_not_extracted() {
+    let body = "~~~\n[[tilde-example]]\n~~~\n\n[[concepts/real]]\n";
+    let links = extract_body_wikilinks(body);
+    assert!(!links.contains(&"tilde-example".to_string()), "{links:?}");
+    assert!(links.contains(&"concepts/real".to_string()));
+}
+
+#[test]
+fn commonmark_link_in_inline_code_is_not_extracted() {
+    let links = extract_body_wikilinks("Write `[text](some-target)` to link; [live](concepts/real).");
+    assert!(!links.contains(&"some-target".to_string()), "{links:?}");
+    assert!(links.contains(&"concepts/real".to_string()));
+}
+
+#[test]
+fn unclosed_backtick_does_not_swallow_prose_links() {
+    let links = extract_body_wikilinks("A stray ` backtick, then [[concepts/real]].");
+    assert!(links.contains(&"concepts/real".to_string()), "{links:?}");
+}
+
+#[test]
+fn parsed_links_also_skip_code() {
+    let page = frontmatter::parse(
+        "---\ntitle: \"Guide\"\ntype: concept\n---\n\nUse `[[wiki://other/example]]` in prose; real: [[concepts/moe]].\n",
+    );
+    let links = extract_parsed_links(&page);
+    assert!(
+        !links
+            .iter()
+            .any(|l| matches!(l, ParsedLink::CrossWiki { wiki, .. } if wiki == "other")),
+        "{links:?}"
+    );
+    assert!(links.contains(&ParsedLink::Local("concepts/moe".to_string())));
+}

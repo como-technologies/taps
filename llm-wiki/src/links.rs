@@ -71,8 +71,86 @@ pub fn extract_parsed_links(page: &ParsedPage) -> Vec<ParsedLink> {
     result
 }
 
+/// Blank fenced code blocks, then inline code spans, so example links —
+/// `[[slug]]` in backticks or inside a fence — never extract as real links.
+/// The link graph reflects prose only.
+fn strip_code(text: &str) -> String {
+    // Pass 1: drop fenced block contents (``` / ~~~, closing run at least
+    // as long as the opener, same character).
+    let mut without_fences = String::with_capacity(text.len());
+    let mut fence: Option<(char, usize)> = None;
+    for line in text.split_inclusive('\n') {
+        let trimmed = line.trim_start();
+        let marker = trimmed
+            .chars()
+            .next()
+            .filter(|c| *c == '`' || *c == '~')
+            .map(|c| (c, trimmed.chars().take_while(|x| *x == c).count()))
+            .filter(|(_, run)| *run >= 3);
+        match (fence, marker) {
+            (Some((ch, len)), Some((c, run))) if c == ch && run >= len => fence = None,
+            (Some(_), _) => {}
+            (None, Some((c, run))) => fence = Some((c, run)),
+            (None, None) => {
+                without_fences.push_str(line);
+                continue;
+            }
+        }
+        // Fence delimiters and fenced content contribute only their newline.
+        if line.ends_with('\n') {
+            without_fences.push('\n');
+        }
+    }
+
+    // Pass 2: drop inline code spans — a run of N backticks closes at the
+    // next run of exactly N (CommonMark), across line boundaries.
+    let chars: Vec<char> = without_fences.chars().collect();
+    let mut out = String::with_capacity(without_fences.len());
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '`' {
+            let mut run = 0;
+            while i < chars.len() && chars[i] == '`' {
+                run += 1;
+                i += 1;
+            }
+            let mut j = i;
+            let mut close = None;
+            while j < chars.len() {
+                if chars[j] == '`' {
+                    let mut crun = 0;
+                    while j < chars.len() && chars[j] == '`' {
+                        crun += 1;
+                        j += 1;
+                    }
+                    if crun == run {
+                        close = Some(j);
+                        break;
+                    }
+                } else {
+                    j += 1;
+                }
+            }
+            match close {
+                Some(end) => i = end, // span dropped wholesale
+                None => {
+                    // Unclosed — literal backticks, keep scanning after them.
+                    for _ in 0..run {
+                        out.push('`');
+                    }
+                }
+            }
+        } else {
+            out.push(chars[i]);
+            i += 1;
+        }
+    }
+    out
+}
+
 fn extract_parsed_wikilinks(text: &str, seen: &mut HashSet<String>, result: &mut Vec<ParsedLink>) {
-    let mut rest = text;
+    let text = strip_code(text);
+    let mut rest = text.as_str();
     while let Some(start) = rest.find("[[") {
         let after = &rest[start + 2..];
         if let Some(end) = after.find("]]") {
@@ -85,7 +163,7 @@ fn extract_parsed_wikilinks(text: &str, seen: &mut HashSet<String>, result: &mut
             break;
         }
     }
-    extract_commonmark_links(text, seen, result);
+    extract_commonmark_links(&text, seen, result);
 }
 
 /// Extract CommonMark inline link destinations `[text](destination)` from body text.
@@ -147,8 +225,10 @@ pub fn extract_links(page: &ParsedPage) -> Vec<String> {
 }
 
 /// Extract `[[slug]]` patterns and CommonMark `[text](destination)` links from body text.
+/// Code spans and fenced blocks are stripped first — example links aren't links.
 pub fn extract_wikilinks(text: &str, seen: &mut HashSet<String>, result: &mut Vec<String>) {
-    let mut rest = text;
+    let text = strip_code(text);
+    let mut rest = text.as_str();
     while let Some(start) = rest.find("[[") {
         let after = &rest[start + 2..];
         if let Some(end) = after.find("]]") {
@@ -163,7 +243,7 @@ pub fn extract_wikilinks(text: &str, seen: &mut HashSet<String>, result: &mut Ve
     }
     // Also extract CommonMark inline links, reusing ParsedLink for filtering.
     let mut parsed: Vec<ParsedLink> = Vec::new();
-    extract_commonmark_links(text, seen, &mut parsed);
+    extract_commonmark_links(&text, seen, &mut parsed);
     for link in parsed {
         result.push(link.as_raw().to_string());
     }
