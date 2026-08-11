@@ -882,3 +882,51 @@ fn suggest_json_results_have_slugs() {
         assert!(entry["slug"].is_string());
     }
 }
+
+// ── schema lifecycle stays live in-process (taps #108) ────────────────────────
+
+const NOTE_SCHEMA: &str = r#"{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field note",
+  "type": "object",
+  "required": ["title", "type"],
+  "properties": {
+    "title": { "type": "string" },
+    "type": { "type": "string" },
+    "status": { "type": "string" }
+  },
+  "x-wiki-types": { "field-note": "A field note" },
+  "x-owner": "test-suite"
+}"#;
+
+#[test]
+fn schema_remove_takes_effect_without_restart() {
+    let (_env, mut mcp) = mcp_env();
+
+    // Register a type; the live process must know it immediately…
+    let reg = mcp.call_json(
+        "wiki_admin_schema_register",
+        json!({"type": "field-note", "schema": NOTE_SCHEMA, "wiki": SPACE_NAME}),
+    );
+    assert_eq!(reg["status"], "registered");
+    let shown = mcp.call(
+        "wiki_schema",
+        json!({"action": "show", "type": "field-note", "wiki": SPACE_NAME}),
+    );
+    assert!(shown.contains("field-note"));
+
+    // …and after removal it must be gone from the same process, no restart.
+    let removed = mcp.call_json(
+        "wiki_admin_schema_remove",
+        json!({"type": "field-note", "delete": true, "wiki": SPACE_NAME}),
+    );
+    assert_eq!(removed["dry_run"], false);
+    let (is_error, text) = mcp.call_raw(
+        "wiki_schema",
+        json!({"action": "show", "type": "field-note", "wiki": SPACE_NAME}),
+    );
+    assert!(
+        is_error && text.contains("not registered"),
+        "removed type still served by the live process: error={is_error} text={text}"
+    );
+}

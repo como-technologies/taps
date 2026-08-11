@@ -332,7 +332,23 @@ impl WikiIndexManager {
         }
 
         writer.commit()?;
-        self.reload_reader()?;
+
+        // Install the fresh index into the held handles: this rebuild just
+        // deleted the directory the old reader was opened on — reloading
+        // that reader would leave every later search on a dead index.
+        let reader = index
+            .reader_builder()
+            .reload_policy(tantivy::ReloadPolicy::Manual)
+            .try_into()?;
+        {
+            let mut inner = self
+                .inner
+                .write()
+                .map_err(|_| anyhow::anyhow!("index lock poisoned"))?;
+            inner.tantivy_index = Some(index);
+            inner.index_reader = Some(reader);
+            inner.generation.fetch_add(1, Ordering::AcqRel);
+        }
 
         let commit = git::current_head(repo_root).unwrap_or_default();
         let state = IndexState {

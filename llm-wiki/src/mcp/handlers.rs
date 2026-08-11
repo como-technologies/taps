@@ -655,6 +655,12 @@ pub fn handle_admin_schema_remove(
         .get("dry_run")
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
+    let entry = engine
+        .config
+        .wikis
+        .iter()
+        .find(|w| w.name == wiki_name)
+        .cloned();
     drop(engine);
     let report = ops::schema_remove(
         &server.manager,
@@ -665,6 +671,18 @@ pub fn handle_admin_schema_remove(
         dry_run,
     )
     .map_err(|e| format!("{e}"))?;
+    // A removed type changes the registry exactly like a registered one —
+    // remount so this live process stops validating and indexing the dead
+    // type (taps #108; mirror of the register path).
+    if !report.dry_run
+        && (report.schema_file_deleted || report.wiki_toml_updated)
+        && let Some(entry) = entry
+    {
+        server
+            .manager
+            .mount_wiki(&entry)
+            .map_err(|e| format!("remount after remove failed: {e}"))?;
+    }
     let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
     ok_text(s)
 }

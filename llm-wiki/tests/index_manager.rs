@@ -1191,3 +1191,38 @@ fn rebuild_crosses_a_schema_change() {
         "rebuilt index answers queries under the new schema"
     );
 }
+
+// ── taps#108: rebuild swaps the live handles ──────────────────────────────────
+
+#[test]
+fn rebuild_on_open_manager_serves_the_new_index() {
+    let dir = tempfile::tempdir().unwrap();
+    let content_root = setup_repo(dir.path());
+    write_page(
+        &content_root,
+        "concepts/first.md",
+        &concept_page("First", "body"),
+    );
+
+    // Open once and keep serving through the same manager — a long-running
+    // process, not a one-shot CLI.
+    let mgr = build_index(dir.path(), &content_root);
+    assert_eq!(mgr.searcher().unwrap().num_docs(), 1);
+
+    // Content changes; rebuild deletes and recreates the index directory.
+    write_page(
+        &content_root,
+        "concepts/second.md",
+        &concept_page("Second", "body"),
+    );
+    git::commit(dir.path(), "second page").unwrap();
+    mgr.rebuild(&content_root, dir.path(), &schema(), &registry())
+        .unwrap();
+
+    // The held reader must serve the rebuilt index, not the deleted one.
+    assert_eq!(
+        mgr.searcher().unwrap().num_docs(),
+        2,
+        "searcher still bound to the pre-rebuild index"
+    );
+}
