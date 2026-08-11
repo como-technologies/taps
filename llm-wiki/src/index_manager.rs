@@ -252,6 +252,19 @@ impl WikiIndexManager {
         }
     }
 
+    /// Process-independent identity of the on-disk index build: commit, build
+    /// timestamp, and schema hash from `state.toml`. Changes on every index
+    /// write (rebuild or update) from any process — the graph snapshot cache
+    /// keys on it (taps #98).
+    pub fn build_key(&self) -> String {
+        let state_path = self.index_path.join("state.toml");
+        std::fs::read_to_string(&state_path)
+            .ok()
+            .and_then(|c| toml::from_str::<IndexState>(&c).ok())
+            .map(|s| format!("{}:{}:{}", s.commit, s.built, s.schema_hash))
+            .unwrap_or_default()
+    }
+
     /// Rebuild the full index by walking all Markdown files under `content_root`.
     pub fn rebuild(
         &self,

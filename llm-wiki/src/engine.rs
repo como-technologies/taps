@@ -443,11 +443,17 @@ fn mount_context(
         let im_build = index_manager.clone();
         let is = index_schema.clone();
         let tr = Arc::clone(&type_registry);
+        // Snapshot freshness must be process-independent: key by the on-disk
+        // index build identity (commit + built timestamp + schema hash from
+        // state.toml). A process-local counter restarts at 0 every serve, so
+        // any process re-served whatever snapshot an earlier one persisted —
+        // including an empty-index one (taps #98: unrooted graph answered
+        // 0 nodes/0 edges forever).
         build_wiki_graph_cache(
             &entry.name,
             state_dir,
             &resolved_cfg.graph,
-            move || Ok(im_key.generation().to_string()),
+            move || Ok(im_key.build_key()),
             move || {
                 let searcher = im_build.searcher().map_err(|e| {
                     petgraph_live::snapshot::SnapshotError::Io(std::io::Error::other(e.to_string()))
