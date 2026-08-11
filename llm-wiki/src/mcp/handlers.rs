@@ -343,6 +343,7 @@ pub fn handle_search(server: &McpServer, args: &Map<String, Value>) -> ToolHandl
         &ops::SearchParams {
             query: &query,
             type_filter: arg_str(args, "type").as_deref(),
+            status_filter: arg_str(args, "status").as_deref(),
             no_excerpt: format.as_deref() == Some("llms") || arg_bool(args, "no_excerpt"),
             top_k: arg_usize(args, "top_k"),
             include_sections: arg_bool(args, "include_sections"),

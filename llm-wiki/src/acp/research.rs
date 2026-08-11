@@ -42,6 +42,7 @@ pub fn step_search(
             &ops::SearchParams {
                 query,
                 type_filter: None,
+                status_filter: None,
                 no_excerpt: false,
                 top_k: Some(top_k),
                 include_sections: false,

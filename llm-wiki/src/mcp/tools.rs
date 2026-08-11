@@ -231,6 +231,7 @@ pub fn tool_list() -> Vec<Tool> {
                 json!({
                     "query": str_prop("Search query"),
                     "type": opt_str("Filter by frontmatter type"),
+                    "status": opt_str("Filter by frontmatter status — results always carry status; non-current pages (superseded, deprecated, rejected) are history, never current guidance"),
                     "no_excerpt": opt_bool("Omit excerpts — refs only"),
                     "include_sections": opt_bool("Include section index pages"),
                     "top_k": opt_int("Max results"),

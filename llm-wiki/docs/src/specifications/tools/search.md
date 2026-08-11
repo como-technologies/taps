@@ -59,6 +59,7 @@ llm-wiki search "mixture of experts"
 llm-wiki search --type concept "routing strategies"
 llm-wiki search --type paper,article "transformer architecture"
 llm-wiki search --type skill "process PDF files"
+llm-wiki search --status active "deployment process"
 ```
 
 ### Output
@@ -81,6 +82,7 @@ JSON (`--format json`):
       "slug": "concepts/mixture-of-experts",
       "uri": "wiki://research/concepts/mixture-of-experts",
       "title": "Mixture of Experts",
+      "status": "active",
       "score": 0.94,
       "confidence": 0.9,
       "excerpt": "Sparse routing of tokens to expert subnetworks, trading compute..."
@@ -111,6 +113,12 @@ agents suggest "there are also 8 papers on this topic".
 
 `status` and `tags` facets are filtered — they describe the current
 result set after type filtering.
+
+Every result carries the page's `status` — a retrieval-level consumer
+sees why a result was down-weighted without a second full read, and
+never quotes a superseded page as current guidance. `--status` filters
+results to one status (same semantics as `list` and `export`); in
+`llms` format, non-active pages are marked inline (`[archived]`).
 
 LLM (`--format llms`):
 

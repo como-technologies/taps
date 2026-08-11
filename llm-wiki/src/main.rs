@@ -253,6 +253,7 @@ fn main() -> Result<()> {
         Commands::Search {
             query,
             r#type,
+            status,
             no_excerpt,
             top_k,
             include_sections,
@@ -269,6 +270,7 @@ fn main() -> Result<()> {
                 &ops::SearchParams {
                     query: &query,
                     type_filter: r#type.as_deref(),
+                    status_filter: status.as_deref(),
                     no_excerpt,
                     top_k,
                     include_sections,
@@ -282,10 +284,13 @@ fn main() -> Result<()> {
                 print!("{}", search::render_search_llms(&results));
             } else {
                 for r in &results.results {
-                    println!("slug:  {}", r.slug);
-                    println!("uri:   {}", r.uri);
-                    println!("title: {}", r.title);
-                    println!("score: {:.2}", r.score);
+                    println!("slug:   {}", r.slug);
+                    println!("uri:    {}", r.uri);
+                    println!("title:  {}", r.title);
+                    if !r.status.is_empty() {
+                        println!("status: {}", r.status);
+                    }
+                    println!("score:  {:.2}", r.score);
                     if let Some(ref excerpt) = r.excerpt {
                         println!("excerpt: {excerpt}");
                     }

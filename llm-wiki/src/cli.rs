@@ -44,6 +44,9 @@ pub enum Commands {
         /// Filter by frontmatter type
         #[arg(long, name = "type")]
         r#type: Option<String>,
+        /// Filter by frontmatter status
+        #[arg(long)]
+        status: Option<String>,
         /// Omit excerpts — refs only
         #[arg(long)]
         no_excerpt: bool,

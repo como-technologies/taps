@@ -29,6 +29,9 @@ pub struct PageRef {
     pub id: Option<Ulid>,
     /// Page title from frontmatter.
     pub title: String,
+    /// Page status from frontmatter — a retrieval-level consumer must see
+    /// why a result was down-weighted without a second full read.
+    pub status: String,
     /// Adjusted BM25 score (multiplied by status and confidence).
     pub score: f32,
     /// Frontmatter `confidence` value in [0, 1]; 1.0 (neutral) when the
@@ -127,6 +130,8 @@ pub struct SearchOptions {
     pub top_k: usize,
     /// Optional frontmatter type filter.
     pub r#type: Option<String>,
+    /// Optional frontmatter status filter.
+    pub status: Option<String>,
     /// Maximum tag facet values to return (0 = all).
     pub facets_top_tags: usize,
     /// Status score multiplier config applied to BM25 scores.
@@ -140,6 +145,7 @@ impl Default for SearchOptions {
             include_sections: false,
             top_k: 10,
             r#type: None,
+            status: None,
             facets_top_tags: 10,
             search_config: SearchConfig::default(),
         }
@@ -272,6 +278,16 @@ pub fn search(
             ));
         }
 
+        if let Some(ref status_filter) = options.status {
+            clauses.push((
+                Occur::Must,
+                Box::new(TermQuery::new(
+                    Term::from_field_text(is.field("status"), status_filter),
+                    IndexRecordOption::Basic,
+                )),
+            ));
+        }
+
         Box::new(BooleanQuery::new(clauses))
     };
 
@@ -356,11 +372,18 @@ pub fn search(
             .and_then(|v| v.as_str())
             .and_then(|s| Ulid::from_string(s).ok());
 
+        let status = doc
+            .get_first(is.field("status"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
         results.push(PageRef {
             slug,
             uri,
             id,
             title,
+            status,
             score,
             confidence,
             excerpt,
@@ -723,11 +746,20 @@ pub fn render_search_llms(result: &SearchResult) -> String {
     }
     let mut out = String::new();
     for r in &result.results {
+        // Non-active pages carry their status inline — an agent reading
+        // this list must never quote retired guidance as current.
+        let marker = match r.status.as_str() {
+            "" | "active" => String::new(),
+            s => format!(" [{s}]"),
+        };
         let summary = r.summary.as_deref().unwrap_or("");
         if summary.is_empty() {
-            out.push_str(&format!("- [{}]({})\n", r.title, r.uri));
+            out.push_str(&format!("- [{}]({}){marker}\n", r.title, r.uri));
         } else {
-            out.push_str(&format!("- [{}]({}): {}\n", r.title, r.uri, summary));
+            out.push_str(&format!(
+                "- [{}]({}){marker}: {}\n",
+                r.title, r.uri, summary
+            ));
         }
     }
     out

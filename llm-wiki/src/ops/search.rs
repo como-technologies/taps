@@ -9,6 +9,8 @@ pub struct SearchParams<'a> {
     pub query: &'a str,
     /// Restrict results to this frontmatter type.
     pub type_filter: Option<&'a str>,
+    /// Restrict results to this frontmatter status.
+    pub status_filter: Option<&'a str>,
     /// When true, omit body excerpts from results.
     pub no_excerpt: bool,
     /// Maximum number of results to return.
@@ -35,6 +37,7 @@ pub fn search(
             .top_k
             .unwrap_or(resolved.defaults.search_top_k as usize),
         r#type: params.type_filter.map(|s| s.to_string()),
+        status: params.status_filter.map(|s| s.to_string()),
         facets_top_tags: resolved.defaults.facets_top_tags as usize,
         search_config: resolved.search.clone(),
     };

@@ -52,6 +52,7 @@ fn hot_reload_mount_wiki_makes_it_searchable() {
         &ops::SearchParams {
             query: "reinforcement",
             type_filter: None,
+            status_filter: None,
             no_excerpt: false,
             top_k: None,
             include_sections: false,
@@ -164,6 +165,7 @@ fn hot_reload_cross_wiki_search_reflects_new_wiki() {
         &ops::SearchParams {
             query: "diffusion",
             type_filter: None,
+            status_filter: None,
             no_excerpt: false,
             top_k: None,
             include_sections: false,

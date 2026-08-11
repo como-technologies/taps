@@ -19,6 +19,7 @@ fn search_returns_results() {
         &ops::SearchParams {
             query: "mixture",
             type_filter: None,
+            status_filter: None,
             no_excerpt: false,
             top_k: None,
             include_sections: false,
@@ -43,6 +44,7 @@ fn search_type_filter() {
         &ops::SearchParams {
             query: "mixture",
             type_filter: Some("paper"),
+            status_filter: None,
             no_excerpt: true,
             top_k: None,
             include_sections: false,
@@ -107,6 +109,7 @@ fn search_facets_type_distribution() {
         &ops::SearchParams {
             query: "mixture",
             type_filter: None,
+            status_filter: None,
             no_excerpt: true,
             top_k: None,
             include_sections: false,
@@ -153,6 +156,7 @@ fn search_facets_type_unfiltered_when_type_filter_active() {
         &ops::SearchParams {
             query: "experts",
             type_filter: Some("concept"),
+            status_filter: None,
             no_excerpt: true,
             top_k: None,
             include_sections: false,
@@ -182,6 +186,7 @@ fn search_facets_empty_when_no_results() {
         &ops::SearchParams {
             query: "xyznonexistent",
             type_filter: None,
+            status_filter: None,
             no_excerpt: true,
             top_k: None,
             include_sections: false,
@@ -238,6 +243,7 @@ fn search_and_list_surface_page_id() {
         &ops::SearchParams {
             query: "unicorn",
             type_filter: None,
+            status_filter: None,
             no_excerpt: true,
             top_k: None,
             include_sections: false,
@@ -265,4 +271,88 @@ fn search_and_list_surface_page_id() {
             );
         }
     }
+}
+
+// ── taps#107: results say what they are ───────────────────────────────────────
+
+#[test]
+fn search_results_carry_status_and_filter_by_it() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+
+    // A retired page on the same subject as a live one.
+    let wiki_path = dir.path().join("test");
+    let content_root = wiki_path.join("content");
+    std::fs::write(
+        content_root.join("concepts/moe-old.md"),
+        "---\ntitle: \"MoE (old)\"\ntype: concept\nstatus: archived\nread_when: [testing]\n---\n\nMixture of Experts, retired mechanics.\n",
+    )
+    .unwrap();
+    llm_wiki::git::commit(&wiki_path, "add archived page").unwrap();
+
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    // Unfiltered: both pages come back, each carrying its status.
+    let all = ops::search(
+        &engine,
+        "test",
+        &ops::SearchParams {
+            query: "mixture experts",
+            type_filter: None,
+            status_filter: None,
+            no_excerpt: true,
+            top_k: None,
+            include_sections: false,
+            cross_wiki: false,
+        },
+    )
+    .unwrap();
+    let old = all
+        .results
+        .iter()
+        .find(|r| r.slug == "concepts/moe-old")
+        .expect("archived page should appear unfiltered");
+    assert_eq!(old.status, "archived");
+    let live = all
+        .results
+        .iter()
+        .find(|r| r.slug == "concepts/moe")
+        .expect("active page should appear");
+    assert_eq!(live.status, "active");
+
+    // Filtered: only the active page remains.
+    let active_only = ops::search(
+        &engine,
+        "test",
+        &ops::SearchParams {
+            query: "mixture experts",
+            type_filter: None,
+            status_filter: Some("active"),
+            no_excerpt: true,
+            top_k: None,
+            include_sections: false,
+            cross_wiki: false,
+        },
+    )
+    .unwrap();
+    assert!(
+        active_only.results.iter().all(|r| r.status == "active"),
+        "{:?}",
+        active_only
+            .results
+            .iter()
+            .map(|r| (&r.slug, &r.status))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        !active_only
+            .results
+            .iter()
+            .any(|r| r.slug == "concepts/moe-old")
+    );
+
+    // The llms rendering marks non-active pages inline.
+    let rendered = llm_wiki::search::render_search_llms(&all);
+    assert!(rendered.contains("[archived]"), "{rendered}");
 }
