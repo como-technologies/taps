@@ -35,7 +35,6 @@ pub fn handle_admin_create(server: &McpServer, args: &Map<String, Value>) -> Too
     .map_err(|e| format!("{e}"))?;
 
     let json = serde_json::to_string_pretty(&serde_json::json!({
-        "path": report.path,
         "name": report.name,
         "created": report.created,
         "registered": report.registered,
@@ -67,7 +66,6 @@ pub fn handle_admin_register(server: &McpServer, args: &Map<String, Value>) -> T
     .map_err(|e| format!("{e}"))?;
 
     let json = serde_json::to_string_pretty(&serde_json::json!({
-        "path": report.path,
         "name": report.name,
         "registered": report.registered,
     }))
@@ -76,11 +74,29 @@ pub fn handle_admin_register(server: &McpServer, args: &Map<String, Value>) -> T
 }
 
 /// Handle `wiki_admin_list` — list registered wikis.
+///
+/// The transport surface is the only topology a client sees: wikis are
+/// reached through the door, never as paths, so the listing carries names
+/// and descriptions — deployment detail stays on the operator console.
 pub fn handle_admin_list(server: &McpServer, args: &Map<String, Value>) -> ToolHandlerResult {
     let engine = server.engine();
     let name = arg_str(args, "name");
     let entries = ops::admin_list(&engine.config, name.as_deref());
-    let s = serde_json::to_string_pretty(&entries).map_err(|e| format!("{e}"))?;
+    let default = engine.default_wiki_name().to_string();
+    let view: Vec<serde_json::Value> = entries
+        .iter()
+        .map(|e| {
+            let mut v = serde_json::json!({ "name": e.name });
+            if let Some(d) = &e.description {
+                v["description"] = serde_json::json!(d);
+            }
+            if e.name == default {
+                v["default"] = serde_json::json!(true);
+            }
+            v
+        })
+        .collect();
+    let s = serde_json::to_string_pretty(&view).map_err(|e| format!("{e}"))?;
     ok_text(s)
 }
 
@@ -196,11 +212,7 @@ pub fn handle_content_write(server: &McpServer, args: &Map<String, Value>) -> To
 
     let result = ops::content_write(&engine, &uri, wiki_flag.as_deref(), &content)
         .map_err(|e| format!("{e}"))?;
-    ok_text(format!(
-        "Wrote {} bytes to {}",
-        result.bytes_written,
-        result.path.display()
-    ))
+    ok_text(format!("Wrote {} bytes to {uri}", result.bytes_written))
 }
 
 /// Handle `wiki_content_new` — create a new page or section with scaffolded frontmatter.
@@ -235,8 +247,6 @@ pub fn handle_content_new(server: &McpServer, args: &Map<String, Value>) -> Tool
     let mut response = serde_json::json!({
         "uri":       result.uri,
         "slug":      result.slug,
-        "path":      result.path,
-        "content_root": result.content_root,
         "bundle":    result.bundle,
     });
     if let Some(id) = result.id {
@@ -513,8 +523,17 @@ pub fn handle_lint(server: &McpServer, args: &Map<String, Value>) -> ToolHandler
     let wiki_name = resolve_wiki_name(&engine, args)?;
     let rules = arg_str(args, "rules");
     let severity = arg_str(args, "severity");
-    let result = ops::run_lint(&engine, &wiki_name, rules.as_deref(), severity.as_deref())
+    let mut result = ops::run_lint(&engine, &wiki_name, rules.as_deref(), severity.as_deref())
         .map_err(|e| format!("{e}"))?;
+    // Findings address pages by slug; paths cross the transport wiki-relative,
+    // never as appliance-absolute filesystem detail.
+    if let Ok(wiki) = engine.wiki(&wiki_name) {
+        for f in &mut result.findings {
+            if let Ok(rel) = std::path::Path::new(&f.path).strip_prefix(&wiki.repo_root) {
+                f.path = rel.to_string_lossy().into_owned();
+            }
+        }
+    }
     let s = serde_json::to_string_pretty(&result).map_err(|e| format!("{e}"))?;
     ok_text(s)
 }

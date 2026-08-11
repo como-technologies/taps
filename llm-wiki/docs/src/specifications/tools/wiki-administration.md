@@ -178,6 +178,10 @@ JSON (`--format json`):
 ]
 ```
 
+Over MCP, `wiki_admin_list` returns names, descriptions, and the default
+marker only — paths are operator-console detail; the transport never
+discloses appliance topology.
+
 ## admin remove
 
 MCP tool: `wiki_admin_remove`

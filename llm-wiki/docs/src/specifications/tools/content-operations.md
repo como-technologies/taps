@@ -106,14 +106,14 @@ The MCP response is JSON (not plain text):
 {
   "uri":       "wiki://research/concepts/new-page",
   "slug":      "concepts/new-page",
-  "path":      "/path/to/wiki/concepts/new-page.md",
-  "content_root": "/path/to/wiki",
   "bundle":    false
 }
 ```
 
-`path` is the resolved filesystem path of the created file. Use it to write
-content directly with native file tools before calling `wiki_ingest`.
+The response addresses the page by slug and URI only — write its content
+through `wiki_content_write` and admit it with `wiki_ingest`. The
+transport never discloses appliance paths; operators who need the
+filesystem location have `wiki_resolve`.
 
 Pages get scaffolded frontmatter (title derived from slug, type
 defaults to `page`, status `draft`). If a body template exists at

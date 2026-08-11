@@ -232,9 +232,45 @@ fn content_new_creates_page() {
         json!({"uri": "concepts/test-new-page", "wiki": SPACE_NAME}),
     );
     assert_eq!(data["slug"], "concepts/test-new-page");
-    let path = data["path"].as_str().unwrap();
-    assert!(path.ends_with(".md"));
-    assert!(Path::new(path).exists());
+    // The transport answers in slugs and uris, never filesystem paths
+    // (taps #68) — existence is observable through the same door.
+    assert!(data.get("path").is_none(), "{data}");
+    let text = mcp.call(
+        "wiki_content_read",
+        json!({"uri": "concepts/test-new-page", "wiki": SPACE_NAME}),
+    );
+    assert!(text.contains("---"), "created page should read back: {text}");
+}
+
+#[test]
+fn transport_answers_carry_no_appliance_paths() {
+    let (env, mut mcp) = mcp_env();
+    let root = env.research.to_string_lossy().into_owned();
+
+    let listing = mcp.call("wiki_admin_list", json!({}));
+    assert!(
+        !listing.contains(&root),
+        "admin_list leaks the appliance path: {listing}"
+    );
+
+    let created = mcp.call(
+        "wiki_content_new",
+        json!({"uri": "concepts/leak-probe", "wiki": SPACE_NAME}),
+    );
+    assert!(!created.contains(&root), "content_new leaks: {created}");
+
+    let written = mcp.call(
+        "wiki_content_write",
+        json!({
+            "uri": "concepts/leak-probe",
+            "content": "---\ntitle: Probe\ntype: page\nstatus: draft\n---\n\nBody.\n",
+            "wiki": SPACE_NAME,
+        }),
+    );
+    assert!(!written.contains(&root), "content_write leaks: {written}");
+
+    let lint = mcp.call("wiki_lint", json!({"wiki": SPACE_NAME}));
+    assert!(!lint.contains(&root), "lint leaks: {lint}");
 }
 
 #[test]

@@ -41,14 +41,16 @@ Returns a JSON object:
       "rule":     "broken-link",
       "severity": "error",
       "message":  "broken link in body_links: concepts/ghost",
-      "path":     "/path/to/wiki/concepts/moe.md"
+      "path":     "concepts/moe.md"
     }
   ]
 }
 ```
 
-Each finding includes `path` — the absolute filesystem path to the offending
-file. Use it to `Edit` the file directly without a follow-up `wiki_resolve` call.
+Each finding addresses its page by `slug`; fix it through
+`wiki_content_write`. Over MCP, `path` is wiki-relative — the transport
+never discloses appliance-absolute paths. On the operator console (CLI),
+`path` is the absolute filesystem path.
 
 Empty `findings` array = clean wiki. CLI exits non-zero when any
 `error` finding exists.
