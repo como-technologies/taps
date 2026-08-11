@@ -251,8 +251,9 @@ pub struct CommitReport {
 }
 
 /// Commit specified slugs (or all uncommitted files) to git, then update
-/// the search index — engine commits never fire the managed post-commit
-/// hook (git2 doesn't run hooks), so this is the index consumer.
+/// the search index — engine commits never fire the managed hooks (git2
+/// doesn't run them), so this path is both the admission gate and the
+/// index consumer.
 pub fn content_commit(
     engine: &EngineState,
     manager: &crate::engine::WikiEngine,
@@ -267,11 +268,16 @@ pub fn content_commit(
         bail!("specify slugs or --all");
     }
 
-    let hash = if all {
-        let msg = message.unwrap_or("commit: all");
-        git::commit(&wiki.repo_root, msg)?
+    // Resolve the file set first — it feeds the gate and then the commit.
+    let mut paths = Vec::new();
+    if all {
+        for rel in git::changed_worktree_paths(&wiki.repo_root)? {
+            let p = wiki.repo_root.join(rel);
+            if p.starts_with(&wiki.content_root) {
+                paths.push(p);
+            }
+        }
     } else {
-        let mut paths = Vec::new();
         for s in slugs {
             let slug = Slug::try_from(s.as_str())?;
             let resolved = slug.resolve(&wiki.content_root)?;
@@ -289,6 +295,53 @@ pub fn content_commit(
                 paths.push(resolved);
             }
         }
+    }
+
+    // The validation gate is the managed pre-commit hook — which engine
+    // commits never fire. So the gate runs here, in the write path itself,
+    // with the same validation ingest applies before its commit. Hard
+    // failures refuse the whole commit; warnings ride in the report.
+    let resolved_cfg = wiki.resolved_config(&engine.config);
+    let mut gate_warnings = Vec::new();
+    let mut gate_errors = Vec::new();
+    for p in &paths {
+        if p.extension().and_then(|e| e.to_str()) != Some("md") {
+            continue;
+        }
+        // A file that no longer exists is a deletion — nothing to validate.
+        let Ok(raw) = std::fs::read_to_string(p) else {
+            continue;
+        };
+        let content = crate::ingest::normalize_line_endings(&raw);
+        let page = crate::frontmatter::parse(&content);
+        let name = p
+            .strip_prefix(&wiki.content_root)
+            .unwrap_or(p)
+            .display()
+            .to_string();
+        if page.frontmatter.is_empty() {
+            gate_warnings.push(format!("{name}: no frontmatter found"));
+            continue;
+        }
+        match wiki
+            .type_registry
+            .validate(&page.frontmatter, &resolved_cfg.validation.type_strictness)
+        {
+            Ok(ws) => gate_warnings.extend(ws.into_iter().map(|w| format!("{name}: {w}"))),
+            Err(e) => gate_errors.push(format!("{name}: {e}")),
+        }
+    }
+    if !gate_errors.is_empty() {
+        bail!(
+            "refusing to commit — validation failed:\n  {}",
+            gate_errors.join("\n  ")
+        );
+    }
+
+    let hash = if all {
+        let msg = message.unwrap_or("commit: all");
+        git::commit(&wiki.repo_root, msg)?
+    } else {
         let path_refs: Vec<&Path> = paths.iter().map(|p| p.as_path()).collect();
         let default_msg = format!("commit: {}", slugs.join(", "));
         let msg = message.unwrap_or(&default_msg);
@@ -299,7 +352,7 @@ pub fn content_commit(
         commit: hash,
         indexed: 0,
         index_deleted: 0,
-        warnings: Vec::new(),
+        warnings: gate_warnings,
     };
     if report.commit.is_empty() {
         return Ok(report);

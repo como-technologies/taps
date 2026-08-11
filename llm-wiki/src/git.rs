@@ -72,6 +72,33 @@ pub fn commit_paths(repo_root: &Path, paths: &[&Path], message: &str) -> Result<
     Ok(oid.to_string())
 }
 
+/// Repo-relative paths of files pending in the working tree or index vs
+/// HEAD — new, modified, renamed, or type-changed. Deletions are excluded:
+/// there is nothing left to validate.
+pub fn changed_worktree_paths(repo_root: &Path) -> Result<Vec<PathBuf>> {
+    let repo = Repository::open(repo_root)
+        .with_context(|| format!("failed to open repo at {}", repo_root.display()))?;
+    let mut opts = git2::StatusOptions::new();
+    opts.include_untracked(true).recurse_untracked_dirs(true);
+    let statuses = repo.statuses(Some(&mut opts))?;
+    Ok(statuses
+        .iter()
+        .filter(|e| {
+            let s = e.status();
+            !s.is_ignored()
+                && (s.is_wt_new()
+                    || s.is_wt_modified()
+                    || s.is_wt_renamed()
+                    || s.is_wt_typechange()
+                    || s.is_index_new()
+                    || s.is_index_modified()
+                    || s.is_index_renamed()
+                    || s.is_index_typechange())
+        })
+        .filter_map(|e| e.path().ok().map(PathBuf::from))
+        .collect())
+}
+
 /// Get current HEAD commit hash. Returns None if repo has no commits.
 pub fn current_head(repo_root: &Path) -> Option<String> {
     let repo = Repository::open(repo_root).ok()?;

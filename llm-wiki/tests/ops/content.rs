@@ -370,7 +370,7 @@ fn content_commit_all() {
         &engine,
         "scratch",
         None,
-        "---\ntitle: \"Scratch\"\ntype: page\n---\n\ntemp\n",
+        "---\ntitle: \"Scratch\"\ntype: concept\nstatus: draft\nread_when: [testing]\n---\n\ntemp\n",
     )
     .unwrap();
 
@@ -385,5 +385,96 @@ fn content_commit_all() {
     assert_eq!(
         wiki.index_manager.last_commit().as_deref(),
         Some(report.commit.as_str())
+    );
+}
+
+// ── the commit gate (taps #63) ────────────────────────────────────────────────
+
+#[test]
+fn content_commit_refuses_page_that_fails_validation() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    // Titleless frontmatter is a hard error at every strictness level —
+    // the same gate ingest applies must fire on the commit path.
+    ops::content_write(
+        &engine,
+        "concepts/no-title",
+        None,
+        "---\ntype: concept\nstatus: draft\n---\n\nBody without a title.\n",
+    )
+    .unwrap();
+
+    let err = ops::content_commit(
+        &engine,
+        &manager,
+        "test",
+        &["concepts/no-title".to_string()],
+        false,
+        None,
+    )
+    .unwrap_err();
+    let msg = format!("{err}");
+    assert!(msg.contains("refusing to commit"), "got: {msg}");
+    assert!(msg.contains("title is required"), "got: {msg}");
+}
+
+#[test]
+fn content_commit_all_gates_pending_content() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    ops::content_write(
+        &engine,
+        "concepts/sneaky",
+        None,
+        "---\ntype: concept\n---\n\nNo title, committed via --all.\n",
+    )
+    .unwrap();
+
+    let err = ops::content_commit(&engine, &manager, "test", &[], true, None).unwrap_err();
+    assert!(format!("{err}").contains("refusing to commit"));
+}
+
+#[test]
+fn content_commit_carries_validation_warnings() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+
+    // Loosen the provisioned strictness: unknown type becomes a warning,
+    // not a refusal — the page admits, and the report says what the gate saw.
+    let wiki_toml = dir.path().join("test").join("wiki.toml");
+    let toml = std::fs::read_to_string(&wiki_toml).unwrap();
+    std::fs::write(&wiki_toml, toml.replace("\"strict\"", "\"loose\"")).unwrap();
+
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    ops::content_write(
+        &engine,
+        "concepts/odd",
+        None,
+        "---\ntitle: \"Odd\"\ntype: gizmo\n---\n\nUnknown type.\n",
+    )
+    .unwrap();
+
+    let report = ops::content_commit(
+        &engine,
+        &manager,
+        "test",
+        &["concepts/odd".to_string()],
+        false,
+        None,
+    )
+    .unwrap();
+    assert!(!report.commit.is_empty());
+    assert!(
+        report.warnings.iter().any(|w| w.contains("unknown type")),
+        "warnings: {:?}",
+        report.warnings
     );
 }
