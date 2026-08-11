@@ -41,6 +41,27 @@ fn schema_show_unknown_type_errors() {
 }
 
 #[test]
+fn schema_show_near_miss_suggests_registered_type() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    // A typo one edit away from a registered type gets a suggestion…
+    let err = ops::schema_show(&engine, "test", "concpet").unwrap_err();
+    let msg = format!("{err}");
+    assert!(msg.contains("did you mean 'concept'"), "got: {msg}");
+
+    // …and validate answers the same way.
+    let err = ops::schema_validate(&engine, "test", Some("concpet")).unwrap_err();
+    assert!(format!("{err}").contains("did you mean 'concept'"));
+
+    // Nothing near — no guess offered.
+    let err = ops::schema_show(&engine, "test", "zzzzzzzz").unwrap_err();
+    assert!(!format!("{err}").contains("did you mean"), "got: {err}");
+}
+
+#[test]
 fn schema_show_template_has_frontmatter() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");

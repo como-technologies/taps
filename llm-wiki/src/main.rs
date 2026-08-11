@@ -484,8 +484,11 @@ fn main() -> Result<()> {
                     if is_json(&format) {
                         println!("{}", serde_json::to_string_pretty(&entries)?);
                     } else {
+                        // Column sized to the longest registered name — a
+                        // fixed width overflows and glues name to description.
+                        let width = entries.iter().map(|e| e.name.len()).max().unwrap_or(0) + 2;
                         for e in &entries {
-                            println!("{:<16}{}", e.name, e.description);
+                            println!("{:<width$}{}", e.name, e.description);
                         }
                     }
                 }

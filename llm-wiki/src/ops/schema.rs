@@ -40,13 +40,45 @@ pub fn schema_list(engine: &EngineState, wiki_name: &str) -> Result<Vec<SchemaTy
         .collect())
 }
 
+/// Levenshtein distance, for near-miss suggestions on unknown type names.
+fn levenshtein(a: &str, b: &str) -> usize {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    let mut prev: Vec<usize> = (0..=b.len()).collect();
+    let mut curr = vec![0; b.len() + 1];
+    for (i, ca) in a.iter().enumerate() {
+        curr[0] = i + 1;
+        for (j, cb) in b.iter().enumerate() {
+            let cost = usize::from(ca != cb);
+            curr[j + 1] = (prev[j] + cost).min(prev[j + 1] + 1).min(curr[j] + 1);
+        }
+        std::mem::swap(&mut prev, &mut curr);
+    }
+    prev[b.len()]
+}
+
+/// "type 'X' is not registered", with a did-you-mean when the registry
+/// holds a near miss — the registry is right there; suggesting is the
+/// standard kindness, for humans and agents alike.
+fn unknown_type_error(registry: &crate::type_registry::WikiTypeRegistry, type_name: &str) -> anyhow::Error {
+    let suggestion = registry
+        .list_types()
+        .into_iter()
+        .map(|(name, _)| (levenshtein(type_name, name), name))
+        .filter(|(d, _)| *d <= 2)
+        .min_by_key(|(d, _)| *d)
+        .map(|(_, name)| format!(" — did you mean '{name}'?"))
+        .unwrap_or_default();
+    anyhow::anyhow!("type '{type_name}' is not registered{suggestion}")
+}
+
 /// Return the raw JSON Schema content for a named type.
 pub fn schema_show(engine: &EngineState, wiki_name: &str, type_name: &str) -> Result<String> {
     let wiki = engine.wiki(wiki_name)?;
     let schema_path = wiki
         .type_registry
         .schema_path(type_name)
-        .ok_or_else(|| anyhow::anyhow!("type '{type_name}' is not registered"))?;
+        .ok_or_else(|| unknown_type_error(&wiki.type_registry, type_name))?;
     let full_path = wiki.repo_root.join(schema_path);
 
     if full_path.exists() {
@@ -449,7 +481,7 @@ pub fn schema_validate(
     if let Some(name) = type_name {
         // Validate single type
         if !wiki.type_registry.is_known(name) {
-            bail!("type '{name}' is not registered");
+            return Err(unknown_type_error(&wiki.type_registry, name));
         }
         let schema_path = wiki
             .type_registry
