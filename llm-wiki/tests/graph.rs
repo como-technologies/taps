@@ -239,7 +239,88 @@ fn render_mermaid_includes_titles_and_relations() {
     assert!(output.contains("|links-to|"));
 }
 
+#[test]
+fn render_mermaid_ids_are_valid_identifiers() {
+    let dir = tempfile::tempdir().unwrap();
+    let content_root = setup_repo(dir.path());
+    // Titles carrying spaces, em-dashes, and quotes — normal prose — must
+    // never leak into node ids; ids derive from slugs, strictly sanitized.
+    write_page(
+        &content_root,
+        "concepts/start-here.md",
+        &page_with_body_links("Start Here — the guide", "See [[concepts/moe]]."),
+    );
+    write_page(
+        &content_root,
+        "concepts/moe.md",
+        &simple_page("MoE (sparse)", "concept"),
+    );
+
+    let mgr = build_index(dir.path(), &content_root);
+    let is = schema();
+    let g = build_graph(
+        &mgr.searcher().unwrap(),
+        &is,
+        &default_filter(),
+        &registry(),
+    )
+    .unwrap();
+    let output = render_mermaid(&g);
+
+    // Slug-derived ids, titles as labels only.
+    assert!(
+        output.contains("concepts_start_here[\"Start Here — the guide\"]"),
+        "{output}"
+    );
+    assert!(
+        output.contains("concepts_start_here -->|links-to| concepts_moe"),
+        "{output}"
+    );
+    assert!(!output.contains("Start Here["), "title leaked into an id: {output}");
+
+    // Every declared id is a plain identifier.
+    for line in output.lines() {
+        let trimmed = line.trim_start();
+        if let Some(idx) = trimmed.find("[\"") {
+            let id = &trimmed[..idx];
+            assert!(
+                !id.is_empty()
+                    && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+                    && !id.chars().next().unwrap().is_ascii_digit(),
+                "invalid mermaid id {id:?} in line {line:?}"
+            );
+        }
+    }
+}
+
 // ── render_dot ────────────────────────────────────────────────────────────────
+
+#[test]
+fn render_dot_escapes_quoted_strings() {
+    let dir = tempfile::tempdir().unwrap();
+    let content_root = setup_repo(dir.path());
+    write_page(
+        &content_root,
+        "concepts/quoted.md",
+        &simple_page("He said \\\"hi\\\"", "concept"),
+    );
+
+    let mgr = build_index(dir.path(), &content_root);
+    let is = schema();
+    let g = build_graph(
+        &mgr.searcher().unwrap(),
+        &is,
+        &default_filter(),
+        &registry(),
+    )
+    .unwrap();
+    let output = render_dot(&g);
+
+    assert!(
+        output.contains("label=\"He said \\\"hi\\\"\""),
+        "quotes in titles must be escaped in DOT labels: {output}"
+    );
+}
 
 #[test]
 fn render_dot_includes_labels_and_relations() {

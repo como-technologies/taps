@@ -857,15 +857,13 @@ pub fn render_mermaid(graph: &WikiGraph) -> String {
     // Declare nodes with titles and type classes
     for idx in graph.node_indices() {
         let node = &graph[idx];
-        let safe_id = mermaid_id(&node.title);
+        let safe_id = node_mermaid_id(node);
+        let label = mermaid_label(&node.title);
         if node.external {
-            out.push_str(&format!("  {safe_id}[\"{}\"]:::external\n", node.title));
+            out.push_str(&format!("  {safe_id}[\"{label}\"]:::external\n"));
             has_external = true;
         } else {
-            out.push_str(&format!(
-                "  {safe_id}[\"{}\"]:::{}\n",
-                node.title, node.r#type
-            ));
+            out.push_str(&format!("  {safe_id}[\"{label}\"]:::{}\n", node.r#type));
             types_seen.insert(node.r#type.clone());
         }
     }
@@ -875,8 +873,8 @@ pub fn render_mermaid(graph: &WikiGraph) -> String {
     // Edges with relation labels
     for edge in graph.edge_indices() {
         let (from, to) = graph.edge_endpoints(edge).unwrap();
-        let from_id = mermaid_id(&graph[from].title);
-        let to_id = mermaid_id(&graph[to].title);
+        let from_id = node_mermaid_id(&graph[from]);
+        let to_id = node_mermaid_id(&graph[to]);
         let relation = &graph[edge].relation;
         out.push_str(&format!("  {from_id} -->|{relation}| {to_id}\n"));
     }
@@ -905,8 +903,34 @@ pub fn render_mermaid(graph: &WikiGraph) -> String {
     out
 }
 
+/// Node ids derive from slugs (stable, unique); titles are display labels.
+/// External placeholders id by their `wiki://` URI (held in `title`) — their
+/// parsed slug can collide across wikis.
+fn node_mermaid_id(node: &PageNode) -> String {
+    if node.external {
+        mermaid_id(&node.title)
+    } else {
+        mermaid_id(&node.slug)
+    }
+}
+
+/// Mermaid ids must be plain identifiers: everything outside `[A-Za-z0-9_]`
+/// becomes `_`, and an id that would start with a digit gets a prefix.
 fn mermaid_id(slug: &str) -> String {
-    slug.replace("://", "__").replace(['/', '-', ':'], "_")
+    let mut id: String = slug
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+        .collect();
+    if id.chars().next().is_none_or(|c| c.is_ascii_digit()) {
+        id.insert(0, 'n');
+    }
+    id
+}
+
+/// Mermaid labels sit inside double quotes — escape the one character that
+/// can break out.
+fn mermaid_label(title: &str) -> String {
+    title.replace('"', "#quot;")
 }
 
 // ── render_dot ────────────────────────────────────────────────────────────────
@@ -920,12 +944,15 @@ pub fn render_dot(graph: &WikiGraph) -> String {
         if node.external {
             out.push_str(&format!(
                 "  \"{}\" [label=\"{}\" type=\"external\" style=\"dashed\"];\n",
-                node.title, node.title
+                dot_string(&node.title),
+                dot_string(&node.title)
             ));
         } else {
             out.push_str(&format!(
                 "  \"{}\" [label=\"{}\" type=\"{}\"];\n",
-                node.slug, node.title, node.r#type
+                dot_string(&node.slug),
+                dot_string(&node.title),
+                node.r#type
             ));
         }
     }
@@ -934,14 +961,14 @@ pub fn render_dot(graph: &WikiGraph) -> String {
         let (from, to) = graph.edge_endpoints(edge).unwrap();
         let relation = &graph[edge].relation;
         let from_id = if graph[from].external {
-            &graph[from].title
+            dot_string(&graph[from].title)
         } else {
-            &graph[from].slug
+            dot_string(&graph[from].slug)
         };
         let to_id = if graph[to].external {
-            &graph[to].title
+            dot_string(&graph[to].title)
         } else {
-            &graph[to].slug
+            dot_string(&graph[to].slug)
         };
         out.push_str(&format!(
             "  \"{from_id}\" -> \"{to_id}\" [label=\"{relation}\"];\n"
@@ -950,6 +977,11 @@ pub fn render_dot(graph: &WikiGraph) -> String {
 
     out.push_str("}\n");
     out
+}
+
+/// DOT ids and labels are quoted strings — escape what can break out.
+fn dot_string(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 // ── wrap_graph_md ─────────────────────────────────────────────────────────────
