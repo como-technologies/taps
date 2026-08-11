@@ -90,6 +90,38 @@ fn suggest_on_empty_wiki() {
 }
 
 #[test]
+fn suggest_survives_punctuated_title_and_summary() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+
+    // Title and summary full of query-parser syntax: em-dash, colon,
+    // brackets, quotes, operators. Normal prose — must be suggestable.
+    let wiki_path = dir.path().join("test");
+    let content_root = wiki_path.join("content");
+    fs::create_dir_all(content_root.join("guides")).unwrap();
+    fs::write(
+        content_root.join("guides/welcome.md"),
+        "---\ntitle: \"A — B: [C] (D) +E -F \\\"G\\\"\"\ntype: guide\nstatus: active\nsummary: \"Welcome to this KB — what it is and what you can do here: orientation!\"\n---\n\nOrientation for new arrivals.\n",
+    )
+    .unwrap();
+    git::commit(&wiki_path, "add welcome").unwrap();
+
+    let manager = WikiEngine::build(&config_path).unwrap();
+    {
+        let engine = manager.state.read().unwrap();
+        ops::ingest(&engine, &manager, "guides/welcome.md", false, "test").unwrap();
+    }
+
+    let engine = manager.state.read().unwrap();
+    let result = ops::suggest(&engine, "guides/welcome", None, None);
+    assert!(
+        result.is_ok(),
+        "punctuated title/summary must not crash suggest: {:?}",
+        result.err()
+    );
+}
+
+#[test]
 fn suggest_has_field_suggestion() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");

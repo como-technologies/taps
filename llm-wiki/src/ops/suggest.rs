@@ -153,8 +153,14 @@ pub fn suggest(
         }
     }
 
-    // Strategy 3: BM25 similarity (title + summary as query)
-    let query = format!("{} {}", input_doc.title, input_doc.summary);
+    // Strategy 3: BM25 similarity (title + summary as content, never as
+    // query syntax — punctuation in prose must not parse as operators, so
+    // map everything non-alphanumeric to whitespace, mirroring what the
+    // tokenizer would do to the terms anyway).
+    let query: String = format!("{} {}", input_doc.title, input_doc.summary)
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { ' ' })
+        .collect();
     if !query.trim().is_empty() {
         let results = search::search(
             &query,
