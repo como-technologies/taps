@@ -28,6 +28,10 @@ pub fn ingest_with_redact(
     wiki_name: &str,
 ) -> Result<ingest::IngestReport> {
     let wiki = engine.wiki(wiki_name)?;
+    // One admission at a time per wiki: parallel ingests raced through the
+    // shared git index — one returned an empty hash while the other's
+    // message claimed the whole sweep (taps #74).
+    let _admission = wiki.git_lock.lock().unwrap_or_else(|p| p.into_inner());
     let resolved = wiki.resolved_config(&engine.config);
 
     // Build changed-paths set from git diff (normal ingest only; dry_run validates all).

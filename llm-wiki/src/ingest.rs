@@ -132,7 +132,17 @@ pub fn ingest(
             report.pages_validated,
             report.assets_found
         );
-        let hash = git::commit(repo_root, &msg)?;
+        // Commit only the subtree this ingest was asked about — a
+        // stage-everything commit would sweep concurrent writers' files in
+        // and claim them under this message (taps #74).
+        let canonical_repo = repo_root
+            .canonicalize()
+            .unwrap_or_else(|_| repo_root.to_path_buf());
+        let pathspec = canonical
+            .strip_prefix(&canonical_repo)
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|_| "*".to_string());
+        let hash = git::commit_pathspec(repo_root, &pathspec, &msg)?;
         report.commit = hash;
     }
 

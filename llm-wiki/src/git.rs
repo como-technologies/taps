@@ -44,6 +44,34 @@ pub fn commit(repo_root: &Path, message: &str) -> Result<String> {
     Ok(oid.to_string())
 }
 
+/// Stage everything under a repo-relative pathspec and commit — the commit
+/// is scoped to the subtree the caller asked about, so its message and hash
+/// never claim a concurrent writer's files. Returns empty string if nothing
+/// to commit.
+pub fn commit_pathspec(repo_root: &Path, pathspec: &str, message: &str) -> Result<String> {
+    let repo = Repository::open(repo_root)
+        .with_context(|| format!("failed to open repo at {}", repo_root.display()))?;
+
+    let sig = make_signature(&repo)?;
+    let mut index = repo.index()?;
+    index.add_all([pathspec].iter(), git2::IndexAddOption::DEFAULT, None)?;
+    index.write()?;
+    let tree_oid = index.write_tree()?;
+    let tree = repo.find_tree(tree_oid)?;
+
+    let parent = repo.head().ok().and_then(|h| h.peel_to_commit().ok());
+
+    if let Some(ref p) = parent
+        && p.tree_id() == tree_oid
+    {
+        return Ok(String::new());
+    }
+
+    let parents: Vec<&git2::Commit> = parent.iter().collect();
+    let oid = repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)?;
+    Ok(oid.to_string())
+}
+
 /// Stage specific paths and commit. Returns empty string if nothing to commit.
 pub fn commit_paths(repo_root: &Path, paths: &[&Path], message: &str) -> Result<String> {
     let repo = Repository::open(repo_root)

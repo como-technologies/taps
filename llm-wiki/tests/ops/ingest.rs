@@ -180,3 +180,72 @@ fn ingest_no_warning_on_correct_edge_target_type() {
         edge_warnings
     );
 }
+
+// ── taps#74: an ingest's commit is its own ────────────────────────────────────
+
+fn write_concept(root: &std::path::Path, rel: &str, title: &str) {
+    let p = root.join(rel);
+    fs::create_dir_all(p.parent().unwrap()).unwrap();
+    fs::write(
+        p,
+        format!(
+            "---\ntitle: \"{title}\"\ntype: concept\nstatus: active\nread_when: [testing]\n---\n\n{title}.\n"
+        ),
+    )
+    .unwrap();
+}
+
+#[test]
+fn ingest_commits_only_its_subtree() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+    let content_root = engine.wiki("test").unwrap().content_root.clone();
+
+    // Two uncommitted pages in different subtrees — the walk's exact shape.
+    write_concept(&content_root, "guides/one.md", "Guide One");
+    write_concept(&content_root, "glossary/two.md", "Term Two");
+
+    let first = ops::ingest(&engine, &manager, "guides", false, "test").unwrap();
+    assert!(!first.commit.is_empty(), "first ingest must commit its pages");
+
+    // The glossary page was NOT swept into the guides commit: its own
+    // ingest still finds something to admit and answers with a real hash.
+    let second = ops::ingest(&engine, &manager, "glossary", false, "test").unwrap();
+    assert!(
+        !second.commit.is_empty(),
+        "second subtree must produce its own commit, not an empty hash"
+    );
+    assert_ne!(first.commit, second.commit);
+}
+
+#[test]
+fn concurrent_ingests_each_answer_with_their_own_commit() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let content_root = {
+        let engine = manager.state.read().unwrap();
+        engine.wiki("test").unwrap().content_root.clone()
+    };
+
+    write_concept(&content_root, "guides/par-a.md", "Par A");
+    write_concept(&content_root, "glossary/par-b.md", "Par B");
+
+    let (a, b) = std::thread::scope(|s| {
+        let ta = s.spawn(|| {
+            let engine = manager.state.read().unwrap();
+            ops::ingest(&engine, &manager, "guides", false, "test").unwrap()
+        });
+        let tb = s.spawn(|| {
+            let engine = manager.state.read().unwrap();
+            ops::ingest(&engine, &manager, "glossary", false, "test").unwrap()
+        });
+        (ta.join().unwrap(), tb.join().unwrap())
+    });
+
+    assert!(!a.commit.is_empty(), "parallel ingest A got an empty hash");
+    assert!(!b.commit.is_empty(), "parallel ingest B got an empty hash");
+    assert_ne!(a.commit, b.commit);
+}

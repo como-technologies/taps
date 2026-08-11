@@ -263,6 +263,8 @@ pub fn content_commit(
     message: Option<&str>,
 ) -> Result<CommitReport> {
     let wiki = engine.wiki(wiki_name)?;
+    // Same admission lock as ingest — one engine commit at a time per wiki.
+    let _admission = wiki.git_lock.lock().unwrap_or_else(|p| p.into_inner());
 
     if slugs.is_empty() && !all {
         bail!("specify slugs or --all");

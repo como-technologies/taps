@@ -39,6 +39,10 @@ pub struct WikiContext {
     pub graph_cache: WikiGraphCache,
     /// Generation-keyed community cache. Shares the same generation key as graph_cache.
     pub community_cache: GenerationCache<CommunityData>,
+    /// One admission at a time per wiki: engine-side stage+commit sequences
+    /// (ingest, content_commit) serialize on this lock so concurrent writers
+    /// can't sweep each other's files into a commit (taps #74).
+    pub git_lock: std::sync::Mutex<()>,
 }
 
 impl WikiContext {
@@ -470,6 +474,7 @@ fn mount_context(
         index_manager,
         graph_cache,
         community_cache: GenerationCache::new(),
+        git_lock: std::sync::Mutex::new(()),
     })
 }
 
