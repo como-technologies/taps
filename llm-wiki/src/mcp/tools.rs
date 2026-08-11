@@ -48,7 +48,7 @@ fn destructive() -> ToolAnnotations {
     ToolAnnotations::new().destructive(true)
 }
 
-// ── Tool definitions (25 tools) ───────────────────────────────────────────────
+// ── Tool definitions (26 tools) ───────────────────────────────────────────────
 
 /// Return the complete list of MCP tool definitions for registration.
 pub fn tool_list() -> Vec<Tool> {
@@ -135,6 +135,19 @@ pub fn tool_list() -> Vec<Tool> {
                 json!({
                     "type": str_prop("Type name (must be declared in the schema's x-wiki-types; x-owner records the owning tool)"),
                     "schema": str_prop("JSON Schema content"),
+                    "body_template": opt_str("Markdown body template content (optional)"),
+                    "wiki": opt_str("Target wiki name"),
+                }),
+                &["type", "schema"],
+            ),
+        ),
+        Tool::new(
+            "wiki_admin_schema_evolve",
+            "Admin: evolve a registered type's schema — the explicit upgrade register refuses (same x-owner on both sides; diff reported; index rebuilt; live process remounted)",
+            schema(
+                json!({
+                    "type": str_prop("Type name (must already be registered)"),
+                    "schema": str_prop("New JSON Schema content"),
                     "body_template": opt_str("Markdown body template content (optional)"),
                     "wiki": opt_str("Target wiki name"),
                 }),
@@ -395,6 +408,7 @@ pub fn call(server: &McpServer, name: &str, args: &Map<String, Value>) -> ToolRe
         "wiki_admin_set_default" => handlers::handle_admin_set_default(server, args),
         "wiki_admin_config" => handlers::handle_admin_config(server, args),
         "wiki_admin_schema_register" => handlers::handle_admin_schema_register(server, args),
+        "wiki_admin_schema_evolve" => handlers::handle_admin_schema_evolve(server, args),
         "wiki_admin_schema_remove" => handlers::handle_admin_schema_remove(server, args),
         "wiki_content_read" => handlers::handle_content_read(server, args),
         "wiki_content_write" => handlers::handle_content_write(server, args),

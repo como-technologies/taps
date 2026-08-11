@@ -221,8 +221,8 @@ pub struct SchemaRegisterReport {
 
 /// Register a type schema carried over the transport: validate it, admit it
 /// idempotently, never overwrite. Identical content → `unchanged`; same type
-/// with different content → a hard named conflict (schema evolution is an
-/// explicit future surface, not a silent overwrite).
+/// with different content → a hard named conflict pointing at
+/// [`schema_evolve`], the explicit upgrade — never a silent overwrite.
 pub fn schema_register(
     engine: &EngineState,
     wiki_name: &str,
@@ -294,7 +294,8 @@ pub fn schema_register(
         bail!(
             "type '{type_name}' is already registered with different content \
              (existing owner: {existing_owner}, submitted owner: {}) — \
-             refusing to overwrite; schema evolution is an explicit operation, not a re-register",
+             refusing to overwrite; a schema change is an explicit upgrade: \
+             use wiki_admin_schema_evolve / `admin schema evolve`",
             owner.as_deref().unwrap_or("unowned")
         );
     }
@@ -339,6 +340,149 @@ pub fn schema_register(
         type_name: type_name.to_string(),
         status: "registered".to_string(),
         owner,
+        notes,
+    })
+}
+
+/// Report of a `schema evolve` operation.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SchemaEvolveReport {
+    /// The evolved type.
+    pub type_name: String,
+    /// `"evolved"`, or `"unchanged"` when the submitted content is identical.
+    pub status: String,
+    /// The owner both schemas declare.
+    pub owner: Option<String>,
+    /// Top-level properties the new schema adds.
+    pub added_fields: Vec<String>,
+    /// Top-level properties the new schema drops.
+    pub removed_fields: Vec<String>,
+    /// Human-readable outcome notes (commit, index rebuild).
+    pub notes: Vec<String>,
+}
+
+/// Evolve a registered type's schema — the explicit upgrade `register`
+/// refuses to be. Same owner on both sides, diff reported, index rebuilt;
+/// the MCP handler remounts so a serving process picks the change up live.
+pub fn schema_evolve(
+    engine: &EngineState,
+    wiki_name: &str,
+    type_name: &str,
+    schema_content: &str,
+    template: Option<&str>,
+) -> Result<SchemaEvolveReport> {
+    let wiki = engine.wiki(wiki_name)?;
+
+    if !wiki.type_registry.is_known(type_name) {
+        let err = unknown_type_error(&wiki.type_registry, type_name);
+        bail!("{err} — evolve upgrades an existing type; use schema register for a new one");
+    }
+
+    let schema_value: serde_json::Value =
+        serde_json::from_str(schema_content).context("schema is not valid JSON")?;
+    jsonschema::Validator::new(&schema_value)
+        .map_err(|e| anyhow::anyhow!("schema is not a valid JSON Schema: {e}"))?;
+    let declares = schema_value
+        .get("x-wiki-types")
+        .and_then(|v| v.as_object())
+        .map(|obj| obj.contains_key(type_name))
+        .unwrap_or(false);
+    if !declares {
+        bail!("schema does not declare '{type_name}' in x-wiki-types");
+    }
+
+    let existing = schema_show(engine, wiki_name, type_name)?;
+    let existing_value: serde_json::Value = serde_json::from_str(&existing)
+        .with_context(|| format!("existing schema for '{type_name}' is not valid JSON"))?;
+
+    let new_owner = schema_value
+        .get("x-owner")
+        .and_then(|v| v.as_str())
+        .map(str::to_string);
+    let existing_owner = existing_value.get("x-owner").and_then(|v| v.as_str());
+
+    // Evolution keeps ownership: the same declared owner on both sides.
+    match (existing_owner, new_owner.as_deref()) {
+        (Some(e), Some(n)) if e == n => {}
+        (Some(e), Some(n)) => bail!(
+            "owner mismatch: '{type_name}' is owned by '{e}' but the evolving \
+             schema declares '{n}' — evolution keeps ownership"
+        ),
+        (Some(e), None) => bail!(
+            "owner mismatch: '{type_name}' is owned by '{e}' but the evolving \
+             schema declares no x-owner"
+        ),
+        (None, _) => bail!(
+            "type '{type_name}' declares no x-owner — evolve upgrades owned \
+             classes; engine-shipped classes upgrade with the engine, and \
+             unowned custom types re-add via `admin schema add`"
+        ),
+    }
+
+    if existing_value == schema_value {
+        return Ok(SchemaEvolveReport {
+            type_name: type_name.to_string(),
+            status: "unchanged".to_string(),
+            owner: new_owner,
+            added_fields: vec![],
+            removed_fields: vec![],
+            notes: vec![],
+        });
+    }
+
+    // Diff of top-level properties — the report says what the upgrade did.
+    let prop_keys = |v: &serde_json::Value| -> std::collections::BTreeSet<String> {
+        v.get("properties")
+            .and_then(|p| p.as_object())
+            .map(|o| o.keys().cloned().collect())
+            .unwrap_or_default()
+    };
+    let old_keys = prop_keys(&existing_value);
+    let new_keys = prop_keys(&schema_value);
+    let added_fields: Vec<String> = new_keys.difference(&old_keys).cloned().collect();
+    let removed_fields: Vec<String> = old_keys.difference(&new_keys).cloned().collect();
+
+    let schemas_dir = wiki.repo_root.join("schemas");
+    std::fs::create_dir_all(&schemas_dir)
+        .with_context(|| format!("failed to create {}", schemas_dir.display()))?;
+    let schema_path = schemas_dir.join(format!("{type_name}.json"));
+    std::fs::write(&schema_path, schema_content)
+        .with_context(|| format!("failed to write {}", schema_path.display()))?;
+    let mut committed_paths = vec![schema_path];
+    if let Some(t) = template {
+        let tmpl_path = schemas_dir.join(format!("{type_name}.md"));
+        std::fs::write(&tmpl_path, t)
+            .with_context(|| format!("failed to write {}", tmpl_path.display()))?;
+        committed_paths.push(tmpl_path);
+    }
+
+    let mut notes = Vec::new();
+    let resolved = wiki.resolved_config(&engine.config);
+    if resolved.ingest.auto_commit {
+        let path_refs: Vec<&Path> = committed_paths.iter().map(|p| p.as_path()).collect();
+        let msg = format!(
+            "schema evolve: {type_name} (owner: {})",
+            new_owner.as_deref().unwrap_or("unowned")
+        );
+        match git::commit_paths(&wiki.repo_root, &path_refs, &msg) {
+            Ok(hash) if !hash.is_empty() => notes.push(format!("committed {hash}")),
+            Ok(_) => {}
+            Err(e) => notes.push(format!("commit failed: {e}")),
+        }
+    }
+
+    notes.push(
+        rebuild_wiki_index(engine, wiki)
+            .trim_start_matches(", ")
+            .to_string(),
+    );
+
+    Ok(SchemaEvolveReport {
+        type_name: type_name.to_string(),
+        status: "evolved".to_string(),
+        owner: new_owner,
+        added_fields,
+        removed_fields,
         notes,
     })
 }

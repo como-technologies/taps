@@ -723,6 +723,25 @@ fn run_admin_schema(
             )?;
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
+        AdminSchemaAction::Evolve {
+            name,
+            schema_path,
+            template,
+        } => {
+            let schema_content = std::fs::read_to_string(&schema_path)
+                .with_context(|| format!("failed to read {schema_path}"))?;
+            let body_template = template
+                .map(|p| std::fs::read_to_string(&p).with_context(|| format!("failed to read {p}")))
+                .transpose()?;
+            let report = ops::schema_evolve(
+                &engine,
+                &wiki_name,
+                &name,
+                &schema_content,
+                body_template.as_deref(),
+            )?;
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        }
         AdminSchemaAction::Add { name, schema_path } => {
             let msg = ops::schema_add(&engine, &wiki_name, &name, Path::new(&schema_path))?;
             println!("{msg}");

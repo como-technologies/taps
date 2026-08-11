@@ -180,6 +180,32 @@ no server-side paths):
 server, `registered` remounts the wiki so the new type validates and
 indexes immediately.
 
+### evolve
+
+Upgrade a registered type's schema — the explicit operation the
+register conflict refuses to be. An owning tool that ships an amended
+schema takes this door instead of re-registering; without it, first
+contact after any schema change wedges every write verb.
+
+Rules: the type must already be registered, and **both** the existing
+and the new schema must declare the same `x-owner` — evolution keeps
+ownership. Engine-shipped classes (no owner) upgrade with the engine;
+unowned custom types re-add via `admin schema add`. Identical content
+is a no-op (`unchanged`).
+
+**CLI:**
+```
+llm-wiki admin schema evolve <type> <schema-path> [--template <md-path>] [--wiki <name>]
+```
+
+**MCP** (`wiki_admin_schema_evolve`): same parameters as register.
+
+**Output:** `{ status: "evolved" | "unchanged", owner, added_fields,
+removed_fields, notes }` — the diff of top-level properties is the
+upgrade's receipt. The index is rebuilt under the new compiled schema
+and, on a live server, the wiki remounts — the very next call
+validates and indexes the new shape, no restart.
+
 ### add
 
 Register a custom type by copying a schema file into the wiki and
@@ -314,6 +340,19 @@ validation misses:
   "parameters": {
     "type": "type name (declared in the schema's x-wiki-types)",
     "schema": "JSON Schema content",
+    "body_template": "Markdown body template content (optional)",
+    "wiki": "target wiki name (uses default if omitted)"
+  }
+}
+```
+
+```json
+{
+  "name": "wiki_admin_schema_evolve",
+  "description": "Evolve a registered type's schema (same x-owner on both sides)",
+  "parameters": {
+    "type": "type name (must already be registered)",
+    "schema": "new JSON Schema content",
     "body_template": "Markdown body template content (optional)",
     "wiki": "target wiki name (uses default if omitted)"
   }

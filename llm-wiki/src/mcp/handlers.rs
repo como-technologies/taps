@@ -634,6 +634,45 @@ pub fn handle_admin_schema_register(
     ok_text(s)
 }
 
+/// Handle `wiki_admin_schema_evolve` — upgrade a registered type's schema.
+pub fn handle_admin_schema_evolve(
+    server: &McpServer,
+    args: &Map<String, Value>,
+) -> ToolHandlerResult {
+    let engine = server.engine();
+    let wiki_name = resolve_wiki_name(&engine, args)?;
+    let type_name = arg_str(args, "type").ok_or("type is required")?;
+    let schema_content = arg_str(args, "schema").ok_or("schema is required")?;
+    let body_template = arg_str(args, "body_template");
+    let report = ops::schema_evolve(
+        &engine,
+        &wiki_name,
+        &type_name,
+        &schema_content,
+        body_template.as_deref(),
+    )
+    .map_err(|e| format!("{e}"))?;
+    // Same rule as register: the registry changed under a live process —
+    // remount so the very next call validates and indexes the new shape.
+    let entry = engine
+        .config
+        .wikis
+        .iter()
+        .find(|w| w.name == wiki_name)
+        .cloned();
+    drop(engine);
+    if report.status == "evolved"
+        && let Some(entry) = entry
+    {
+        server
+            .manager
+            .mount_wiki(&entry)
+            .map_err(|e| format!("remount after evolve failed: {e}"))?;
+    }
+    let s = serde_json::to_string_pretty(&report).map_err(|e| format!("{e}"))?;
+    ok_text(s)
+}
+
 /// Handle `wiki_admin_schema_remove` — unregister a type and remove its pages
 /// from the index.
 pub fn handle_admin_schema_remove(

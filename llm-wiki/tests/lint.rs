@@ -69,6 +69,7 @@ fn build_engine_with(
             petgraph_live::cache::GenerationCache::new(),
         ),
         community_cache: petgraph_live::cache::GenerationCache::new(),
+        git_lock: std::sync::Mutex::new(()),
     });
 
     let mut wikis = HashMap::new();
@@ -614,6 +615,7 @@ fn build_engine_with_name(dir: &Path, content_root: &Path, name: &str) -> Engine
             petgraph_live::cache::GenerationCache::new(),
         ),
         community_cache: petgraph_live::cache::GenerationCache::new(),
+        git_lock: std::sync::Mutex::new(()),
     });
 
     let mut wikis = HashMap::new();

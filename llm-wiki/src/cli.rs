@@ -308,6 +308,17 @@ pub enum AdminSchemaAction {
         #[arg(long)]
         template: Option<String>,
     },
+    /// Evolve a registered type's schema — the explicit upgrade register
+    /// refuses (same x-owner on both sides; diff reported; index rebuilt)
+    Evolve {
+        /// Type name (must already be registered)
+        name: String,
+        /// Path to the new JSON Schema file to read
+        schema_path: String,
+        /// Path to an optional Markdown body template
+        #[arg(long)]
+        template: Option<String>,
+    },
     /// Register a custom type
     Add {
         /// Type name

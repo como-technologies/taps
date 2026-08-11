@@ -1,9 +1,9 @@
 use llm_wiki::mcp::tools;
 
 #[test]
-fn tool_list_returns_25_tools() {
+fn tool_list_returns_26_tools() {
     let tools = tools::tool_list();
-    assert_eq!(tools.len(), 25);
+    assert_eq!(tools.len(), 26);
 }
 
 #[test]

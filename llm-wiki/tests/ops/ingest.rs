@@ -208,7 +208,10 @@ fn ingest_commits_only_its_subtree() {
     write_concept(&content_root, "glossary/two.md", "Term Two");
 
     let first = ops::ingest(&engine, &manager, "guides", false, "test").unwrap();
-    assert!(!first.commit.is_empty(), "first ingest must commit its pages");
+    assert!(
+        !first.commit.is_empty(),
+        "first ingest must commit its pages"
+    );
 
     // The glossary page was NOT swept into the guides commit: its own
     // ingest still finds something to admit and answers with a real hash.

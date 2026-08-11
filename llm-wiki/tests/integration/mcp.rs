@@ -930,3 +930,55 @@ fn schema_remove_takes_effect_without_restart() {
         "removed type still served by the live process: error={is_error} text={text}"
     );
 }
+
+// ── schema evolve unwedges the owning tool (taps #96) ─────────────────────────
+
+#[test]
+fn schema_evolve_takes_effect_live_and_register_names_it() {
+    let (_env, mut mcp) = mcp_env();
+
+    let reg = mcp.call_json(
+        "wiki_admin_schema_register",
+        json!({"type": "field-note", "schema": NOTE_SCHEMA, "wiki": SPACE_NAME}),
+    );
+    assert_eq!(reg["status"], "registered");
+
+    // The Step 4 wedge: the owner ships an amended schema and re-registers.
+    // The refusal now names the exit.
+    let amended = NOTE_SCHEMA.replace(
+        r#""status": { "type": "string" }"#,
+        r#""status": { "type": "string" }, "severity": { "type": "string" }"#,
+    );
+    let (is_error, text) = mcp.call_raw(
+        "wiki_admin_schema_register",
+        json!({"type": "field-note", "schema": amended, "wiki": SPACE_NAME}),
+    );
+    assert!(is_error && text.contains("schema evolve"), "got: {text}");
+
+    // Taking the exit works, reports the diff…
+    let evolved = mcp.call_json(
+        "wiki_admin_schema_evolve",
+        json!({"type": "field-note", "schema": amended, "wiki": SPACE_NAME}),
+    );
+    assert_eq!(evolved["status"], "evolved");
+    assert_eq!(evolved["added_fields"][0], "severity");
+
+    // …and the same process serves the new shape immediately: a page using
+    // the new field admits with no restart.
+    mcp.call(
+        "wiki_content_write",
+        json!({
+            "uri": "notes/first-field-note",
+            "content": "---\ntitle: First Note\ntype: field-note\nseverity: low\n---\n\nA note.\n",
+            "wiki": SPACE_NAME,
+        }),
+    );
+    let ingest = mcp.call_json(
+        "wiki_ingest",
+        json!({"path": "notes/first-field-note.md", "wiki": SPACE_NAME}),
+    );
+    assert_eq!(
+        ingest["pages_validated"], 1,
+        "live process must know the evolved schema"
+    );
+}

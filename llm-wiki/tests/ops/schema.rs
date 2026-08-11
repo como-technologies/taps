@@ -311,3 +311,97 @@ fn schema_register_rejects_invalid_json_schema() {
         ops::schema_register(&engine, "test", "assessment", "not json at all", None).unwrap_err();
     assert!(format!("{err}").contains("not valid JSON"));
 }
+
+// ── schema evolve (taps#96: an upgrade is an ordinary operation) ──────────────
+
+#[test]
+fn schema_evolve_upgrades_owned_type_and_reports_diff() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    {
+        let manager = WikiEngine::build(&config_path).unwrap();
+        let engine = manager.state.read().unwrap();
+        ops::schema_register(&engine, "test", "assessment", ASSESSMENT_SCHEMA, None).unwrap();
+    }
+
+    // Fresh mount, as a serving process would be after first contact.
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    // The owner ships an amended schema: one field gained.
+    let amended = ASSESSMENT_SCHEMA.replace(
+        r#""status": { "type": "string" }"#,
+        r#""status": { "type": "string" }, "relates_to": { "type": "array", "items": { "type": "string" } }"#,
+    );
+    let report = ops::schema_evolve(&engine, "test", "assessment", &amended, None).unwrap();
+    assert_eq!(report.status, "evolved");
+    assert_eq!(report.owner.as_deref(), Some("amaker"));
+    assert_eq!(report.added_fields, vec!["relates_to".to_string()]);
+    assert!(report.removed_fields.is_empty());
+
+    // The file on disk is the new truth.
+    let on_disk = std::fs::read_to_string(dir.path().join("test/schemas/assessment.json")).unwrap();
+    assert!(on_disk.contains("relates_to"));
+
+    // Idempotent: evolving to the same content is unchanged.
+    drop(engine);
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+    let again = ops::schema_evolve(&engine, "test", "assessment", &amended, None).unwrap();
+    assert_eq!(again.status, "unchanged");
+}
+
+#[test]
+fn schema_evolve_requires_matching_owner() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    {
+        let manager = WikiEngine::build(&config_path).unwrap();
+        let engine = manager.state.read().unwrap();
+        ops::schema_register(&engine, "test", "assessment", ASSESSMENT_SCHEMA, None).unwrap();
+    }
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let hijack = ASSESSMENT_SCHEMA.replace("amaker", "impostor");
+    let err = ops::schema_evolve(&engine, "test", "assessment", &hijack, None).unwrap_err();
+    assert!(format!("{err}").contains("owner mismatch"), "got: {err}");
+}
+
+#[test]
+fn schema_evolve_refuses_unowned_and_unknown_types() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    // Engine-shipped classes declare no owner — they upgrade with the engine.
+    let concept = ops::schema_show(&engine, "test", "concept").unwrap();
+    let err = ops::schema_evolve(&engine, "test", "concept", &concept, None).unwrap_err();
+    assert!(format!("{err}").contains("no x-owner"), "got: {err}");
+
+    // Unknown types are register's job, and the error says so.
+    let err =
+        ops::schema_evolve(&engine, "test", "brand-new", ASSESSMENT_SCHEMA, None).unwrap_err();
+    assert!(format!("{err}").contains("schema register"), "got: {err}");
+}
+
+#[test]
+fn schema_register_conflict_names_the_evolve_remedy() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    {
+        let manager = WikiEngine::build(&config_path).unwrap();
+        let engine = manager.state.read().unwrap();
+        ops::schema_register(&engine, "test", "assessment", ASSESSMENT_SCHEMA, None).unwrap();
+    }
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let altered = ASSESSMENT_SCHEMA.replace("A published assessment definition", "Different");
+    let err = ops::schema_register(&engine, "test", "assessment", &altered, None).unwrap_err();
+    assert!(
+        format!("{err}").contains("schema evolve"),
+        "the wedge must name its own exit: {err}"
+    );
+}
