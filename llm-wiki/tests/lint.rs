@@ -432,6 +432,54 @@ fn stale_old_page_explicit_low_confidence_is_flagged() {
 }
 
 #[test]
+fn stale_rfc3339_recent_page_not_flagged() {
+    let dir = tempfile::tempdir().unwrap();
+    let content_root = setup_repo(dir.path());
+
+    // RFC 3339 is the format the schemas demand — a fresh timestamp in it
+    // must not read as "old" just because the parser only knew bare dates.
+    let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ");
+    write_page(
+        &content_root,
+        "concepts/fresh-rfc3339.md",
+        &format!(
+            "---\ntitle: \"Fresh\"\ntype: concept\nread_when: [\"x\"]\nlast_updated: \"{now}\"\nconfidence: 0.1\n---\n\nFresh content.\n"
+        ),
+    );
+
+    let engine = build_engine(dir.path(), &content_root);
+    let report = run_lint(&engine, "test", Some("stale"), None).unwrap();
+    let findings = findings_for_rule(&report.findings, "stale");
+
+    assert!(
+        findings.is_empty(),
+        "fresh RFC 3339 page must not be stale: {findings:?}"
+    );
+}
+
+#[test]
+fn stale_rfc3339_old_page_low_confidence_is_flagged() {
+    let dir = tempfile::tempdir().unwrap();
+    let content_root = setup_repo(dir.path());
+
+    write_page(
+        &content_root,
+        "concepts/old-rfc3339.md",
+        "---\ntitle: \"Old RFC\"\ntype: concept\nread_when: [\"x\"]\nlast_updated: \"2020-01-01T00:00:00Z\"\nconfidence: 0.2\n---\n\nOld content.\n",
+    );
+
+    let engine = build_engine(dir.path(), &content_root);
+    let report = run_lint(&engine, "test", Some("stale"), None).unwrap();
+    let findings = findings_for_rule(&report.findings, "stale");
+
+    assert!(
+        !findings.is_empty(),
+        "old RFC 3339 date + low confidence must be stale"
+    );
+    assert_eq!(findings[0].slug, "concepts/old-rfc3339");
+}
+
+#[test]
 fn stale_old_page_high_confidence_not_flagged() {
     let dir = tempfile::tempdir().unwrap();
     let content_root = setup_repo(dir.path());

@@ -54,6 +54,42 @@ fn schema_show_template_has_frontmatter() {
 }
 
 #[test]
+fn schema_show_template_validates_against_its_own_schema() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = setup_wiki(dir.path(), "test");
+    let manager = WikiEngine::build(&config_path).unwrap();
+    let engine = manager.state.read().unwrap();
+
+    let template = ops::schema_show_template(&engine, "test", "guide").unwrap();
+
+    // The commons carry the load-bearing fields, and status comes from the
+    // class's own enum — the authoring contract's born state, never a
+    // hardcoded string.
+    assert!(
+        template.contains("status: generated"),
+        "born state from the enum: {template}"
+    );
+    assert!(template.contains("confidence:"), "{template}");
+    assert!(template.contains("relates_to:"), "{template}");
+
+    // The frontmatter as issued must satisfy the schema that issued it.
+    let inner = template
+        .trim()
+        .strip_prefix("---")
+        .and_then(|s| s.strip_suffix("---"))
+        .expect("template is a frontmatter block");
+    let value: serde_json::Value = serde_yaml::from_str(inner).unwrap();
+    let schema: serde_json::Value =
+        serde_json::from_str(&ops::schema_show(&engine, "test", "guide").unwrap()).unwrap();
+    let validator = jsonschema::Validator::new(&schema).unwrap();
+    let errors: Vec<String> = validator
+        .iter_errors(&value)
+        .map(|e| e.to_string())
+        .collect();
+    assert!(errors.is_empty(), "template fails its own schema: {errors:?}");
+}
+
+#[test]
 fn schema_validate_passes_default_schemas() {
     let dir = tempfile::tempdir().unwrap();
     let config_path = setup_wiki(dir.path(), "test");

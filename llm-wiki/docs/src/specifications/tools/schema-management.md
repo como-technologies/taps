@@ -120,11 +120,19 @@ type: concept
 read_when:
   - ""
 summary: ""
-status: active
-last_updated: "2025-07-18"
-tags: []
+status: generated
+last_updated: "2026-08-10T00:00:00Z"
+confidence: 0.5
+tags:
+  - ""
 ---
 ```
+
+`status` comes from the class's own enum (preferring the authoring
+contract's born state, `generated`), `last_updated` is RFC 3339 (the
+format the schemas demand), and `confidence` appears whenever the class
+declares it — an absent confidence would opt the page out of staleness
+tracking. Classes that declare `relates_to` get it in the commons too.
 
 For skill type (aliased fields):
 
@@ -133,9 +141,10 @@ For skill type (aliased fields):
 name: ""
 description: ""
 type: skill
-status: active
-last_updated: "2025-07-18"
-tags: []
+status: generated
+last_updated: "2026-08-10T00:00:00Z"
+tags:
+  - ""
 ---
 ```
 

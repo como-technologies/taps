@@ -628,11 +628,14 @@ fn rule_stale(
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
-        let is_old = if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-            date < threshold_date
-        } else {
+        // The schemas demand RFC 3339; bare dates survive as a legacy read.
+        let parsed = chrono::DateTime::parse_from_rfc3339(date_str)
+            .map(|dt| dt.date_naive())
+            .or_else(|_| chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d"));
+        let is_old = match parsed {
+            Ok(date) => date < threshold_date,
             // No valid date — treat as old
-            true
+            Err(_) => true,
         };
 
         if !is_old {

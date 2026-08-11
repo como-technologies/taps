@@ -534,8 +534,17 @@ fn generate_template(schema: &serde_json::Value, type_name: &str) -> String {
         }
     }
 
-    // Common optional fields
-    for field in &["summary", "status", "last_updated", "tags"] {
+    // Common optional fields. `confidence` earns its slot because absence
+    // opts the page out of staleness tracking; `relates_to` because an
+    // orphan birth is the default without it.
+    for field in &[
+        "summary",
+        "status",
+        "last_updated",
+        "confidence",
+        "relates_to",
+        "tags",
+    ] {
         if !required.contains(field)
             && let Some(prop) = properties.get(*field)
         {
@@ -565,17 +574,44 @@ fn format_template_field(name: &str, prop: &serde_json::Value, type_name: &str) 
             if name == "type" {
                 format!("type: {type_name}")
             } else if name == "status" {
-                "status: active".to_string()
+                // Status vocabularies differ per class — read the schema's own
+                // enum, preferring the authoring contract's born state.
+                let from_enum = prop
+                    .get("enum")
+                    .and_then(|e| e.as_array())
+                    .and_then(|arr| {
+                        let vals: Vec<&str> = arr.iter().filter_map(|v| v.as_str()).collect();
+                        if vals.contains(&"generated") {
+                            Some("generated")
+                        } else {
+                            vals.first().copied()
+                        }
+                    });
+                match from_enum {
+                    Some(v) => format!("status: {v}"),
+                    None => "status: \"\"".to_string(),
+                }
             } else if name == "last_updated" {
                 format!(
                     "last_updated: \"{}\"",
-                    chrono::Utc::now().format("%Y-%m-%d")
+                    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ")
                 )
             } else {
                 format!("{name}: \"\"")
             }
         }
         "boolean" => format!("{name}: false"),
+        "number" => {
+            if let Some(default) = prop.get("default") {
+                format!("{name}: {default}")
+            } else if name == "confidence" {
+                // Born-generated pages declare low confidence; a template
+                // without a value would opt the page out of staleness tracking.
+                format!("{name}: 0.3")
+            } else {
+                format!("{name}: 0")
+            }
+        }
         _ => format!("{name}: \"\""),
     }
 }
