@@ -465,7 +465,7 @@ mod tests {
             .iter()
             .map(|e| e.as_str().unwrap())
             .collect();
-        let contract_efforts: Vec<&str> = crate::contract::EFFORT_LABELS
+        let contract_efforts: Vec<&str> = como_contract::tuesday::EFFORT_LABELS
             .iter()
             .map(|l| l.strip_prefix("effort:").unwrap())
             .collect();

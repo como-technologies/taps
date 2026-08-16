@@ -38,27 +38,6 @@ check:
 run *ARGS:
     cargo run -- {{ARGS}}
 
-# Scripted demo trigger: label the demo issue conduit:run as the reviewer (REPO_NAME selects the repo)
-demo-trigger:
-    bash demo/demo-trigger.sh
-
-# The packaged demo lives in demo/kit (old surface; dies with the rebuild's item 7)
-demo:
-    @echo "Run demo/kit/demo-up, the per-beat scripts, then demo/kit/demo-down."
-
-# Conformance suite, all legs that need no secrets
-conformance:
-    cargo test --test conformance
-
-# Throwaway Gitea on localhost:3000 (FORGE_PORT overrides the host port) — two users, labels, seeded repo (SEED_REPO_DIR/REPO_NAME parameterize the seeding)
-forge-up:
-    docker compose -f demo/docker-compose.yml up -d
-    bash demo/gitea-init.sh
-
-# Destroy the throwaway forge (container + volume — nothing survives)
-forge-down:
-    docker compose -f demo/docker-compose.yml down -v
-
 # Upgrade dependencies (including incompatible versions)
 crate-upgrade:
     cargo upgrade --incompatible

@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 license = "Apache-2.0"
-description = "Forge-neutral agentic development harness — the Adopt-stage engine of the Como TAPS loop"
+description = "Harness-first execution store for the Adopt stage of the Como TAPS loop"
 
 # Versions live in the workspace root Cargo.toml.
 [dependencies]
@@ -21,25 +21,19 @@ rmcp.workspace = true
 schemars.workspace = true
 # Work-item page ids (26-char Crockford strings in frontmatter).
 ulid.workspace = true
-# The door verbs are async (the KB client is); the old poll-tick surface
-# stays sync and spins no runtime.
+# The door verbs are async (the KB client is); one runtime per invocation.
 tokio.workspace = true
 serde.workspace = true
-# `-o json` output, transcript JSONL, engine JSON envelopes, snapshot persistence.
+# `-o json` reports and the schema-sync tests.
 serde_json.workspace = true
 # Work-item page frontmatter (the approval seal rides YAML frontmatter).
 serde_yaml_ng.workspace = true
-# Plan-snapshot integrity hash + FakeEngine's deterministic output.
+# The approval seal's body hash.
 sha2.workspace = true
-# Typed errors in the forge/store/machine/adroit layers (anyhow stays in main.rs).
+# Typed errors in the lib modules (anyhow stays in main.rs).
 thiserror.workspace = true
-# Snapshot timestamps + review submitted_at.
+# Door timestamps (created/claimed_at/approval.at, work_ms measurement).
 time.workspace = true
-# conduit.toml config (not in the spec dep list, required by §Module layout src/config.rs).
-toml.workspace = true
-# Blocking HTTP (rustls) — only ever called through the HttpTransport seam.
-# `json` gates send_json/into_json, the surface the forge adapters speak.
-ureq.workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true

@@ -1,20 +1,19 @@
 # conduit
 
-The Adopt-stage engine of the Como TAPS loop, being rebuilt as a
-harness-first execution store: work items as conduit-owned KB classes,
-humans gating intent (sign-off) rather than diffs, a mechanical merge
-door. The decision is portfolio ADR-0015; the plan of record and running
-implementation notes are taps issue 113. The old forge-integrator surface
-(forge adapters, driven engine, poll-tick router, Docker demo) is still
-in-tree and dies with the rebuild's item 7.
+Harness-first execution store for the Adopt stage (portfolio ADR-0015;
+the rebuild record is taps issue 113). Work items — project/story/task —
+are conduit-owned KB classes behind the llm-wiki appliance; humans gate
+intent (sign-off seals), the lifecycle is a pure rule table, and the
+doors (one clap definition, terminal + MCP) are the only way work-item
+state changes. Internal bare repos under `.conduit/repos/` are the local
+remotes work lands on through the mechanical merge door.
 
 ## Working agreements (IMPORTANT — read first)
 
-- **Never push to a real remote. Never open a PR on any public forge.** The
-  only push targets that ever exist are the throwaway localhost Gitea
-  container (old surface, dies at item 7) and local bare repos in tests.
-  GitHub and GitLab mutations are ALWAYS DryRun-decorated.
-- Tokens live in gitignored `.secrets/`; never commit or log them.
+- **Never push to a real remote.** The only push targets that exist are
+  the internal bare repos (and tempdir repos in tests). Mirroring to
+  external forges is a deferred integration, not product code.
+- Tokens and secrets never get committed or logged.
 - **Complete alpha until the Getting Started walk finishes** (taps issue
   46): anything may change or break at-will, no compatibility or history
   obligations. Don't preserve "what was" unless it is critical to
@@ -22,18 +21,21 @@ in-tree and dies with the rebuild's item 7.
 - **Humans gate intent, not diffs** (portfolio ADR-0015): sign-off and
   project close are human seats; the harness can neither write nor grant
   approval; a task's `done` belongs to the mechanical merge door alone.
-  `src/workitem.rs` is the rule table — extend it, never bypass it.
+  `src/workitem.rs` is the rule table and `src/approval.rs` the seal —
+  extend them, never bypass them.
+- **Actor honesty is wiring**: terminal = `HumanSeat`, MCP = `Harness`,
+  `MergeDoor` only inside `complete`. `signoff` is absent from the MCP
+  door entirely; `Actor` is never accepted from a caller.
 - **conduit never authors, edits, or transitions an ADR** — that is
   adroit's lane. conduit does not invoke adroit at all.
-- **No book during the rebuild — deliberate.** The old book described the
-  deleted shape and was removed whole. Implementation notes land on taps
-  issue 113 as a landing comment per checklist item (what shipped, the
-  design calls the code can't self-explain, threads left open). A new book
-  is written from the new code, commit messages, and issue record once the
-  shape stabilizes after the walk.
+- **No book during the rebuild — deliberate.** Implementation notes land
+  on taps issue 113 as a landing comment per checklist item (what
+  shipped, the design calls the code can't self-explain, threads left
+  open). A new book is written from the new code, commit messages, and
+  issue record once the shape stabilizes after the walk.
 - **No client names** in docs/comments/examples — keep examples generic.
-- Never write a bare `#<number>` in text conduit renders to a forge — use
-  plain `N`. (Governs the old surface's PR/issue bodies while it lives.)
+- Never write a bare `#<number>` in text conduit renders into a repo
+  (the squash-commit messages) — use plain `N`.
 
 ## Build & test
 
@@ -43,29 +45,26 @@ Always use `just` recipes — never raw `cargo`.
 just init        # toolchain components
 just ci          # fmt-check + clippy + test (the gate)
 just test        # all tests
-just forge-up    # throwaway Gitea on localhost:3000 (old surface; dies at item 7)
-just forge-down  # destroy it
 ```
 
-`cargo audit` runs as a separate CI job (`just crate-audit`, plus a weekly
-schedule) so a fresh advisory can't mask the code gates.
+`cargo audit` runs as a separate CI job (`just crate-audit`, plus a
+weekly schedule) so a fresh advisory can't mask the code gates.
 
-Env-gated test legs: `CONDUIT_E2E_GITEA=1` (live Gitea conformance),
-`CONDUIT_E2E_GITHUB=1` (GitHub live reads), `CONDUIT_E2E_CLAUDE=1` (live
-claude CLI engine smoke) — all old-surface legs.
+Config surface: the suite pair `KB_URL`/`KB_WIKI` (discovery order:
+process env > cwd `.env` > `~/.config/taps/env`) and
+`CONDUIT_GATE_TIMEOUT_SECS` (merge-door gate deadline, default 1800).
+The per-project gate command is frontmatter (`gate:`, default `just ci`).
+The harness workspace template and posture skills live in `kit/`.
 
 ## Design rules
 
 - Typed errors (`thiserror`) in lib modules; `anyhow` only in `main.rs`.
-- Pure core, effectful shell: rule tables (`workitem.rs`, `contract.rs`)
-  are pure and exhaustively unit-tested; effects live at the edges.
-- The work-item doors (`surface.rs`, `mcp.rs`, `work.rs`) are async over
-  the KB client, one clap definition serving terminal and MCP; the old
-  poll-tick surface stays sync until item 7 deletes it. (The tokio-free
-  lane retired with this.)
-- Actor honesty: terminal = human seat, MCP = harness, and the merge
-  door's authority is internal to `complete` — `signoff` is absent from
-  the MCP door entirely, and `Actor` is never accepted from a caller.
-- Never put test-only state in a production type; use injected fakes and
-  documented env overrides (the doors test against an in-memory
-  `WorkStore`; internal git is real in tests).
+- Pure core, effectful shell: the rule tables (`workitem.rs`,
+  `approval.rs`) are pure and exhaustively unit-tested; effects live in
+  the doors (`surface.rs`) and their seams (`work.rs`, `repo.rs`).
+- The doors are async over `como-kb-client` (one tokio runtime per
+  invocation); everything below them is sync.
+- The body is the contract, the frontmatter is state: no door ever
+  rewrites a body, and the seal pins body bytes only.
+- Never put test-only state in a production type; the doors test against
+  an in-memory `WorkStore`, and internal git is real in tests.

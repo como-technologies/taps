@@ -1,10 +1,9 @@
 //! Shared subprocess deadline harness: spawn the child in its OWN process
 //! group, drain its pipes on threads, poll against the deadline, and SIGKILL
-//! the whole group on expiry. One implementation for every deadline-bounded
-//! child (the engine runner, src/engine/claude_code.rs) so a hung child can
-//! never block its caller past the configured timeout.
+//! the whole group on expiry. The merge door's gate run (src/repo.rs) rides
+//! this so a hung gate can never block the door past the configured timeout.
 //!
-//! Why a GROUP kill: children fork (claude spawns tools).
+//! Why a GROUP kill: children fork (a gate command spawns test runners).
 //! Killing only the leader leaves grandchildren holding the output pipes,
 //! which would block the pipe-reader join arbitrarily far past the deadline.
 
