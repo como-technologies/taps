@@ -28,7 +28,13 @@ scratch clones. It wires two MCP servers:
 One session wears one hat at a time: the **PM posture** (skill
 `plan-work`) turns accepted decisions into a draft work-item tree and
 presents goals for human sign-off; the **execution posture** (skill
-`execute-task`) takes a signed task from claim to the merge door.
+`execute-task`) takes a signed task from claim to the merge door; the
+**review posture** (skill `review-task`) is the standing gate for
+qualities the signed tests don't measure — run it in a *separate*
+session from the one that implemented, because a session reviewing its
+own diff is a mirror, not a gate. (That separation is the future
+out-of-band reviewer agent's whole design; the skill is its job
+description, run interactively until the walk proves the steps.)
 
 ## Layout
 
@@ -43,6 +49,7 @@ kit/
   skills/              Como skills (Claude Code format; the procedures)
     plan-work/         the PM posture
     execute-task/      the execution posture
+    review-task/       the standing-gate review posture (a separate session)
 ```
 
 ## Setup — Claude Code

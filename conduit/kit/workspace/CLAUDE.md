@@ -46,6 +46,8 @@ create and remove.
 
 The skills in `.claude/skills/` carry the procedures: `plan-work` (the
 PM posture: accepted decisions → a draft work-item tree → goals
-presented for sign-off) and `execute-task` (the execution posture: a
-signed task from claim to the merge door). Prefer them over ad-hoc
-flows, and wear one hat at a time.
+presented for sign-off), `execute-task` (the execution posture: a
+signed task from claim to the merge door), and `review-task` (the
+standing-gate review — only ever in a session that did not implement
+the work). Prefer them over ad-hoc flows, and wear one hat at a time:
+in particular, a session that executed a task never reviews it.
