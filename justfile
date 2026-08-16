@@ -139,9 +139,8 @@ test:
 # The per-product invariant lanes a blanket --workspace build can't see.
 # Each guards an accepted decision:
 lanes:
-    # conduit is fully synchronous (conduit ADR-0001, poll-tick loop): its
-    # dependency graph must stay tokio-free.
-    bash -c "! cargo tree -p conduit -e normal | grep -qw tokio"
+    # conduit's tokio-free lane retired with the doors rebuild (portfolio
+    # ADR-0015): the work-item doors ride the async KB client, like adroit.
     # adroit is greenfield (taps #93) — its lanes return as the new core
     # earns them.
     # tuesday-core stays wasm32-compatible, no tokio (tuesday ADR-0002).

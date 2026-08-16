@@ -42,7 +42,9 @@ pub const SCHEMAS: [(&str, &str); 3] = [
     ("task", TASK_SCHEMA),
 ];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, clap::ValueEnum, schemars::JsonSchema,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum Class {
     Project,

@@ -25,6 +25,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::item::{ItemError, assemble, canonical, split};
+
 /// The frontmatter key the seal lives under (mirrored in the three
 /// work-item schemas' `approval` property).
 pub const APPROVAL_KEY: &str = "approval";
@@ -55,10 +57,8 @@ pub enum SealState {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApprovalError {
-    #[error("missing opening frontmatter delimiter `---`")]
-    MissingOpenDelimiter,
-    #[error("missing closing frontmatter delimiter `---`")]
-    MissingCloseDelimiter,
+    #[error(transparent)]
+    Page(#[from] ItemError),
     #[error("invalid frontmatter YAML: {0}")]
     Yaml(#[from] serde_yaml_ng::Error),
     #[error(
@@ -94,7 +94,7 @@ pub fn seal(page: &str, by: &str, at: &str) -> Result<String, ApprovalError> {
         serde_yaml_ng::Value::String(APPROVAL_KEY.into()),
         serde_yaml_ng::to_value(&seal)?,
     );
-    assemble(&fm, body)
+    Ok(assemble(&fm, body)?)
 }
 
 /// Remove the seal (the bounce). Idempotent: a page without one comes back
@@ -107,7 +107,7 @@ pub fn strip(page: &str) -> Result<String, ApprovalError> {
     {
         return Ok(page.to_string());
     }
-    assemble(&fm, body)
+    Ok(assemble(&fm, body)?)
 }
 
 /// Verify a page's seal against its body, recomputing the hash — the stored
@@ -130,48 +130,8 @@ pub fn check(page: &str) -> Result<SealState, ApprovalError> {
     }
 }
 
-// ── Page plumbing ──────────────────────────────────────────────────────────
-
-/// The canonical body: leading newlines and trailing whitespace shed, every
-/// interior byte kept (the house page-round-trip canon).
-fn canonical(body: &str) -> &str {
-    body.trim_start_matches(['\r', '\n']).trim_end()
-}
-
-/// Split a page into (frontmatter mapping, raw body after the delimiters).
-fn split(page: &str) -> Result<(serde_yaml_ng::Mapping, &str), ApprovalError> {
-    let trimmed = page.trim_start();
-    if !trimmed.starts_with("---") {
-        return Err(ApprovalError::MissingOpenDelimiter);
-    }
-    let after_open = trimmed[3..].trim_start_matches(['\r', '\n']);
-    let close = after_open
-        .find("\n---")
-        .ok_or(ApprovalError::MissingCloseDelimiter)?;
-    // The newline before the delimiter belongs to the YAML block (lossless
-    // round-trip for keep-chomping block scalars).
-    let yaml = &after_open[..close + 1];
-    let body = after_open[close + 4..].trim_start_matches(['\r', '\n']);
-    let fm: serde_yaml_ng::Mapping = serde_yaml_ng::from_str(yaml)?;
-    Ok((fm, body))
-}
-
-/// Reassemble a page from rewritten frontmatter and the untouched body,
-/// in the house canonical form (blank line after the frontmatter, one
-/// trailing newline).
-fn assemble(fm: &serde_yaml_ng::Mapping, body: &str) -> Result<String, ApprovalError> {
-    let yaml = serde_yaml_ng::to_string(fm)?;
-    let mut out = String::from("---\n");
-    out.push_str(&yaml);
-    out.push_str("---\n");
-    let body = canonical(body);
-    if !body.is_empty() {
-        out.push('\n');
-        out.push_str(body);
-        out.push('\n');
-    }
-    Ok(out)
-}
+// Page plumbing (canonical/split/assemble) is shared with the item model —
+// see crate::item.
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
@@ -307,11 +267,15 @@ mod tests {
         assert!(matches!(check(&bad), Err(ApprovalError::MalformedSeal(_))));
         assert!(matches!(
             check("no frontmatter at all\n"),
-            Err(ApprovalError::MissingOpenDelimiter)
+            Err(ApprovalError::Page(
+                crate::item::ItemError::MissingOpenDelimiter
+            ))
         ));
         assert!(matches!(
             check("---\ntitle: t\nno close"),
-            Err(ApprovalError::MissingCloseDelimiter)
+            Err(ApprovalError::Page(
+                crate::item::ItemError::MissingCloseDelimiter
+            ))
         ));
     }
 

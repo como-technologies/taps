@@ -9,11 +9,21 @@ description = "Forge-neutral agentic development harness — the Adopt-stage eng
 
 # Versions live in the workspace root Cargo.toml.
 [dependencies]
-# ── Core — fully synchronous, no tokio (spec §Stack: poll-tick loop, one task at a time).
 # Binary-layer errors; typed thiserror enums live in the lib modules.
 anyhow.workspace = true
+# The doors' seams: KB transport (async, rmcp under the hood) + the MCP
+# server door + tool-parameter schemas (the one-clap-definition pattern).
+async-trait.workspace = true
 como-contract.workspace = true
+como-kb-client = { path = "../kb-client" }
 clap.workspace = true
+rmcp.workspace = true
+schemars.workspace = true
+# Work-item page ids (26-char Crockford strings in frontmatter).
+ulid.workspace = true
+# The door verbs are async (the KB client is); the old poll-tick surface
+# stays sync and spins no runtime.
+tokio.workspace = true
 serde.workspace = true
 # `-o json` output, transcript JSONL, engine JSON envelopes, snapshot persistence.
 serde_json.workspace = true

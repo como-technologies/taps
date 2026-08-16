@@ -31,7 +31,7 @@ pub enum OutputFormat {
 #[command(
     name = "conduit",
     version,
-    about = "Forge-neutral agentic development harness"
+    about = "Harness-first execution store for the Adopt stage: work items in the KB, humans gating intent, a mechanical merge door"
 )]
 pub struct Cli {
     /// Forge adapter to use (defaults to conduit.toml [forge].default).
@@ -52,6 +52,36 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    // ── The work-item doors (portfolio ADR-0015; the rebuild's surface) ──
+    /// Create a draft work item (project/story/task) — the body is the
+    /// contract: a goal at altitude plus its verification form.
+    New(crate::surface::NewParams),
+    /// The work tree as rows with seal states.
+    List(crate::surface::ListParams),
+    /// One work item in full — frontmatter, body, seal state, children.
+    Show(crate::surface::ShowParams),
+    /// Sign off an item at the human seat: seal the body, item goes ready.
+    /// Sign-off flows downhill — the parent must be signed first.
+    Signoff(crate::surface::SignoffParams),
+    /// Reopen a signed item: strip the seal, back to draft, cascading
+    /// downhill. Only a human seat can re-sign afterwards.
+    Bounce(crate::surface::IdParams),
+    /// Claim a ready task: seal verified, internal repo + branch
+    /// provisioned, task goes in-progress.
+    Claim(crate::surface::IdParams),
+    /// The mechanical merge door: seal intact + gate green on the branch ->
+    /// one squash commit on main, telemetry written, task done.
+    Complete(crate::surface::IdParams),
+    /// Close a story/project whose children are all terminal (projects
+    /// close at the human seat).
+    Close(crate::surface::IdParams),
+    /// Cancel an item and every non-terminal descendant.
+    Cancel(crate::surface::IdParams),
+    /// Serve the work-item surface to harness sessions over MCP stdio
+    /// (signoff is absent through that door by design).
+    Mcp,
+
+    // ── The old forge surface (dies with the rebuild's item 7) ──
     /// Initialize: .conduit store + pre-create the label set on the forge.
     Init,
     /// Poll-tick loop: fetch -> diff -> step -> execute -> persist.
@@ -82,12 +112,132 @@ pub fn dispatch(cli: Cli) -> anyhow::Result<()> {
     }
 
     match cli.command {
+        // The work-item doors are async (the KB client is); the terminal is
+        // the human seat.
+        Command::New(_)
+        | Command::List(_)
+        | Command::Show(_)
+        | Command::Signoff(_)
+        | Command::Bounce(_)
+        | Command::Claim(_)
+        | Command::Complete(_)
+        | Command::Close(_)
+        | Command::Cancel(_)
+        | Command::Mcp => dispatch_doors(&cwd, &config, cli),
+
         Command::Status => cmd_status(&cwd, cli.output),
         Command::Init => cmd_init(&cwd, &config),
         Command::Run { once } => cmd_run(&cwd, &config, once),
         Command::Verify { address } => cmd_verify(&cwd, &config, &address, cli.output),
         Command::DemoTranscript { address } => cmd_demo_transcript(&cwd, &config, &address),
     }
+}
+
+/// The work-item doors: one tokio runtime per invocation, one KB session
+/// per verb, `Actor::HumanSeat` — the terminal IS the human seat.
+fn dispatch_doors(cwd: &Path, config: &Config, cli: Cli) -> anyhow::Result<()> {
+    use crate::surface as s;
+    use crate::workitem::Actor;
+    como_kb_client::load_env();
+    let gate_timeout = std::time::Duration::from_secs(config.engine.timeout_secs);
+    let rt = tokio::runtime::Runtime::new()?;
+    let report = rt.block_on(async {
+        if let Command::Mcp = cli.command {
+            crate::mcp::serve(cwd.to_path_buf(), gate_timeout).await?;
+            return Ok(None);
+        }
+        let store = crate::work::KbWorkStore::connect().await?;
+        let out = match &cli.command {
+            Command::New(p) => s::new_core(&store, p).await,
+            Command::List(p) => s::list_core(&store, p).await,
+            Command::Show(p) => s::show_core(&store, p).await,
+            Command::Signoff(p) => s::signoff_core(&store, Actor::HumanSeat, p).await,
+            Command::Bounce(p) => s::bounce_core(&store, Actor::HumanSeat, p).await,
+            Command::Claim(p) => s::claim_core(&store, cwd, Actor::HumanSeat, p).await,
+            Command::Complete(p) => s::complete_core(&store, cwd, gate_timeout, p).await,
+            Command::Close(p) => s::close_core(&store, Actor::HumanSeat, p).await,
+            Command::Cancel(p) => s::cancel_core(&store, Actor::HumanSeat, p).await,
+            _ => unreachable!("routed above"),
+        };
+        store.close().await.ok();
+        out.map(Some)
+    })?;
+    if let Some(report) = report {
+        match cli.output {
+            OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
+            OutputFormat::Human => print_door_report(&cli.command, &report),
+        }
+    }
+    Ok(())
+}
+
+/// Terse human lines for the door verbs (the `-o json` report is the
+/// automation door).
+fn print_door_report(command: &Command, report: &serde_json::Value) {
+    let s = |k: &str| report[k].as_str().unwrap_or("?").to_string();
+    match command {
+        Command::New(_) => println!("created {} ({}, draft)", s("slug"), s("class")),
+        Command::List(_) => {
+            let empty = vec![];
+            let items = report["items"].as_array().unwrap_or(&empty);
+            if items.is_empty() {
+                println!("no work items");
+            }
+            for i in items {
+                println!(
+                    "{:<12} {:<44} {:<12} seal:{:<9} {}",
+                    i["class"].as_str().unwrap_or("?"),
+                    i["slug"].as_str().unwrap_or("?"),
+                    i["status"].as_str().unwrap_or("?"),
+                    i["seal"].as_str().unwrap_or("?"),
+                    i["title"].as_str().unwrap_or(""),
+                );
+            }
+        }
+        Command::Show(_) => println!(
+            "{} ({}, {}, seal:{})\n\n{}",
+            s("slug"),
+            s("class"),
+            s("status"),
+            s("seal"),
+            s("body")
+        ),
+        Command::Signoff(_) => println!(
+            "signed off {} by {} — ready (body sha256 {})",
+            s("slug"),
+            s("by"),
+            s("content_sha256")
+        ),
+        Command::Bounce(_) => println!("bounced to draft: {}", join(&report["bounced"])),
+        Command::Claim(_) => println!(
+            "claimed {} — branch {} in {}\n  {}",
+            s("slug"),
+            s("branch"),
+            s("repo"),
+            s("hint")
+        ),
+        Command::Complete(_) => println!(
+            "merged {} — commit {} (gate: {}, {} ms of work)",
+            s("slug"),
+            s("merge_commit"),
+            s("gate"),
+            report["work_ms"].as_u64().unwrap_or(0)
+        ),
+        Command::Close(_) => println!("closed {}", s("slug")),
+        Command::Cancel(_) => println!("cancelled: {}", join(&report["cancelled"])),
+        _ => println!("{report}"),
+    }
+}
+
+fn join(v: &serde_json::Value) -> String {
+    v.as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|s| s.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
+        .unwrap_or_default()
 }
 
 // ── Assembly helpers ───────────────────────────────────────────────────────

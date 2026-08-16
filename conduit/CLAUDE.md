@@ -59,8 +59,13 @@ claude CLI engine smoke) — all old-surface legs.
 - Typed errors (`thiserror`) in lib modules; `anyhow` only in `main.rs`.
 - Pure core, effectful shell: rule tables (`workitem.rs`, `contract.rs`)
   are pure and exhaustively unit-tested; effects live at the edges.
-- Fully synchronous today (no tokio; a root-justfile lane guards it). The
-  rebuild's door work (item 4) decides whether that survives — the KB
-  transport client (`como-kb-client`) is async.
+- The work-item doors (`surface.rs`, `mcp.rs`, `work.rs`) are async over
+  the KB client, one clap definition serving terminal and MCP; the old
+  poll-tick surface stays sync until item 7 deletes it. (The tokio-free
+  lane retired with this.)
+- Actor honesty: terminal = human seat, MCP = harness, and the merge
+  door's authority is internal to `complete` — `signoff` is absent from
+  the MCP door entirely, and `Actor` is never accepted from a caller.
 - Never put test-only state in a production type; use injected fakes and
-  documented env overrides.
+  documented env overrides (the doors test against an in-memory
+  `WorkStore`; internal git is real in tests).
