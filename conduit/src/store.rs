@@ -9,8 +9,7 @@
 //! ├── plans/<task-id>.adr.md   ADR sidecar written alongside the plan snapshot
 //! ├── cursor/<forge>.json      previous RepoSnapshot per forge (the poll cursor)
 //! ├── cache/<forge>.git        local bare git cache (Task 11, git.rs)
-//! ├── workspaces/<task-id>-a<attempt>/   engine workspaces (disposable)
-//! └── bin/                     pinned adroit (Task 10, `just init-adroit`)
+//! └── workspaces/<task-id>-a<attempt>/   engine workspaces (disposable)
 //! ```
 //!
 //! All record/plan/cursor writes are atomic: bytes go to `<path>.tmp`, fsynced,
@@ -52,7 +51,7 @@ impl Store {
     /// Open (and create dirs under) `<repo>/.conduit`.
     pub fn open(root: impl Into<PathBuf>) -> Result<Store, StoreError> {
         let root: PathBuf = root.into();
-        for sub in &["tasks", "plans", "cursor", "cache", "workspaces", "bin"] {
+        for sub in &["tasks", "plans", "cursor", "cache", "workspaces"] {
             let dir = root.join(sub);
             std::fs::create_dir_all(&dir).map_err(|source| StoreError::Io {
                 path: dir.clone(),

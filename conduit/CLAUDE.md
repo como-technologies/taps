@@ -16,8 +16,8 @@ TAPS loop. Design spec (normative): `docs/src/dev/spike-design.md`.
   label and PR review/merge are human actions. Do not add automation that
   bypasses a gate.
 - **conduit never authors, edits, or transitions an ADR** — that is adroit's
-  lane. The only adroit subcommands conduit may invoke are
-  `{manifest, list, show, plan}` (enforced by test).
+  lane. conduit no longer invokes adroit at all: the subprocess seam died
+  with portfolio ADR-0015 (the rebuild is taps issue 113).
 - **All documentation lives in the mdbook** (`docs/src/**`, wired into
   `docs/src/SUMMARY.md`). No standalone Markdown docs elsewhere. Keep code and
   docs in sync; `just book` must build.
@@ -31,9 +31,7 @@ Always use `just` recipes — never raw `cargo`/`mdbook`.
 
 ```sh
 just init        # toolchain components + mdbook
-just init-adroit # build the in-tree adroit -> .conduit/bin (the adroit.rev
-                 # pin and its resolution chain retired with the workspace)
-just ci          # fmt-check + clippy + init-adroit + test + book (the gate)
+just ci          # fmt-check + clippy + test + book (the gate)
 just test        # all tests
 just forge-up    # throwaway Gitea on localhost:3000 (demo/; FORGE_PORT overrides the host port)
 just forge-down  # destroy it
@@ -43,8 +41,6 @@ The customer demo kit (`demo/kit/demo-up`, per-beat scripts, `demo-down`)
 packages the full TAPS engagement demo — narrated script:
 `docs/src/usage/customer-demo.md`; design: ADR-0015.
 
-`just init-adroit` is a `ci` leg
-here because tests/demo_init.rs needs the binary at .conduit/bin/adroit.
 `cargo audit` runs as a separate CI job (`just crate-audit`, plus a weekly
 schedule) so a fresh advisory can't mask the code gates.
 The `docs/src/adr` corpus is the legacy-format repo of record (ADR-0017):
@@ -54,9 +50,8 @@ legacy format exactly and must pass `adroit check` on a seeded space.
 adroit's forge integration stays disabled.
 
 Env-gated test legs: `CONDUIT_E2E_GITEA=1` (live Gitea conformance),
-`CONDUIT_E2E_GITHUB=1` (GitHub live reads), `CONDUIT_E2E_ADROIT=1` (in-tree
-adroit binary contract tests), `CONDUIT_E2E_CLAUDE=1` (live claude CLI
-engine smoke).
+`CONDUIT_E2E_GITHUB=1` (GitHub live reads), `CONDUIT_E2E_CLAUDE=1` (live
+claude CLI engine smoke).
 
 ## Design rules
 

@@ -10,10 +10,7 @@ init:
 # Run all CI checks: format, lint, tests, book build (the house gate).
 # crate-audit is deliberately NOT a leg — it runs as a separate CI job (plus
 # a weekly schedule), so a fresh advisory can't mask the code gates.
-# init-adroit runs BEFORE test: it places the in-tree adroit at
-# .conduit/bin/adroit, which tests/demo_init.rs needs to exercise the
-# corpus-space seeding.
-ci: fmt-check lint init-adroit test book
+ci: fmt-check lint test book
 
 # Format code
 fmt:
@@ -38,19 +35,6 @@ check:
 # Run the binary with arguments
 run *ARGS:
     cargo run -- {{ARGS}}
-
-# Build the workspace's adroit and place it at .conduit/bin/adroit — the
-# path conduit's AdrSource resolves (src/adroit.rs). The contract is the
-# crate graph itself (conduit and adroit share types via como-contract),
-# and the binary is built from this tree.
-init-adroit:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd "{{justfile_directory()}}"
-    cargo build -q -p adroit
-    mkdir -p .conduit/bin
-    cp ../target/debug/adroit .conduit/bin/adroit
-    .conduit/bin/adroit manifest -o json > /dev/null && echo "adroit handshake OK"
 
 # Scripted demo trigger: label the demo issue conduit:run as the reviewer (REPO_NAME selects the repo)
 demo-trigger:

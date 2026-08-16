@@ -1,5 +1,3 @@
-use std::path::{Path, PathBuf};
-
 use assert_cmd::Command;
 use predicates::prelude::*;
 use tempfile::TempDir;
@@ -14,7 +12,6 @@ fn conduit(dir: &TempDir) -> Command {
         "CONDUIT_GITEA_TOKEN",
         "CONDUIT_TIMEOUT_SECS",
         "CONDUIT_POLL_SECS",
-        "CONDUIT_ADROIT_BIN",
         "CONDUIT_FAKE_ENGINE_MODE",
         "GITHUB_TOKEN",
         "GITLAB_TOKEN",
@@ -34,34 +31,6 @@ fn unreachable_gitea_config(dir: &TempDir) {
     .unwrap();
 }
 
-/// Self-contained adroit stub: Accepted ADR-0042 + a stored plan. The `plan`
-/// subcommand REFUSES a second invocation (sentinel file) — that is how the
-/// replay test proves the snapshot is never regenerated.
-fn write_plan_stub(dir: &Path) -> PathBuf {
-    let path = dir.join("stub-adroit");
-    let script = r####"#!/bin/sh
-case "$1" in
-  manifest) echo '{"tool":"adroit","manifest_schema":1}' ;;
-  show) cat <<'EOF'
-{"reference":"ADR-0042","address":"42","title":"Use Rust","status":"accepted","body":"## Context\n\nwords\n"}
-EOF
-  ;;
-  plan)
-    if [ -e "$0.plan-called" ]; then echo "adroit plan invoked twice" >&2; exit 7; fi
-    : > "$0.plan-called"
-    cat <<'EOF'
-{"reference":"ADR-0042","title":"Use Rust","plan":"# Plan\n\n1. step one\n2. step two\n","stored":true}
-EOF
-  ;;
-  *) echo "unexpected subcommand: $*" >&2; exit 2 ;;
-esac
-"####;
-    std::fs::write(&path, script).unwrap();
-    use std::os::unix::fs::PermissionsExt;
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
-    path
-}
-
 #[test]
 fn help_lists_all_subcommands() {
     let d = TempDir::new().unwrap();
@@ -70,7 +39,6 @@ fn help_lists_all_subcommands() {
         .assert()
         .success()
         .stdout(predicate::str::contains("init"))
-        .stdout(predicate::str::contains("plan"))
         .stdout(predicate::str::contains("run"))
         .stdout(predicate::str::contains("status"))
         .stdout(predicate::str::contains("verify"))
@@ -121,7 +89,7 @@ fn init_fails_on_unreachable_forge_but_opens_the_store() {
         .failure()
         .stderr(predicate::str::contains("forge unreachable"));
     // Store::open ran first: the on-disk layout exists.
-    for sub in ["tasks", "plans", "cursor", "cache", "workspaces", "bin"] {
+    for sub in ["tasks", "plans", "cursor", "cache", "workspaces"] {
         assert!(
             d.path().join(".conduit").join(sub).is_dir(),
             ".conduit/{sub} must exist"
@@ -137,7 +105,7 @@ fn verify_fails_cleanly_on_unknown_task() {
         .assert()
         .failure()
         .stderr(predicate::str::contains("no task for ADR address"))
-        .stderr(predicate::str::contains("conduit plan 3"));
+        .stderr(predicate::str::contains("conduit status"));
 }
 
 #[test]
@@ -166,45 +134,6 @@ fn verify_refuses_an_unmerged_task_before_touching_the_forge() {
         .stderr(predicate::str::contains("forge unreachable").not());
 }
 
-/// GAP B: cmd_plan rejects a terminal-state task immediately with the
-/// "cancel + new task" message, and MUST NOT invoke `adroit plan` at all.
-/// The stub sentinel guarantees the plan subcommand was never reached.
-#[test]
-fn plan_bails_on_terminal_task_without_invoking_adroit() {
-    let d = TempDir::new().unwrap();
-    // Write a Merged task record directly into the store — no forge needed.
-    std::fs::create_dir_all(d.path().join(".conduit/tasks")).unwrap();
-    std::fs::write(
-        d.path().join(".conduit/tasks/adr-0042.json"),
-        r#"{
-          "id": "adr-0042", "adr_reference": "ADR-0042", "adr_address": "42",
-          "title": "Use Rust", "state": "Merged",
-          "branch": "conduit/adr-0042/use-rust",
-          "issue": 1, "pr": 7, "attempt": 1, "work_ms": 0,
-          "plan_sha256": "x", "review_feedback": [], "pending": []
-        }"#,
-    )
-    .unwrap();
-    let stub = write_plan_stub(d.path());
-    conduit(&d)
-        .env("CONDUIT_ADROIT_BIN", &stub)
-        .args(["plan", "42"])
-        .assert()
-        .failure()
-        // The exact bail message from cmd_plan (spec §terminal bail).
-        .stderr(predicate::str::contains("cancel + new task"))
-        // adroit plan must NOT have been invoked — the stub writes a sentinel
-        // file on its first plan call and exits 7 on the second.  Neither
-        // should have happened; the sentinel must be absent.
-        .stderr(predicate::str::contains("adroit plan invoked twice").not());
-    // Belt-and-suspenders: the sentinel file must not exist at all.
-    assert!(
-        !stub.with_extension("plan-called").exists()
-            && !d.path().join("stub-adroit.plan-called").exists(),
-        "adroit plan must not have been called for a terminal task"
-    );
-}
-
 // GAP C (CLI-level): verify exits non-zero when the task is not yet Merged.
 // This is already covered by verify_refuses_an_unmerged_task_before_touching_the_forge
 // above; this comment documents why a full forge-backed verify CLI test is not
@@ -213,58 +142,6 @@ fn plan_bails_on_terminal_task_without_invoking_adroit() {
 // in Task 14 of the demo transcript. The violation-detection logic itself
 // (tuesday_checks returning pass=false) is unit-tested exhaustively in
 // src/cli.rs tests::tuesday_checks_violation_yields_pass_false.
-
-/// The spec §Plan snapshot ordering, end-to-end: `conduit plan` persists the
-/// verbatim snapshot (+ ADR-body sidecar + Scoped record) BEFORE the forge
-/// call — pointing gitea at an unreachable port, the command fails with the
-/// typed Offline error and the snapshot is already on disk.
-#[test]
-fn plan_via_stub_adroit_creates_scoped_record() {
-    let d = TempDir::new().unwrap();
-    unreachable_gitea_config(&d);
-    let stub = write_plan_stub(d.path());
-
-    conduit(&d)
-        .env("CONDUIT_ADROIT_BIN", &stub)
-        .args(["plan", "42"])
-        .assert()
-        .failure()
-        // Operator-facing provenance: stored vs generated.
-        .stderr(predicate::str::contains("stored plan"))
-        // The failure is the forge, AFTER the snapshot persisted.
-        .stderr(predicate::str::contains("forge unreachable"));
-
-    // Snapshot: exact bytes, before the issue ever existed.
-    let plan = std::fs::read_to_string(d.path().join(".conduit/plans/adr-0042.md")).unwrap();
-    assert_eq!(plan, "# Plan\n\n1. step one\n2. step two\n");
-    // ADR-body sidecar (the engine-seam context, spec §The engine seam).
-    let body = std::fs::read_to_string(d.path().join(".conduit/plans/adr-0042.adr.md")).unwrap();
-    assert_eq!(body, "## Context\n\nwords\n");
-    // Scoped record with the snapshot sha, no issue yet.
-    let record: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(d.path().join(".conduit/tasks/adr-0042.json")).unwrap(),
-    )
-    .unwrap();
-    assert_eq!(record["state"], "Scoped");
-    assert_eq!(record["issue"], serde_json::Value::Null);
-    assert_eq!(
-        record["plan_sha256"],
-        "93d39bc9dde72bcf91a2efaff012ae7508a1105e93025bf03cfa10dae12d832f"
-    );
-
-    // Replay: the second run converges on the existing snapshot and NEVER
-    // calls `adroit plan` again (the stub would fail loudly if it did).
-    conduit(&d)
-        .env("CONDUIT_ADROIT_BIN", &stub)
-        .args(["plan", "42"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("already planned"))
-        .stderr(predicate::str::contains("adroit plan invoked twice").not())
-        .stderr(predicate::str::contains("forge unreachable"));
-    let replayed = std::fs::read_to_string(d.path().join(".conduit/plans/adr-0042.md")).unwrap();
-    assert_eq!(replayed, plan, "snapshot untouched by the replay");
-}
 
 /// The github transcript leg is hermetic by construction (DryRun mutations,
 /// no polling, no git): two runs must be byte-identical, normalized JSONL.

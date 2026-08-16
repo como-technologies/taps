@@ -31,7 +31,6 @@ pub enum EngineKind {
 pub struct Config {
     pub forge: ForgeConfig,
     pub engine: EngineConfig,
-    pub adroit: AdroitConfig,
     pub effort: EffortThresholds,
     pub poll: PollConfig,
 }
@@ -84,15 +83,6 @@ pub struct EngineConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct AdroitConfig {
-    pub dir: String,
-    pub ai_provider: String,
-    pub ai_model: String,
-    // ADROIT_ANTHROPIC_KEY upgrade path: passed through from conduit's env if set.
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
 pub struct PollConfig {
     pub interval_secs: u64,
 }
@@ -109,7 +99,6 @@ impl Default for Config {
         Config {
             forge: ForgeConfig::default(),
             engine: EngineConfig::default(),
-            adroit: AdroitConfig::default(),
             effort: EffortThresholds::default(),
             poll: PollConfig::default(),
         }
@@ -162,16 +151,6 @@ impl Default for EngineConfig {
         EngineConfig {
             kind: EngineKind::Fake,
             timeout_secs: 1800,
-        }
-    }
-}
-
-impl Default for AdroitConfig {
-    fn default() -> Self {
-        AdroitConfig {
-            dir: "adr".to_string(),
-            ai_provider: "ollama".to_string(),
-            ai_model: "llama3.2".to_string(),
         }
     }
 }
@@ -324,7 +303,6 @@ mod tests {
         assert_eq!(c.engine.timeout_secs, 1800);
         assert_eq!(c.forge.gitea.base_url, "http://localhost:3000");
         assert_eq!(c.forge.gitlab.base_url, "https://gitlab.com");
-        assert_eq!(c.adroit.ai_provider, "ollama");
         assert_eq!(c.poll.interval_secs, 15);
     }
 

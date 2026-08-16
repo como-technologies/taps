@@ -1,17 +1,16 @@
 //! CLI surface (spec §Module layout):
-//! init | plan <address> | run [--once] | status | verify <address> | demo-transcript <address>
+//! init | run [--once] | status | verify <address> | demo-transcript <address>
 //! Globals: --forge <gitea|github|gitlab>, -o/--output <human|json>.
 //!
 //! Behavior contract per spec §Demo script; `verify` is the executable spec
 //! of §The tuesday contract. All wiring lives here — the binary's `main.rs`
-//! is clap marshalling only, and this module never names the adroit binary
-//! path (AdrSource::resolve_bin owns it).
+//! is clap marshalling only. (`plan` died with the adroit subprocess seam,
+//! portfolio ADR-0015; the work-item doors replace it in the rebuild.)
 
 use std::path::Path;
 
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::adroit::AdrSource;
 use crate::config::{Config, EngineKind, ForgeKind};
 use crate::contract;
 use crate::engine::Engine;
@@ -55,9 +54,6 @@ pub struct Cli {
 pub enum Command {
     /// Initialize: .conduit store + pre-create the label set on the forge.
     Init,
-    /// Plan an accepted ADR into a Scoped task: adroit handshake -> show ->
-    /// enforce Accepted -> adroit plan -> persist snapshot verbatim -> issue.
-    Plan { address: String },
     /// Poll-tick loop: fetch -> diff -> step -> execute -> persist.
     Run {
         /// Run exactly one tick, then exit.
@@ -88,7 +84,6 @@ pub fn dispatch(cli: Cli) -> anyhow::Result<()> {
     match cli.command {
         Command::Status => cmd_status(&cwd, cli.output),
         Command::Init => cmd_init(&cwd, &config),
-        Command::Plan { address } => cmd_plan(&cwd, &config, &address, cli.output),
         Command::Run { once } => cmd_run(&cwd, &config, once),
         Command::Verify { address } => cmd_verify(&cwd, &config, &address, cli.output),
         Command::DemoTranscript { address } => cmd_demo_transcript(&cwd, &config, &address),
@@ -194,98 +189,6 @@ fn cmd_init(dir: &Path, config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `conduit plan <address>` (spec §adroit integration + §Plan snapshot):
-/// handshake → show → conduit-side Accepted guard → adroit plan → persist the
-/// plan VERBATIM (sha onto the record) + the ADR body sidecar → THEN the
-/// probe-first issue (Router::ensure_issue). Snapshot-before-issue ordering
-/// is spec behavior: a forge failure leaves the snapshot persisted, and the
-/// re-run converges without regenerating the plan.
-fn cmd_plan(
-    dir: &Path,
-    config: &Config,
-    address: &str,
-    output: OutputFormat,
-) -> anyhow::Result<()> {
-    let store = Store::open(dir.join(".conduit"))?;
-    let adroit = AdrSource::new(
-        AdrSource::resolve_bin(dir),
-        dir.join(&config.adroit.dir),
-        &config.adroit,
-    )
-    // The adroit subprocess inherits the engine deadline ([engine]
-    // timeout_secs): a hung `plan` is group-killed, never blocks the daemon.
-    .with_timeout(std::time::Duration::from_secs(config.engine.timeout_secs));
-    adroit.handshake()?;
-    let detail = adroit.show(address)?;
-    AdrSource::require_accepted(&detail)?;
-
-    let task_id = contract::task_slug(&detail.summary.reference);
-    let mut record = match store.load_task(&task_id)? {
-        Some(existing) if existing.state.is_terminal() => anyhow::bail!(
-            "task {task_id} is already {:?} — replanning = cancel + new task (out of scope in the spike)",
-            existing.state
-        ),
-        Some(existing) => {
-            // Replay (operator re-run, or crash between snapshot and issue):
-            // the persisted plan snapshot is immutable — NEVER regenerated.
-            eprintln!("task {task_id} already planned; converging on the existing snapshot");
-            existing
-        }
-        None => {
-            let envelope = adroit.plan(address)?;
-            // Operator-facing provenance: a stored plan is a deterministic
-            // read; a fresh generation is nondeterministic (and this snapshot
-            // is now the only copy that matters).
-            eprintln!(
-                "plan for {}: {}",
-                detail.summary.reference,
-                if envelope.stored {
-                    "stored plan (deterministic read from the ADR document)"
-                } else {
-                    "freshly generated (nondeterministic; snapshot is now canonical)"
-                }
-            );
-            let mut record = TaskRecord::new(
-                &detail.summary.reference,
-                &detail.summary.address,
-                &detail.summary.title,
-                "",
-            );
-            record.plan_sha256 = store.save_plan(&record.id, &envelope.plan)?;
-            // Decision context for the engine seam (TaskSpec.adr_body).
-            store.save_adr_body(&record.id, &detail.body)?;
-            store.save_task(&record)?;
-            record
-        }
-    };
-
-    let (forge, forge_name) = build_forge(dir, config);
-    let engine = build_engine(config);
-    let router = Router::new(
-        forge.as_ref(),
-        forge_name,
-        engine.as_ref(),
-        &store,
-        config,
-        "main",
-    );
-    router.ensure_issue(&mut record)?;
-    let issue = record.issue.expect("ensure_issue sets the id");
-
-    match output {
-        OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&record)?),
-        OutputFormat::Human => println!(
-            "planned {} as task {} — issue {} on {}: label it {} to start",
-            detail.summary.reference,
-            record.id,
-            issue.0,
-            forge.describe(),
-            contract::LABEL_RUN
-        ),
-    }
-    Ok(())
-}
-
 /// `conduit run [--once]`: the poll-tick daemon. `--once` = recover + one
 /// tick (errors propagate). The daemon loop logs a failed tick and keeps
 /// polling — transient forge outages must not kill it; the unadvanced cursor
@@ -379,8 +282,7 @@ fn cmd_verify(
         .find(|r| r.adr_address == address || r.id == address || r.adr_reference == address)
         .ok_or_else(|| {
             anyhow::anyhow!(
-                "no task for ADR address {address:?} — run `conduit plan {address}` first \
-                 (`conduit status` lists known tasks)"
+                "no task for ADR address {address:?} (`conduit status` lists known tasks)"
             )
         })?;
     if record.state != TaskState::Merged {

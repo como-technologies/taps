@@ -20,12 +20,11 @@ pub struct ClaudeCodeEngine {
 /// Env vars scrubbed from the engine subprocess. The implementation is
 /// STRONGER — `env_clear()` plus an allowlist (`PATH`, `HOME`, `TERM`,
 /// `LANG`), never a blocklist; this list is the *test* assertion surface.
-pub const SCRUBBED_ENV: [&str; 6] = [
+pub const SCRUBBED_ENV: [&str; 5] = [
     "GITHUB_TOKEN",
     "CONDUIT_GITEA_TOKEN",
     "GITEA_TOKEN",
     "ANTHROPIC_API_KEY",
-    "ADROIT_ANTHROPIC_KEY",
     "OPENAI_API_KEY",
 ];
 

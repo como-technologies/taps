@@ -1,11 +1,10 @@
 //! Shared subprocess deadline harness: spawn the child in its OWN process
 //! group, drain its pipes on threads, poll against the deadline, and SIGKILL
 //! the whole group on expiry. One implementation for every deadline-bounded
-//! child — the engine runner (src/engine/claude_code.rs) and the adroit
-//! client (src/adroit.rs) — so a hung child can never block its caller past
-//! the configured timeout.
+//! child (the engine runner, src/engine/claude_code.rs) so a hung child can
+//! never block its caller past the configured timeout.
 //!
-//! Why a GROUP kill: children fork (claude spawns tools; adroit shells out).
+//! Why a GROUP kill: children fork (claude spawns tools).
 //! Killing only the leader leaves grandchildren holding the output pipes,
 //! which would block the pipe-reader join arbitrarily far past the deadline.
 
