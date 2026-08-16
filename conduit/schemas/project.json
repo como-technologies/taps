@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/como-technologies/taps/conduit/schemas/v0.1.0/project.json",
+  "title": "Project work item",
+  "description": "The top work-item altitude (portfolio ADR-0015): a goal in executive terms, verified by Measure. The BODY is the contract — goal and verification prose live there and are what the approval hash pins; frontmatter is state and may change through conduit's doors without breaking the seal. Sign-off (status draft -> ready) is a human seat; close (-> done) is the same seat, with every child story terminal.",
+  "type": "object",
+  "required": [
+    "title",
+    "type",
+    "status",
+    "created"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Stable opaque page identifier (ULID, tool-generated). Links target this, not the path."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short title describing the project"
+    },
+    "type": {
+      "type": "string",
+      "description": "Page type from registry"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ready",
+        "in-progress",
+        "done",
+        "cancelled"
+      ],
+      "description": "Work-item lifecycle, aligned to conduit workitem::Status (transitions enforced by conduit's doors)"
+    },
+    "created": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+      "description": "RFC 3339 timestamp the project was created"
+    },
+    "implements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids/slugs of the accepted decision pages this project implements — the provenance edge Measure walks from priced work back to the decision"
+    },
+    "repo": {
+      "type": "string",
+      "description": "The internal bare repo this project's work lands in (one repo per project for now; stories and tasks inherit it)"
+    },
+    "relates_to": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids/slugs of related pages"
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "by",
+        "at",
+        "content_sha256"
+      ],
+      "properties": {
+        "by": {
+          "type": "string",
+          "description": "The human seat that signed off the goal"
+        },
+        "at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+          "description": "RFC 3339 timestamp of sign-off"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 of the page body exactly as signed — any body edit breaks it and bounces the item to draft. Written only by conduit's sign-off door, never by the harness (suite convention, portfolio ADR-0015)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Sign-off seal. Its presence is what makes an item executable; only the owning door writes it."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "ready",
+              "in-progress",
+              "done"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "approval"
+        ]
+      }
+    }
+  ],
+  "x-owner": "conduit",
+  "x-wiki-types": {
+    "project": "Work-item project: an executive-altitude goal, Measure-verified"
+  },
+  "x-graph-edges": {
+    "implements": {
+      "relation": "implements",
+      "direction": "outgoing",
+      "target_types": [
+        "decision"
+      ]
+    },
+    "relates_to": {
+      "relation": "relates-to",
+      "direction": "outgoing"
+    }
+  },
+  "additionalProperties": false
+}
