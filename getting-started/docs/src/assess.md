@@ -147,15 +147,19 @@ it says what you mean.)
 
 ## Respond — this part is you
 
-Open the respond app (`:3001`, or `http://walk.local:3001` from the
-clean room), pick the assessment, and answer as the respondent. The
-questions exist to collect *your* ground truth about the project —
-that's the one seat in this loop that stays human on purpose.
+The respond app serves each assessment at its own address — a link a
+respondent gets handed, not a site they browse. Yours is
+`:3001/assess/<project-id>` (from the clean room:
+`http://walk.local:3001/assess/<project-id>`), with the project id
+your session reported at import. Open it and answer as the
+respondent. The questions exist to collect *your* ground truth about
+the project — that's the one seat in this loop that stays human on
+purpose.
 
 ## Analyze and publish
 
-The analyze app (`:3002`) shows the scorecard, gaps, and roadmap as you
-answer. When it reflects reality, land the result in your wiki — ask
+The analyze app addresses the same way — `:3002/analyze/<project-id>`
+— and shows the scorecard, gaps, and roadmap as you answer. When it reflects reality, land the result in your wiki — ask
 your workspace session (amaker's `status` tool tells it your response
 is in — `response.complete` — and `publish` lands it), or do it
 yourself from a terminal:
