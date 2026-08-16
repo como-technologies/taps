@@ -5,12 +5,14 @@ default:
 # Install project toolchain components and tools
 init:
     rustup component add clippy rustfmt
-    cargo install --locked mdbook cargo-edit cargo-audit
+    cargo install --locked cargo-edit cargo-audit
 
-# Run all CI checks: format, lint, tests, book build (the house gate).
+# Run all CI checks: format, lint, tests (the house gate). No book leg —
+# the book is deliberately absent during the rebuild (portfolio ADR-0015);
+# a new one is written from the new shape once it stabilizes.
 # crate-audit is deliberately NOT a leg — it runs as a separate CI job (plus
 # a weekly schedule), so a fresh advisory can't mask the code gates.
-ci: fmt-check lint test book
+ci: fmt-check lint test
 
 # Format code
 fmt:
@@ -40,9 +42,9 @@ run *ARGS:
 demo-trigger:
     bash demo/demo-trigger.sh
 
-# The full demo walkthrough is docs/src/usage/demo.md (Task 14)
+# The packaged demo lives in demo/kit (old surface; dies with the rebuild's item 7)
 demo:
-    @echo "Follow docs/src/usage/demo.md — `just forge-up` first."
+    @echo "Run demo/kit/demo-up, the per-beat scripts, then demo/kit/demo-down."
 
 # Conformance suite, all legs that need no secrets
 conformance:
@@ -72,12 +74,3 @@ crate-audit:
 
 # Upgrade deps, update lockfile, audit, and test
 crate-refresh: crate-upgrade crate-update crate-audit test
-
-# Build the user manual (mdbook)
-book:
-    mdbook build docs
-    @echo "Book built -> docs/book"
-
-# Serve the book locally with live reload
-book-serve:
-    mdbook serve docs --open

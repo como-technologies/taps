@@ -39,20 +39,14 @@ just init-adroit          # builds the in-tree adroit where conduit expects it
 Push your project to the local forge, then configure conduit with the
 repo and your KB so it can read the accepted decisions from Step 4.
 
-> 🚧 **Unverified — the biggest open seam in this guide.** Two things
-> are moving here. First: today the polished path is the packaged
-> engagement demo (`demo/kit/demo-up` … `beat-4-adopt`), which runs
-> against a fictional client corpus; the walk will establish the
-> first-party path for *your own* project and wiki — what
-> configuration conduit needs, which engine drives the changes, and
-> where the human gates sit. Second: the throwaway forge currently runs
-> in Docker, and the suite has decided to retire Docker for incus
-> (portfolio ADR-0014,
-> [issue 48](https://github.com/como-technologies/taps/issues/48)) —
-> the commands on this page change with it. The page gets rewritten
-> from that walk; until then, the
-> [conduit book's demo walkthrough](../conduit/)
-> shows the full Adopt motion end to end.
+> 🚧 **This page describes the retired shape.** The suite has decided
+> to rebuild conduit as a harness-first execution store — work items in
+> the knowledge base, humans signing off intent rather than reviewing
+> diffs, a mechanical merge door (portfolio ADR-0015; the rebuild is
+> [issue 113](https://github.com/como-technologies/taps/issues/113)).
+> Everything on this page — the forge, the commands, the gates —
+> changes with it. The page gets rewritten from the walk on the new
+> shape, not before.
 
 ## Review and merge — the human gates
 

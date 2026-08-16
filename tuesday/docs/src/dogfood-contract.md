@@ -8,10 +8,12 @@ them into hours attributed back to the originating decision. Two independent
 codebases agreeing on the same merged PR's labels, title, and trailer is the
 loop-closure evidence.
 
-The normative producer-side statement is conduit's spike design
-("The tuesday contract" table in `conduit/docs/src/dev/spike-design.md`,
-implemented in conduit's `src/contract.rs`). This page is the consumer-side
-statement: what tuesday relies on, and how it allocates from it.
+The normative statement of the shared markers is `como-contract`
+(`contract/src/tuesday.rs`), which both sides implement. This page is the
+consumer-side statement: what tuesday relies on, and how it allocates from
+it. Note: conduit is being rebuilt (portfolio ADR-0015) — the carrier moves
+from forge PR labels to work-item frontmatter, and this page changes with
+the rebuild's Measure step.
 
 ## What conduit emits on every PR
 

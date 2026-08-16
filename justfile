@@ -156,7 +156,6 @@ lanes:
 # Build every book — the six products' plus the Getting Started guide
 books:
     mdbook build assessments/docs
-    mdbook build conduit/docs
     mdbook build getting-started/docs
     mdbook build llm-wiki/docs
     mdbook build portfolio/docs
@@ -174,7 +173,6 @@ site: books
     # live-server watches this root, and deleting it would orphan the watch.
     mkdir -p target/site && rm -rf target/site/*
     cp -r assessments/target/book   target/site/assessments
-    cp -r conduit/docs/book         target/site/conduit
     cp -r getting-started/target/book target/site/getting-started
     cp -r llm-wiki/docs/book        target/site/llm-wiki
     cp -r portfolio/target/book     target/site/portfolio
@@ -192,7 +190,7 @@ site: books
     <ul>
       <li>adroit — decision records (Prescribe; book returns with taps #93's docs pass)</li>
       <li><a href="assessments/">assessments</a> — amaker (Assess)</li>
-      <li><a href="conduit/">conduit</a> — the Adopt engine</li>
+      <li>conduit — the Adopt engine (rebuilding harness-first; book returns from the new shape, taps #113)</li>
       <li><a href="llm-wiki/">llm-wiki</a> — the knowledge-base engine</li>
       <li><a href="pulse/">pulse</a> — anonymous signal (Measure)</li>
       <li><a href="tuesday/">tuesday</a> — effort attribution (Measure)</li>
@@ -225,7 +223,7 @@ books-serve port="8000": _need-watch-tools site
     # build into docs/book from re-triggering.
     while inotifywait -qq -r -e modify,create,delete,move \
           --exclude '/docs/book/' \
-          assessments/docs conduit/docs getting-started/docs \
+          assessments/docs getting-started/docs \
           llm-wiki/docs portfolio/docs pulse/docs tuesday/docs docs-theme; do
         sleep 0.3       # coalesce editor save bursts
         echo "change detected — rebuilding site…"

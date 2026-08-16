@@ -1,65 +1,66 @@
 # conduit
 
-Forge-neutral agentic development harness — the Adopt-stage engine of the Como
-TAPS loop. Design spec (normative): `docs/src/dev/spike-design.md`.
+The Adopt-stage engine of the Como TAPS loop, being rebuilt as a
+harness-first execution store: work items as conduit-owned KB classes,
+humans gating intent (sign-off) rather than diffs, a mechanical merge
+door. The decision is portfolio ADR-0015; the plan of record and running
+implementation notes are taps issue 113. The old forge-integrator surface
+(forge adapters, driven engine, poll-tick router, Docker demo) is still
+in-tree and dies with the rebuild's item 7.
 
 ## Working agreements (IMPORTANT — read first)
 
-- **Never push to a real remote. Never open a PR on any public forge.** The only
-  push target that ever exists is the throwaway localhost Gitea container (and
-  local bare repos in tests). GitHub and GitLab mutations are ALWAYS
-  DryRun-decorated — the constructors only hand out `DryRun(GitHubForge)` /
-  `DryRun(GitLabForge)` (ADR-0012 / ADR-0016).
-- **All work stays under `~/repos/como-tech/**`.** Tokens live in gitignored
-  `.secrets/`; never commit or log them.
-- **Humans hold every gate.** No `Forge::merge` method exists; the `conduit:run`
-  label and PR review/merge are human actions. Do not add automation that
-  bypasses a gate.
-- **conduit never authors, edits, or transitions an ADR** — that is adroit's
-  lane. conduit no longer invokes adroit at all: the subprocess seam died
-  with portfolio ADR-0015 (the rebuild is taps issue 113).
-- **All documentation lives in the mdbook** (`docs/src/**`, wired into
-  `docs/src/SUMMARY.md`). No standalone Markdown docs elsewhere. Keep code and
-  docs in sync; `just book` must build.
+- **Never push to a real remote. Never open a PR on any public forge.** The
+  only push targets that ever exist are the throwaway localhost Gitea
+  container (old surface, dies at item 7) and local bare repos in tests.
+  GitHub and GitLab mutations are ALWAYS DryRun-decorated.
+- Tokens live in gitignored `.secrets/`; never commit or log them.
+- **Complete alpha until the Getting Started walk finishes** (taps issue
+  46): anything may change or break at-will, no compatibility or history
+  obligations. Don't preserve "what was" unless it is critical to
+  understanding "what is".
+- **Humans gate intent, not diffs** (portfolio ADR-0015): sign-off and
+  project close are human seats; the harness can neither write nor grant
+  approval; a task's `done` belongs to the mechanical merge door alone.
+  `src/workitem.rs` is the rule table — extend it, never bypass it.
+- **conduit never authors, edits, or transitions an ADR** — that is
+  adroit's lane. conduit does not invoke adroit at all.
+- **No book during the rebuild — deliberate.** The old book described the
+  deleted shape and was removed whole. Implementation notes land on taps
+  issue 113 as a landing comment per checklist item (what shipped, the
+  design calls the code can't self-explain, threads left open). A new book
+  is written from the new code, commit messages, and issue record once the
+  shape stabilizes after the walk.
 - **No client names** in docs/comments/examples — keep examples generic.
-- Never write a bare `#<number>` in forge-rendered text (commits, PR/issue
-  bodies) — use `task N` / plain `N`.
+- Never write a bare `#<number>` in text conduit renders to a forge — use
+  plain `N`. (Governs the old surface's PR/issue bodies while it lives.)
 
 ## Build & test
 
-Always use `just` recipes — never raw `cargo`/`mdbook`.
+Always use `just` recipes — never raw `cargo`.
 
 ```sh
-just init        # toolchain components + mdbook
-just ci          # fmt-check + clippy + test + book (the gate)
+just init        # toolchain components
+just ci          # fmt-check + clippy + test (the gate)
 just test        # all tests
-just forge-up    # throwaway Gitea on localhost:3000 (demo/; FORGE_PORT overrides the host port)
+just forge-up    # throwaway Gitea on localhost:3000 (old surface; dies at item 7)
 just forge-down  # destroy it
 ```
 
-The customer demo kit (`demo/kit/demo-up`, per-beat scripts, `demo-down`)
-packages the full TAPS engagement demo — narrated script:
-`docs/src/usage/customer-demo.md`; design: ADR-0015.
-
 `cargo audit` runs as a separate CI job (`just crate-audit`, plus a weekly
 schedule) so a fresh advisory can't mask the code gates.
-The `docs/src/adr` corpus is the legacy-format repo of record (ADR-0017):
-adroit is KB-only (adroit ADR-0020), so validation seeds the corpus into
-an ephemeral space and checks it there. A new entry matches the existing
-legacy format exactly and must pass `adroit check` on a seeded space.
-adroit's forge integration stays disabled.
 
 Env-gated test legs: `CONDUIT_E2E_GITEA=1` (live Gitea conformance),
 `CONDUIT_E2E_GITHUB=1` (GitHub live reads), `CONDUIT_E2E_CLAUDE=1` (live
-claude CLI engine smoke).
+claude CLI engine smoke) — all old-surface legs.
 
 ## Design rules
 
-- Fully synchronous — no tokio. HTTP via ureq behind the `HttpTransport` seam;
-  unit tests inject `FakeTransport`, never the network.
 - Typed errors (`thiserror`) in lib modules; `anyhow` only in `main.rs`.
-- Pure core, effectful shell: `contract.rs`, `machine.rs`, `forge::diff` are
-  pure and exhaustively unit-tested; `router.rs` owns all effects.
-- State is files under `.conduit/` you can `cat` — no database.
-- Never put test-only state in a production type; use injected fakes
-  (`FakeForge`, `FakeEngine`, `FakeTransport`) and documented env overrides.
+- Pure core, effectful shell: rule tables (`workitem.rs`, `contract.rs`)
+  are pure and exhaustively unit-tested; effects live at the edges.
+- Fully synchronous today (no tokio; a root-justfile lane guards it). The
+  rebuild's door work (item 4) decides whether that survives — the KB
+  transport client (`como-kb-client`) is async.
+- Never put test-only state in a production type; use injected fakes and
+  documented env overrides.
