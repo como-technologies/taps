@@ -15,8 +15,10 @@ anyhow.workspace = true
 como-contract.workspace = true
 clap.workspace = true
 serde.workspace = true
-# `-o json` output, transcript JSONL, adroit/engine JSON envelopes, snapshot persistence.
+# `-o json` output, transcript JSONL, engine JSON envelopes, snapshot persistence.
 serde_json.workspace = true
+# Work-item page frontmatter (the approval seal rides YAML frontmatter).
+serde_yaml_ng.workspace = true
 # Plan-snapshot integrity hash + FakeEngine's deterministic output.
 sha2.workspace = true
 # Typed errors in the forge/store/machine/adroit layers (anyhow stays in main.rs).
