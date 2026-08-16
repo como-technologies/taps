@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__conduit__new",
+      "mcp__conduit__list",
+      "mcp__conduit__show",
+      "mcp__conduit__bounce",
+      "mcp__conduit__claim",
+      "mcp__conduit__complete",
+      "mcp__conduit__close",
+      "mcp__conduit__cancel",
+      "mcp__kb__wiki_search",
+      "mcp__kb__wiki_list",
+      "mcp__kb__wiki_content_read",
+      "mcp__kb__wiki_graph",
+      "mcp__kb__wiki_resolve",
+      "mcp__kb__wiki_suggest",
+      "mcp__kb__wiki_stats",
+      "mcp__kb__wiki_history",
+      "mcp__kb__wiki_schema",
+      "mcp__kb__wiki_lint"
+    ],
+    "deny": [
+      "Bash(incus exec kb:*)",
+      "Bash(incus file push kb:*)",
+      "Bash(incus file pull kb:*)",
+      "Bash(incus file edit kb:*)",
+      "Bash(incus file delete kb:*)",
+      "Bash(git push * main:*)",
+      "Bash(git merge:*)"
+    ]
+  }
+}
