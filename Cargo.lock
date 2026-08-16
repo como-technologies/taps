@@ -4820,6 +4820,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
+ "directories",
  "git2",
  "hex",
  "jsonschema",
