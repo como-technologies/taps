@@ -52,7 +52,7 @@ nested incus, mDNS — so a snapshot restore doesn't cost a reinstall:
 
 ```sh
 # launch: nesting lets later steps run containers inside this one —
-# Step 2's KB appliance and Step 5's throwaway forge
+# Step 2's KB appliance
 incus launch images:ubuntu/24.04 walk -c security.nesting=true
 
 # wait for boot: first an IP (the real readiness signal — network up,

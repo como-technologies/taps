@@ -26,9 +26,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 cargo install --locked just
 ```
 
-(Step 5's throwaway forge brings its own runtime requirement — that
-step names it when you get there.)
-
 ## Clone
 
 Already cloned from a local checkout in
@@ -66,5 +63,5 @@ what you have installed; any binary missing from `PATH` or misbehaving
 fails the command.
 
 Later steps still lean on each product's own justfile for runtime
-pieces (amaker's web assets, the demo forge) — but every binary is
+pieces (amaker's web apps build on first run) — but every binary is
 built and on `PATH` now, so nothing later waits on a cold build.

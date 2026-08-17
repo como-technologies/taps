@@ -30,7 +30,7 @@ sense.
 | [2 — Create your knowledge base](./create-your-kb.md)  | Stand up the wiki every stage writes to              | `llm-wiki`, the authoring kit |
 | [3 — Assess](./assess.md)                              | Turn what you know into a structured assessment      | amaker                        |
 | [4 — Prescribe](./prescribe.md)                        | Seed and accept the decisions the assessment implies | `adroit`                      |
-| [5 — Adopt](./adopt.md)                                | Turn an accepted decision into a reviewed, merged PR | conduit                       |
+| [5 — Adopt](./adopt.md)                                | Turn an accepted decision into signed, landed work   | conduit                       |
 | [6 — Measure](./measure.md)                            | Price the decision and read the team's pulse         | tuesday, pulse                |
 | [Around again](./around-again.md)                      | Ask the KB what it all cost; re-assess               | everything                    |
 
