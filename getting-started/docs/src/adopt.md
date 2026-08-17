@@ -1,8 +1,5 @@
 # Step 5 — Adopt
 
-> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
-> yet — commands and claims may change as the dogfood walk reaches it.
-
 Accepted decisions become landed, priced change. The engine is
 [conduit](../portfolio/loop/adopt.html), and it works the way the rest
 of the suite now does, taken to its conclusion: **work items are pages
