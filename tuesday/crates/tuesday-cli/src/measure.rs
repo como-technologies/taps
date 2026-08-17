@@ -127,6 +127,8 @@ pub struct Corpus {
 /// One decision's price for the period.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct DecisionRow {
+    /// The decision page's title, for the human briefing.
+    pub title: String,
     pub projects: u64,
     pub stories: u64,
     pub tasks: u64,
@@ -151,9 +153,10 @@ pub struct Report {
     pub discarded_ms: u64,
 }
 
-/// A task's resolved lineage: (decision reference, decision slug) pairs,
-/// plus the story and project the walk passed through.
-type Attribution<'a> = (Vec<(String, String)>, &'a Page, &'a Page);
+/// A task's resolved lineage: (decision reference, decision slug,
+/// decision title) triples, plus the story and project the walk passed
+/// through.
+type Attribution<'a> = (Vec<(String, String, String)>, &'a Page, &'a Page);
 
 impl Corpus {
     fn find<'a>(&'a self, pages: &'a [Page], target: &str) -> Option<&'a Page> {
@@ -172,6 +175,7 @@ impl Corpus {
             refs.push((
                 decision.str("reference")?.to_string(),
                 decision.slug.clone(),
+                decision.str("title").unwrap_or_default().to_string(),
             ));
         }
         (!refs.is_empty()).then_some((refs, story, project))
@@ -217,9 +221,12 @@ pub fn assemble(period: YearMonth, corpus: &Corpus) -> Report {
             report.unattributed_ms += task.u64("work_ms");
             continue;
         };
-        for (reference, decision_slug) in refs {
+        for (reference, decision_slug, decision_title) in refs {
             let row_key = reference.clone();
             let row = report.decisions.entry(reference).or_default();
+            if row.title.is_empty() {
+                row.title = decision_title;
+            }
             row.tasks += 1;
             row.machine_ms += task.u64("work_ms");
             if let Some(sha) = task.str("merge_commit") {
@@ -377,30 +384,60 @@ fn body(report: &Report) -> String {
     out
 }
 
-/// The compact human table for stdout.
-pub fn render_table(report: &Report) -> String {
+/// The human briefing for stdout: the numbers *with* their meaning — the
+/// report prices attention, so it must not waste it (taps 116).
+pub fn render_table(report: &Report, wiki: &str) -> String {
     let mut out = String::new();
-    out.push_str(&format!("Measure — {}\n", report.period));
+    out.push_str(&format!("Measure — {wiki}, {}\n", report.period));
     for (reference, row) in &report.decisions {
+        let shas: Vec<&str> = row
+            .merge_commits
+            .iter()
+            .map(|s| s.get(..7).unwrap_or(s))
+            .collect();
+        out.push_str(&format!("\n{reference}  {}\n", row.title));
         out.push_str(&format!(
-            "{reference:<10} {} task(s)  {:>6} min machine  {} gate action(s)\n",
+            "  landed     {} project(s), {} story(ies), {} task(s)  ({})\n",
+            row.projects,
+            row.stories,
             row.tasks,
-            row.machine_ms / 60_000,
-            row.signoffs + row.closes + row.bounces + row.door_refusals
+            shas.join(", ")
+        ));
+        out.push_str(&format!(
+            "  machine    {}m of execution between claim and the merge door\n",
+            row.machine_ms / 60_000
+        ));
+        out.push_str(&format!(
+            "  attention  {} sign-off(s), {} close(s), {} bounce(s), {} refused knock(s)\n",
+            row.signoffs, row.closes, row.bounces, row.door_refusals
         ));
     }
     if report.decisions.is_empty() {
-        out.push_str("no attributed work landed\n");
+        out.push_str("\nno work landed against any decision this period\n");
     }
-    if report.unattributed_tasks > 0 {
+    out.push('\n');
+    if report.unattributed_tasks == 0 {
+        out.push_str("unattributed  none — every landed task traces to a decision\n");
+    } else {
         out.push_str(&format!(
-            "unattributed: {} task(s), {} ms\n",
+            "unattributed  {} task(s), {} ms — work whose graph walk reaches no decision\n",
             report.unattributed_tasks, report.unattributed_ms
         ));
     }
+    if report.discarded_ms == 0 {
+        out.push_str(&format!(
+            "discarded     {} cancelled item(s), no execution time lost\n",
+            report.discarded_items
+        ));
+    } else {
+        out.push_str(&format!(
+            "discarded     {} cancelled item(s), {} ms of execution set aside\n",
+            report.discarded_items, report.discarded_ms
+        ));
+    }
     out.push_str(&format!(
-        "discarded to date: {} item(s)\n",
-        report.discarded_items
+        "\nfull report: measures/{} — a typed page beside the decisions it prices\n",
+        report.period
     ));
     out
 }
@@ -498,12 +535,7 @@ pub async fn run(period: YearMonth, json: bool) -> Result<String, Error> {
             "ingest": ingest,
         }))?
     } else {
-        format!(
-            "{}\nreport page: {} (ingest: {})\n",
-            render_table(&report).trim_end(),
-            slug,
-            ingest["pages_validated"].as_u64().unwrap_or(0),
-        )
+        render_table(&report, &wiki)
     };
     if !out.ends_with('\n') {
         out.push('\n');
@@ -535,7 +567,7 @@ mod tests {
         Corpus {
             decisions: vec![page(
                 "decisions/0001-write-it-down",
-                "id: DEC00000000000000000000001\nreference: ADR-0001\ntype: decision\nstatus: accepted",
+                "id: DEC00000000000000000000001\nreference: ADR-0001\ntype: decision\nstatus: accepted\ntitle: Write it down",
             )],
             projects: vec![page(
                 "work/project-1-p",
@@ -624,6 +656,17 @@ mod tests {
         let report = assemble(period(), &c);
         assert_eq!(report.discarded_items, 1);
         assert_eq!(report.discarded_ms, 5000);
+    }
+
+    #[test]
+    fn the_table_is_a_briefing_not_a_dump() {
+        let report = assemble(period(), &corpus());
+        let table = render_table(&report, "myproject");
+        assert!(table.contains("ADR-0001  Write it down"));
+        assert!(table.contains("2 task(s)  (c6908be, ea6c661)"));
+        assert!(table.contains("attention  4 sign-off(s), 2 close(s)"));
+        assert!(table.contains("unattributed  none"));
+        assert!(table.contains("full report: measures/2026-08"));
     }
 
     #[test]

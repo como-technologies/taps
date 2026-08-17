@@ -32,16 +32,35 @@ tuesday-report --period 2026-08   # or a named one
 ```
 
 tuesday reads the suite pair from Step 2 like every taps tool — no
-flags, no forge, no filesystem access to the wiki. The month's
-`measure-report` page lands beside the decisions it prices, through
-the same admission gates as everything else, and it is deterministic:
-the same pages produce byte-identical reports, so re-running converges
-instead of churning history.
+flags, no forge, no filesystem access to the wiki. Expect a briefing
+shaped like this (these are Step 5's real numbers):
 
-> 🚧 **Unverified.** The walk confirms the report against Step 5's
-> real project: one decision priced, its machine time and gate actions
-> matching what the doors recorded, unattributed and discarded work
-> called out honestly.
+```text
+Measure — myproject, 2026-08
+
+ADR-0001  Adopt a written code review standard carried by the pull request template
+  landed     1 project(s), 1 story(ies), 2 task(s)  (c6908be, ea6c661)
+  machine    45m of execution between claim and the merge door
+  attention  4 sign-off(s), 2 close(s), 0 bounce(s), 0 refused knock(s)
+
+unattributed  none — every landed task traces to a decision
+discarded     6 cancelled item(s), no execution time lost
+
+full report: measures/2026-08 — a typed page beside the decisions it prices
+```
+
+Reading it: each block is one decision that had work land this month,
+priced in the two currencies. **machine** sums the door-stamped
+`work_ms` of every task the merge door landed — what execution cost.
+**attention** counts what *you* spent at the gates: signatures given,
+closes confirmed, bounces issued, knocks the door refused.
+**unattributed** is work whose graph walk reaches no decision — real
+work, honestly orphaned, never hidden. **discarded** is cancelled
+items: planning paid for and set aside. The terminal shows the digest;
+the `measure-report` page it names is the full record, landed through
+the same admission gates as everything else — and deterministic: the
+same pages produce byte-identical reports, so re-running converges
+instead of churning history.
 
 ## Read the room — pulse
 
