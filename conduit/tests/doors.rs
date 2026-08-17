@@ -342,6 +342,18 @@ async fn bounce_and_cancel_cascade_downhill() {
         .await
         .unwrap_err();
     assert!(err.to_string().contains("terminal"), "{err}");
+
+    // The default list is the living tree; cancelled items on request only.
+    let dead = |all| ListParams {
+        class: None,
+        status: None,
+        parent: None,
+        all,
+    };
+    let listed = list_core(&store, &dead(false)).await.unwrap();
+    assert_eq!(listed["items"].as_array().unwrap().len(), 0);
+    let listed = list_core(&store, &dead(true)).await.unwrap();
+    assert_eq!(listed["items"].as_array().unwrap().len(), 3);
 }
 
 #[tokio::test]
@@ -392,6 +404,7 @@ async fn new_validates_parentage_and_list_show_read_the_tree() {
             class: Some(Class::Task),
             status: None,
             parent: None,
+            all: false,
         },
     )
     .await
@@ -408,6 +421,7 @@ async fn new_validates_parentage_and_list_show_read_the_tree() {
             class: None,
             status: None,
             parent: Some("project-1".into()),
+            all: false,
         },
     )
     .await

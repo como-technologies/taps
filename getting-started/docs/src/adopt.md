@@ -122,10 +122,20 @@ pushed branch and stop there: report what you built and hold before
 complete, because the review gate runs out-of-band first.
 ```
 
+Where does the work land? The project's internal repository — and the
+first `claim` is what brings it into existence, *empty* (one root
+commit), under `.conduit/repos/`. There is no separate project-setup
+step: a first task's contract includes bootstrapping the repo it lands
+in — the gate command the merge door will run (default `just ci`) is a
+promise the task makes true. Pointing a project at an *existing*
+codebase — seeding from a real repo, mirroring landed commits out to a
+forge — is a later integration; today's shape adopts change in the
+project's own repository.
+
 The session claims the task (the door verifies the seal and provisions
-the project's internal repo and branch), clones into a scratch
-directory, writes the signed test set as failing tests *first*, then
-implements until the project's gate is green and pushes the branch.
+the repo and branch), clones into a scratch directory, writes the
+signed test set as failing tests *first*, then implements until the
+project's gate is green and pushes the branch.
 If it finds the contract wrong mid-work, the right move is a `bounce`
 with the finding — never a quiet extra test, never code the contract
 doesn't cover.

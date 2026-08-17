@@ -75,6 +75,11 @@ pub struct ListParams {
     /// subtree, the parent itself excluded
     #[arg(long)]
     pub parent: Option<String>,
+    /// Include cancelled items (hidden by default; `--status cancelled`
+    /// shows them alone)
+    #[arg(long)]
+    #[serde(default)]
+    pub all: bool,
 }
 
 /// Parameters for `show`.
@@ -329,6 +334,8 @@ pub async fn list_core(store: &dyn WorkStore, p: &ListParams) -> Result<Value> {
         .iter()
         .filter(|e| p.class.is_none_or(|c| e.item.class() == Some(c)))
         .filter(|e| status.is_none_or(|s| e.item.status() == Some(s)))
+        // The living tree by default: cancelled items only on request.
+        .filter(|e| p.all || status.is_some() || e.item.status() != Some(Status::Cancelled))
         .filter(|e| {
             under
                 .as_ref()
