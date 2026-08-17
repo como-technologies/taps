@@ -431,7 +431,7 @@ async fn read_type(kb: &KbClient, type_name: &str) -> Result<Vec<Page>, Error> {
         }
         for slug in batch {
             let text = kb
-                .call("wiki_content_read", serde_json::json!({"slug": slug}))
+                .call("wiki_content_read", serde_json::json!({"uri": slug}))
                 .await?;
             pages.push(Page::parse(&slug, &text)?);
         }
@@ -470,7 +470,7 @@ pub async fn run(period: YearMonth, json: bool) -> Result<String, Error> {
     let page = render_page(&report, &wiki);
     kb.call(
         "wiki_content_write",
-        serde_json::json!({"slug": slug, "content": page}),
+        serde_json::json!({"uri": slug, "content": page}),
     )
     .await?;
     let ingest = kb
