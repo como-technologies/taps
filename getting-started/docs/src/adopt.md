@@ -100,9 +100,10 @@ conduit show <item>             # read what you are about to sign
 conduit signoff <item>          # seal it; the item goes ready
 ```
 
-`<item>` is any unique fragment of the slug `list` shows —
-`conduit show review-standard` beats typing sixty characters. An
-ambiguous fragment errors with the candidates.
+`<item>` is the short handle `list` prints — `project-1`, `task-2` —
+numbered per class within the wiki, like issue numbers in a repo.
+(The full page slug and the page id work too, and
+`conduit list --parent story-1` scopes the view to one subtree.)
 
 What you sign is the **body** — the goal, the scenarios, the test
 set. The seal pins its exact bytes: any edit afterwards breaks it, and

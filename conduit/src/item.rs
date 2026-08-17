@@ -87,13 +87,18 @@ pub struct Item {
 }
 
 impl Item {
-    /// A fresh draft page of the given class.
-    pub fn new(class: Class, title: &str, created: &str, body: &str) -> Self {
+    /// A fresh draft page of the given class. `ref_no` is the class-scoped
+    /// sequence number — the short handle humans type (`task-3`).
+    pub fn new(class: Class, ref_no: u64, title: &str, created: &str, body: &str) -> Self {
         let mut fm = Mapping::new();
+        fm.insert(
+            Value::String("id".into()),
+            Value::String(Ulid::generate().to_string()),
+        );
+        fm.insert(Value::String("ref".into()), Value::Number(ref_no.into()));
         let mut set = |k: &str, v: &str| {
             fm.insert(Value::String(k.into()), Value::String(v.into()));
         };
-        set("id", &Ulid::generate().to_string());
         set("title", title);
         set("type", class_name(class));
         set("status", "draft");
@@ -131,6 +136,17 @@ impl Item {
 
     pub fn id(&self) -> Option<&str> {
         self.str_field("id")
+    }
+
+    /// The class-scoped sequence number.
+    pub fn ref_no(&self) -> Option<u64> {
+        self.fm.get("ref").and_then(Value::as_u64)
+    }
+
+    /// The short human handle: `<class>-<ref>` (`task-3`). Wiki-local,
+    /// like an issue number; the ULID `id` is the global machine key.
+    pub fn handle(&self) -> Option<String> {
+        Some(format!("{}-{}", class_name(self.class()?), self.ref_no()?))
     }
 
     pub fn title(&self) -> Option<&str> {
@@ -180,9 +196,11 @@ pub fn class_name(class: Class) -> &'static str {
     }
 }
 
-/// Slug stem for a new page: `<class>-<kebab-title>`, capped for sanity —
-/// at a word boundary, so a cut never strands half a word.
-pub fn stem(class: Class, title: &str) -> String {
+/// Slug stem for a new page: `<class>-<ref>-<kebab-title>` — the handle
+/// first (which makes stems collision-proof by construction), then the
+/// readable title, capped at a word boundary so a cut never strands half
+/// a word.
+pub fn stem(class: Class, ref_no: u64, title: &str) -> String {
     let mut slug = String::new();
     for c in title.chars() {
         if c.is_ascii_alphanumeric() {
@@ -200,7 +218,7 @@ pub fn stem(class: Class, title: &str) -> String {
     } else {
         slug
     };
-    format!("{}-{}", class_name(class), slug.trim_matches('-'))
+    format!("{}-{ref_no}-{}", class_name(class), slug.trim_matches('-'))
 }
 
 // ── Corpus ─────────────────────────────────────────────────────────────────
@@ -233,46 +251,42 @@ pub struct WorkCorpus {
 }
 
 impl WorkCorpus {
-    /// Resolve a caller-supplied identifier to one entry: an exact slug
-    /// (with or without the `work/` prefix), a page id, or any fragment
-    /// that matches exactly one slug — the human seat types fragments,
-    /// not sixty-character slugs.
+    /// Resolve a caller-supplied identifier to one entry. Three exact
+    /// forms, nothing fuzzy: a handle (`task-3`), a page id (ULID), or a
+    /// slug (with or without the `work/` prefix).
     pub fn resolve(&self, input: &str) -> anyhow::Result<&Loaded> {
         let t = input.trim();
         if t.is_empty() {
             anyhow::bail!("empty work-item identifier");
         }
-        if let Some(e) = self.entries.iter().find(|e| e.is_target_of(t)) {
+        if let Some(e) = self.entries.iter().find(|e| {
+            e.is_target_of(t) || e.item.handle().is_some_and(|h| h.eq_ignore_ascii_case(t))
+        }) {
             return Ok(e);
         }
-        let needle = t.to_ascii_lowercase();
-        let hits: Vec<&Loaded> = self
-            .entries
-            .iter()
-            .filter(|e| e.slug.to_ascii_lowercase().contains(&needle))
-            .collect();
-        match hits.as_slice() {
-            [one] => Ok(one),
-            [] => anyhow::bail!(
-                "no work item matches '{input}' (known: {})",
-                if self.entries.is_empty() {
-                    "none — the wiki has no work items yet".to_string()
-                } else {
-                    self.entries
-                        .iter()
-                        .map(|e| e.slug.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                }
-            ),
-            many => anyhow::bail!(
-                "'{input}' is ambiguous — it matches: {}",
-                many.iter()
-                    .map(|e| e.slug.as_str())
+        anyhow::bail!(
+            "no work item matches '{input}' (known: {})",
+            if self.entries.is_empty() {
+                "none — the wiki has no work items yet".to_string()
+            } else {
+                self.entries
+                    .iter()
+                    .map(|e| e.item.handle().unwrap_or_else(|| e.slug.clone()))
                     .collect::<Vec<_>>()
                     .join(", ")
-            ),
-        }
+            }
+        )
+    }
+
+    /// The next class-scoped sequence number: max existing + 1.
+    pub fn next_ref(&self, class: Class) -> u64 {
+        self.entries
+            .iter()
+            .filter(|e| e.item.class() == Some(class))
+            .filter_map(|e| e.item.ref_no())
+            .max()
+            .unwrap_or(0)
+            + 1
     }
 
     /// The parent entry of an item, if its class has one and the reference
@@ -313,6 +327,7 @@ mod tests {
     fn new_parse_round_trip_preserves_foreign_keys_and_body() {
         let mut item = Item::new(
             Class::Task,
+            7,
             "Do the thing",
             "2026-08-16T00:00:00Z",
             "## Goal\n\nyes\n",
@@ -320,10 +335,12 @@ mod tests {
         item.set("story", "01ARZ3NDEKTSV4RRFFQ69G5FAV");
         item.set("x-foreign", "kept");
         let text = item.serialize().unwrap();
-        let back = Item::parse("work/task-do-the-thing", &text).unwrap();
+        let back = Item::parse("work/task-7-do-the-thing", &text).unwrap();
         assert_eq!(back.class(), Some(Class::Task));
         assert_eq!(back.status(), Some(Status::Draft));
         assert_eq!(back.title(), Some("Do the thing"));
+        assert_eq!(back.ref_no(), Some(7));
+        assert_eq!(back.handle().as_deref(), Some("task-7"));
         assert_eq!(back.parent_ref(), Some("01ARZ3NDEKTSV4RRFFQ69G5FAV"));
         assert_eq!(
             back.fm.get("x-foreign").and_then(Value::as_str),
@@ -335,7 +352,7 @@ mod tests {
 
     #[test]
     fn status_rewrite_never_touches_the_body() {
-        let item = Item::new(Class::Story, "S", "2026-08-16T00:00:00Z", "body text");
+        let item = Item::new(Class::Story, 1, "S", "2026-08-16T00:00:00Z", "body text");
         let before = item.serialize().unwrap();
         let mut item = Item::parse("s", &before).unwrap();
         item.set_status(Status::InProgress);
@@ -345,14 +362,14 @@ mod tests {
     }
 
     #[test]
-    fn stems_are_kebab_and_class_prefixed() {
+    fn stems_lead_with_the_handle_and_stay_kebab() {
         assert_eq!(
-            stem(Class::Task, "Reject unsigned work items!"),
-            "task-reject-unsigned-work-items"
+            stem(Class::Task, 4, "Reject unsigned work items!"),
+            "task-4-reject-unsigned-work-items"
         );
         assert_eq!(
-            stem(Class::Project, "KB: v2 (alpha)"),
-            "project-kb-v2-alpha"
+            stem(Class::Project, 2, "KB: v2 (alpha)"),
+            "project-2-kb-v2-alpha"
         );
     }
 
@@ -360,34 +377,35 @@ mod tests {
     fn long_stems_cut_at_a_word_boundary() {
         let s = stem(
             Class::Project,
+            1,
             "Every pull request carries the review standard it will be judged by",
         );
         assert_eq!(
             s,
-            "project-every-pull-request-carries-the-review-standard-it-will-be"
+            "project-1-every-pull-request-carries-the-review-standard-it-will-be"
         );
         assert!(!s.ends_with('-'));
         // A single unbroken word still gets the hard cap.
-        let s = stem(Class::Task, &"x".repeat(80));
-        assert_eq!(s.len(), "task-".len() + 60);
+        let s = stem(Class::Task, 1, &"x".repeat(80));
+        assert_eq!(s.len(), "task-1-".len() + 60);
     }
 
     fn corpus() -> WorkCorpus {
         let mut entries = Vec::new();
-        let mut add = |class: Class, title: &str, parent: Option<(&str, &str)>| {
-            let mut item = Item::new(class, title, "2026-08-16T00:00:00Z", "b");
+        let mut add = |class: Class, ref_no: u64, title: &str, parent: Option<(&str, &str)>| {
+            let mut item = Item::new(class, ref_no, title, "2026-08-16T00:00:00Z", "b");
             if let Some((key, target)) = parent {
                 item.set(key, target);
             }
-            let slug = format!("{WORK_ROOT}/{}", stem(class, title));
+            let slug = format!("{WORK_ROOT}/{}", stem(class, ref_no, title));
             let text = item.serialize().unwrap();
             let item = Item::parse(&slug, &text).unwrap();
             entries.push(Loaded { slug, text, item });
         };
-        add(Class::Project, "P", None);
-        add(Class::Story, "S", Some(("project", "project-p")));
-        add(Class::Task, "T one", Some(("story", "story-s")));
-        add(Class::Task, "T two", Some(("story", "story-s")));
+        add(Class::Project, 1, "P", None);
+        add(Class::Story, 1, "S", Some(("project", "project-1-p")));
+        add(Class::Task, 1, "T one", Some(("story", "story-1-s")));
+        add(Class::Task, 2, "T two", Some(("story", "story-1-s")));
         WorkCorpus { entries }
     }
 
@@ -395,12 +413,12 @@ mod tests {
     fn resolution_and_tree_queries() {
         let c = corpus();
         // Slug with or without the work/ prefix, and by id.
-        let story = c.resolve("story-s").unwrap();
-        assert_eq!(c.resolve("work/story-s").unwrap().slug, story.slug);
+        let story = c.resolve("story-1-s").unwrap();
+        assert_eq!(c.resolve("work/story-1-s").unwrap().slug, story.slug);
         let by_id = c.resolve(story.item.id().unwrap()).unwrap();
         assert_eq!(by_id.slug, story.slug);
 
-        let project = c.resolve("project-p").unwrap();
+        let project = c.resolve("project-1-p").unwrap();
         assert_eq!(c.parent_of(story).unwrap().slug, project.slug);
         assert!(c.parent_of(project).is_none());
         assert_eq!(c.children_of(story).len(), 2);
@@ -413,17 +431,23 @@ mod tests {
     }
 
     #[test]
-    fn fragments_resolve_when_unique_and_name_rivals_when_not() {
+    fn handles_resolve_exactly_and_fragments_do_not() {
         let c = corpus();
-        // A fragment matching exactly one slug resolves, case-insensitively.
-        assert_eq!(c.resolve("t-one").unwrap().slug, "work/task-t-one");
-        assert_eq!(c.resolve("T-TWO").unwrap().slug, "work/task-t-two");
-        // A fragment matching several names every candidate.
-        let err = c.resolve("task").unwrap_err().to_string();
-        assert!(err.contains("ambiguous"));
-        assert!(err.contains("work/task-t-one") && err.contains("work/task-t-two"));
-        // Exact matches still win outright even when they'd also be a
-        // fragment of something else.
-        assert_eq!(c.resolve("story-s").unwrap().slug, "work/story-s");
+        assert_eq!(c.resolve("task-2").unwrap().slug, "work/task-2-t-two");
+        assert_eq!(c.resolve("STORY-1").unwrap().slug, "work/story-1-s");
+        // Nothing fuzzy: a fragment that is neither handle, id, nor slug
+        // fails, and the error offers the handles.
+        let err = c.resolve("t-two").unwrap_err().to_string();
+        assert!(err.contains("task-2"));
+        assert!(c.resolve("task").is_err());
+    }
+
+    #[test]
+    fn next_ref_counts_per_class() {
+        let c = corpus();
+        assert_eq!(c.next_ref(Class::Task), 3);
+        assert_eq!(c.next_ref(Class::Story), 2);
+        assert_eq!(c.next_ref(Class::Project), 2);
+        assert_eq!(WorkCorpus::default().next_ref(Class::Task), 1);
     }
 }

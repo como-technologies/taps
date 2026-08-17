@@ -119,7 +119,7 @@ fn gate_timeout() -> std::time::Duration {
 fn print_report(command: &Command, report: &serde_json::Value) {
     let s = |k: &str| report[k].as_str().unwrap_or("?").to_string();
     match command {
-        Command::New(_) => println!("created {} ({}, draft)", s("slug"), s("class")),
+        Command::New(_) => println!("created {} ({}, draft)", s("handle"), s("slug")),
         Command::List(_) => {
             let empty = vec![];
             let items = report["items"].as_array().unwrap_or(&empty);
@@ -128,9 +128,8 @@ fn print_report(command: &Command, report: &serde_json::Value) {
             }
             for i in items {
                 println!(
-                    "{:<12} {:<44} {:<12} seal:{:<9} {}",
-                    i["class"].as_str().unwrap_or("?"),
-                    i["slug"].as_str().unwrap_or("?"),
+                    "{:<12} {:<12} seal:{:<9} {}",
+                    i["handle"].as_str().unwrap_or("?"),
                     i["status"].as_str().unwrap_or("?"),
                     i["seal"].as_str().unwrap_or("?"),
                     i["title"].as_str().unwrap_or(""),
@@ -138,9 +137,9 @@ fn print_report(command: &Command, report: &serde_json::Value) {
             }
         }
         Command::Show(_) => println!(
-            "{} ({}, {}, seal:{})\n\n{}",
+            "{} — {} ({}, seal:{})\n\n{}",
+            s("handle"),
             s("slug"),
-            s("class"),
             s("status"),
             s("seal"),
             s("body")

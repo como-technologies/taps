@@ -127,10 +127,10 @@ async fn tree(store: &FakeStore) {
     new_core(store, &new_params(Class::Project, "P", None))
         .await
         .unwrap();
-    new_core(store, &new_params(Class::Story, "S", Some("project-p")))
+    new_core(store, &new_params(Class::Story, "S", Some("project-1")))
         .await
         .unwrap();
-    new_core(store, &new_params(Class::Task, "T", Some("story-s")))
+    new_core(store, &new_params(Class::Task, "T", Some("story-1")))
         .await
         .unwrap();
 }
@@ -138,7 +138,7 @@ async fn tree(store: &FakeStore) {
 /// All three signed off, top down, at the human seat.
 async fn signed_tree(store: &FakeStore) {
     tree(store).await;
-    for slug in ["project-p", "story-s", "task-t"] {
+    for slug in ["project-1", "story-1", "task-1"] {
         signoff_core(store, Actor::HumanSeat, &signer(slug))
             .await
             .unwrap();
@@ -187,32 +187,34 @@ async fn the_full_loop_lands_one_squash_commit_and_closes_uphill() {
     signed_tree(&store).await;
 
     // Claim: repo + branch provisioned, clock started.
-    let claimed = claim_core(&store, dir.path(), Actor::Harness, &id("task-t"))
+    let claimed = claim_core(&store, dir.path(), Actor::Harness, &id("task-1"))
         .await
         .unwrap();
     assert_eq!(claimed["status"], "in-progress");
-    assert_eq!(claimed["branch"], "work/task-t");
+    assert_eq!(claimed["branch"], "work/task-1-t");
     let repo = claimed["repo"].as_str().unwrap().to_string();
     assert!(Path::new(&repo).join("HEAD").exists());
-    let task = store.text("work/task-t");
+    let task = store.text("work/task-1-t");
     assert!(task.contains("claimed_at:"));
     assert!(
-        store.text("work/project-p").contains("repo:"),
+        store.text("work/project-1-p").contains("repo:"),
         "the project records its provisioned repo"
     );
 
     // The session does the work; the merge door proves the gate and lands
     // ONE commit (the project's gate is set to a trivially-green command —
     // the gate CONTENT is the signed test set's business, not this test's).
-    store.edit_fm("work/project-p", |i| i.set("gate", "test -f delivered.txt"));
-    push_work(dir.path(), &repo, "work/task-t");
-    let done = complete_core(&store, dir.path(), Duration::from_secs(60), &id("task-t"))
+    store.edit_fm("work/project-1-p", |i| {
+        i.set("gate", "test -f delivered.txt")
+    });
+    push_work(dir.path(), &repo, "work/task-1-t");
+    let done = complete_core(&store, dir.path(), Duration::from_secs(60), &id("task-1"))
         .await
         .unwrap();
     assert_eq!(done["status"], "done");
     let sha = done["merge_commit"].as_str().unwrap();
     assert_eq!(sha.len(), 40);
-    let task = store.text("work/task-t");
+    let task = store.text("work/task-1-t");
     assert!(task.contains(&format!("merge_commit: {sha}")));
     assert!(task.contains("work_ms:"));
 
@@ -227,14 +229,14 @@ async fn the_full_loop_lands_one_squash_commit_and_closes_uphill() {
     assert!(body.contains("work-item: "), "trailer: {body}");
 
     // Done flows uphill: harness closes the story, only a human the project.
-    close_core(&store, Actor::Harness, &id("story-s"))
+    close_core(&store, Actor::Harness, &id("story-1"))
         .await
         .unwrap();
-    let refused = close_core(&store, Actor::Harness, &id("project-p"))
+    let refused = close_core(&store, Actor::Harness, &id("project-1"))
         .await
         .unwrap_err();
     assert!(refused.to_string().contains("human seat"), "{refused}");
-    let closed = close_core(&store, Actor::HumanSeat, &id("project-p"))
+    let closed = close_core(&store, Actor::HumanSeat, &id("project-1"))
         .await
         .unwrap();
     assert_eq!(closed["status"], "done");
@@ -248,26 +250,26 @@ async fn signoff_flows_downhill_and_is_a_human_seat() {
     tree(&store).await;
 
     // Story before project: refused, naming the unsigned parent.
-    let err = signoff_core(&store, Actor::HumanSeat, &signer("story-s"))
+    let err = signoff_core(&store, Actor::HumanSeat, &signer("story-1"))
         .await
         .unwrap_err();
     assert!(err.to_string().contains("parent"), "{err}");
 
     // The harness cannot sign at all.
-    signoff_core(&store, Actor::HumanSeat, &signer("project-p"))
+    signoff_core(&store, Actor::HumanSeat, &signer("project-1"))
         .await
         .unwrap();
-    let err = signoff_core(&store, Actor::Harness, &signer("story-s"))
+    let err = signoff_core(&store, Actor::Harness, &signer("story-1"))
         .await
         .unwrap_err();
     assert!(err.to_string().contains("human seat"), "{err}");
 
     // Top-down succeeds, and the pages carry the seal + ready status —
     // exactly what the schemas' ready-requires-approval invariant expects.
-    signoff_core(&store, Actor::HumanSeat, &signer("story-s"))
+    signoff_core(&store, Actor::HumanSeat, &signer("story-1"))
         .await
         .unwrap();
-    let text = store.text("work/story-s");
+    let text = store.text("work/story-1-s");
     assert!(text.contains("approval:"));
     assert!(text.contains("content_sha256:"));
     assert!(text.contains("status: ready"));
@@ -280,29 +282,29 @@ async fn a_tampered_contract_is_bounced_not_worked() {
     signed_tree(&store).await;
 
     // The body changes after sign-off — by anyone, however it happened.
-    store.tamper_body("work/task-t", "it works", "it slacks");
+    store.tamper_body("work/task-1-t", "it works", "it slacks");
 
     // The claim door refuses AND executes the bounce.
-    let err = claim_core(&store, dir.path(), Actor::Harness, &id("task-t"))
+    let err = claim_core(&store, dir.path(), Actor::Harness, &id("task-1"))
         .await
         .unwrap_err();
     let msg = err.to_string();
     assert!(msg.contains("seal") && msg.contains("bounced"), "{msg}");
-    assert_eq!(store.status_of("work/task-t"), "draft");
+    assert_eq!(store.status_of("work/task-1-t"), "draft");
     assert!(
-        !store.text("work/task-t").contains("approval:"),
+        !store.text("work/task-1-t").contains("approval:"),
         "the broken seal is stripped, never overwritten"
     );
 
     // Nothing proceeds until a human re-signs.
-    let err = claim_core(&store, dir.path(), Actor::Harness, &id("task-t"))
+    let err = claim_core(&store, dir.path(), Actor::Harness, &id("task-1"))
         .await
         .unwrap_err();
     assert!(err.to_string().contains("sign-off"), "{err}");
-    signoff_core(&store, Actor::HumanSeat, &signer("task-t"))
+    signoff_core(&store, Actor::HumanSeat, &signer("task-1"))
         .await
         .unwrap();
-    claim_core(&store, dir.path(), Actor::Harness, &id("task-t"))
+    claim_core(&store, dir.path(), Actor::Harness, &id("task-1"))
         .await
         .unwrap();
 }
@@ -313,7 +315,7 @@ async fn bounce_and_cancel_cascade_downhill() {
     signed_tree(&store).await;
 
     // Bouncing the story takes its signed task with it; the project stands.
-    let report = bounce_core(&store, Actor::Harness, &id("story-s"))
+    let report = bounce_core(&store, Actor::Harness, &id("story-1"))
         .await
         .unwrap();
     let bounced: Vec<&str> = report["bounced"]
@@ -322,21 +324,21 @@ async fn bounce_and_cancel_cascade_downhill() {
         .iter()
         .filter_map(|v| v.as_str())
         .collect();
-    assert_eq!(bounced, vec!["work/story-s", "work/task-t"]);
-    assert_eq!(store.status_of("work/story-s"), "draft");
-    assert_eq!(store.status_of("work/task-t"), "draft");
-    assert_eq!(store.status_of("work/project-p"), "ready");
+    assert_eq!(bounced, vec!["work/story-1-s", "work/task-1-t"]);
+    assert_eq!(store.status_of("work/story-1-s"), "draft");
+    assert_eq!(store.status_of("work/task-1-t"), "draft");
+    assert_eq!(store.status_of("work/project-1-p"), "ready");
 
     // Cancelling the project sweeps every non-terminal descendant.
-    let report = cancel_core(&store, Actor::HumanSeat, &id("project-p"))
+    let report = cancel_core(&store, Actor::HumanSeat, &id("project-1"))
         .await
         .unwrap();
     assert_eq!(report["cancelled"].as_array().unwrap().len(), 3);
-    for slug in ["work/project-p", "work/story-s", "work/task-t"] {
+    for slug in ["work/project-1-p", "work/story-1-s", "work/task-1-t"] {
         assert_eq!(store.status_of(slug), "cancelled");
     }
     // Terminal is terminal.
-    let err = bounce_core(&store, Actor::HumanSeat, &id("story-s"))
+    let err = bounce_core(&store, Actor::HumanSeat, &id("story-1"))
         .await
         .unwrap_err();
     assert!(err.to_string().contains("terminal"), "{err}");
@@ -349,13 +351,13 @@ async fn close_requires_landed_children_and_the_merge_door_requires_a_claim() {
     signed_tree(&store).await;
 
     // An open child holds the story's close.
-    let err = close_core(&store, Actor::Harness, &id("story-s"))
+    let err = close_core(&store, Actor::Harness, &id("story-1"))
         .await
         .unwrap_err();
     assert!(err.to_string().contains("child"), "{err}");
 
     // The merge door refuses an unclaimed (ready) task.
-    let err = complete_core(&store, dir.path(), Duration::from_secs(60), &id("task-t"))
+    let err = complete_core(&store, dir.path(), Duration::from_secs(60), &id("task-1"))
         .await
         .unwrap_err();
     assert!(err.to_string().contains("invalid transition"), "{err}");
@@ -371,20 +373,25 @@ async fn new_validates_parentage_and_list_show_read_the_tree() {
         .await
         .unwrap_err();
     assert!(err.to_string().contains("--parent"), "{err}");
-    let err = new_core(&store, &new_params(Class::Task, "Wrong", Some("project-p")))
+    let err = new_core(&store, &new_params(Class::Task, "Wrong", Some("project-1")))
         .await
         .unwrap_err();
     assert!(err.to_string().contains("hangs under"), "{err}");
-    let err = new_core(&store, &new_params(Class::Project, "P", None))
+
+    // Duplicate titles are fine: the ref makes the slug — and the handle —
+    // unique by construction.
+    let again = new_core(&store, &new_params(Class::Project, "P", None))
         .await
-        .unwrap_err();
-    assert!(err.to_string().contains("already exists"), "{err}");
+        .unwrap();
+    assert_eq!(again["handle"], "project-2");
+    assert_eq!(again["slug"], "work/project-2-p");
 
     let listed = list_core(
         &store,
         &ListParams {
             class: Some(Class::Task),
             status: None,
+            parent: None,
         },
     )
     .await
@@ -392,11 +399,31 @@ async fn new_validates_parentage_and_list_show_read_the_tree() {
     let items = listed["items"].as_array().unwrap();
     assert_eq!(items.len(), 1);
     assert_eq!(items[0]["seal"], "unsealed");
+    assert_eq!(items[0]["handle"], "task-1");
+
+    // --parent scopes to the subtree, the parent itself excluded.
+    let under = list_core(
+        &store,
+        &ListParams {
+            class: None,
+            status: None,
+            parent: Some("project-1".into()),
+        },
+    )
+    .await
+    .unwrap();
+    let slugs: Vec<&str> = under["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|i| i["slug"].as_str())
+        .collect();
+    assert_eq!(slugs, vec!["work/story-1-s", "work/task-1-t"]);
 
     let shown = show_core(
         &store,
         &ShowParams {
-            id: "story-s".into(),
+            id: "story-1".into(),
         },
     )
     .await

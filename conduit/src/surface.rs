@@ -71,19 +71,25 @@ pub struct ListParams {
     /// cancelled)
     #[arg(long)]
     pub status: Option<String>,
+    /// Only items under this parent (handle, slug, or id) — its whole
+    /// subtree, the parent itself excluded
+    #[arg(long)]
+    pub parent: Option<String>,
 }
 
 /// Parameters for `show`.
 #[derive(clap::Args, Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct ShowParams {
-    /// Work-item identifier: a slug (with or without `work/`) or a page id
+    /// Work-item identifier: a handle (`task-3`), a slug (with or without
+    /// `work/`), or a page id
     pub id: String,
 }
 
 /// Parameters for `signoff`.
 #[derive(clap::Args, Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct SignoffParams {
-    /// Work-item identifier: a slug (with or without `work/`) or a page id
+    /// Work-item identifier: a handle (`task-3`), a slug (with or without
+    /// `work/`), or a page id
     pub id: String,
     /// Who signs (defaults to `git config user.email`)
     #[arg(long)]
@@ -93,7 +99,8 @@ pub struct SignoffParams {
 /// Parameters for verbs that act on one item.
 #[derive(clap::Args, Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct IdParams {
-    /// Work-item identifier: a slug (with or without `work/`) or a page id
+    /// Work-item identifier: a handle (`task-3`), a slug (with or without
+    /// `work/`), or a page id
     pub id: String,
 }
 
@@ -118,6 +125,7 @@ fn seal_word(text: &str) -> &'static str {
 
 fn row(e: &Loaded) -> Value {
     json!({
+        "handle": e.item.handle(),
         "slug": e.slug,
         "id": e.item.id(),
         "class": e.item.class().map(class_name),
@@ -261,7 +269,8 @@ pub async fn new_core(store: &dyn WorkStore, p: &NewParams) -> Result<Value> {
         );
     }
 
-    let mut item = Item::new(p.class, &p.title, &now_rfc3339(), &body);
+    let ref_no = corpus.next_ref(p.class);
+    let mut item = Item::new(p.class, ref_no, &p.title, &now_rfc3339(), &body);
     match p.class {
         Class::Project => {}
         Class::Story => item.set("project", parent_id.clone().unwrap()),
@@ -279,13 +288,14 @@ pub async fn new_core(store: &dyn WorkStore, p: &NewParams) -> Result<Value> {
         );
     }
 
-    let slug = format!("{WORK_ROOT}/{}", stem(p.class, &p.title));
+    let slug = format!("{WORK_ROOT}/{}", stem(p.class, ref_no, &p.title));
     if corpus.entries.iter().any(|e| e.slug == slug) {
         bail!("page {slug} already exists — pick a different title");
     }
     store.write(&slug, &item.serialize()?).await?;
     let ingest = store.ingest().await?;
     Ok(json!({
+        "handle": item.handle(),
         "slug": slug,
         "id": item.id(),
         "class": class_name(p.class),
@@ -301,11 +311,29 @@ pub async fn new_core(store: &dyn WorkStore, p: &NewParams) -> Result<Value> {
 pub async fn list_core(store: &dyn WorkStore, p: &ListParams) -> Result<Value> {
     let status = p.status.as_deref().map(parse_status).transpose()?;
     let corpus = load_corpus(store).await?;
+    let under: Option<Vec<&str>> = match &p.parent {
+        None => None,
+        Some(target) => {
+            let root = corpus.resolve(target)?;
+            Some(
+                subtree(&corpus, root)
+                    .into_iter()
+                    .skip(1) // the parent itself
+                    .map(|e| e.slug.as_str())
+                    .collect(),
+            )
+        }
+    };
     let rows: Vec<Value> = corpus
         .entries
         .iter()
         .filter(|e| p.class.is_none_or(|c| e.item.class() == Some(c)))
         .filter(|e| status.is_none_or(|s| e.item.status() == Some(s)))
+        .filter(|e| {
+            under
+                .as_ref()
+                .is_none_or(|slugs| slugs.contains(&e.slug.as_str()))
+        })
         .map(row)
         .collect();
     Ok(json!({ "items": rows }))

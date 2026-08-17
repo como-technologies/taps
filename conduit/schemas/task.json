@@ -17,6 +17,11 @@
       "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
       "description": "Stable opaque page identifier (ULID, tool-generated). Links target this, not the path."
     },
+    "ref": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Class-scoped sequence number, allocated at creation — the short human handle (task-3) is <type>-<ref>. Wiki-local, like an issue number; id is the global key."
+    },
     "title": {
       "type": "string",
       "description": "Short title describing the change"
