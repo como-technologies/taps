@@ -64,19 +64,51 @@ instead of churning history.
 
 ## Read the room — pulse
 
-Effort tells you what a decision cost; [pulse](../portfolio/loop/measure.html) tells
-you how it landed. Anonymous by cryptography, not by policy: blind
-signatures guarantee that no one — including the operator — can link who
-answered to what they said.
+tuesday tells you what a decision cost.
+[pulse](../portfolio/loop/measure.html) tells you how the team feels
+about it. pulse is an anonymous poll. The anonymity is cryptographic,
+not a policy: blind signatures guarantee that no one — not even the
+operator — can link who answered to what they said.
 
-> 🚧 **Unverified.** pulse today ships a deterministic dogfood report
-> (`just dogfood` in `pulse/`) with simulated respondents; the walk
-> establishes what a real small-team poll looks like from this tutorial's
-> vantage and how its signal lands in the KB.
+A real poll needs a team. pulse hides any answer group with fewer than
+`k` people, so one reader cannot produce a real number. This tutorial
+runs pulse's built-in simulation instead: ten simulated respondents
+answer a short retro survey through the full protocol, and the report
+labels its data as simulated.
+
+Run it from your taps clone:
+
+```sh
+cd ~/taps/pulse
+just dogfood
+```
+
+The command starts both pulse services in one process, runs ten
+respondents through the protocol over HTTP, and writes
+`out/pulse-report.json`. Open the file and check three things:
+
+- `"failed": 0` — every respondent completed the protocol.
+- one segment with a numeric `average_score` and `"suppressed": false`
+  — the poll produced a signal.
+- `"data_source"` — the report states that its respondents are
+  simulated.
+
+The run uses a fixed seed, so the report is reproducible. Run it twice
+and compare:
+
+```sh
+cp out/pulse-report.json /tmp/first.json
+just dogfood
+diff /tmp/first.json out/pulse-report.json && echo identical
+```
+
+Today the pulse report stays a local file. It does not land in the
+knowledge base yet — that connection is future work.
 
 ## The point
 
-After this step your knowledge base holds the whole thread: the
-assessment that found the gap, the decision that addressed it, the PR
-that shipped it, the capacity it consumed, and the team's reaction. That
-thread is what the next step queries.
+After this step your knowledge base holds most of the thread: the
+assessment that found the gap, the decision that addressed it, the work
+that shipped it, and what it cost in machine time and human attention.
+The team's reaction still lives in pulse's local report. That thread is
+what the next step queries.
