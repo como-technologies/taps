@@ -116,6 +116,11 @@ fn find_string_arg(args: &[String], flag: &str) -> Option<String> {
 
 #[tokio::main]
 async fn main() {
+    // Suite convention: every installed binary answers --version.
+    if std::env::args().any(|a| a == "--version") {
+        println!("pulse-simulate {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
     tracing_subscriber::fmt()
         .with_env_filter("pulse=info")
         .with_writer(std::io::stderr)

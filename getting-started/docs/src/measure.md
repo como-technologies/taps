@@ -74,41 +74,51 @@ A real poll needs a team. pulse hides any answer group with fewer than
 `k` people, so one reader cannot produce a real number. This tutorial
 runs pulse's built-in simulation instead: ten simulated respondents
 answer a short retro survey through the full protocol, and the report
-labels its data as simulated.
+labels its data as simulated. A poll with real teammates is future
+work.
 
 Run it from your taps clone:
 
 ```sh
 cd ~/taps/pulse
-just dogfood
+pulse-report
 ```
 
 The command starts both pulse services in one process, runs ten
-respondents through the protocol over HTTP, and writes
-`out/pulse-report.json`. Open the file and check three things:
+respondents through the protocol over HTTP, and lands the result in
+your knowledge base as one typed `pulse-report` page. Like tuesday, it
+finds the KB through the suite pair from Step 2 — no flags. Expect a
+briefing shaped like this:
 
-- `"failed": 0` — every respondent completed the protocol.
-- one segment with a numeric `average_score` and `"suppressed": false`
-  — the poll produced a signal.
-- `"data_source"` — the report states that its respondents are
-  simulated.
+```text
+Pulse — myproject, survey iteration-retro
 
-The run uses a fixed seed, so the report is reproducible. Run it twice
-and compare:
+   3.7  How confident are you that this iteration's changes improved the portfolio? (company, 10 responses)
+   3.9  How well did the dogfood loop (prescribe, adopt, measure, assess) support the work this iteration? (company, 10 responses)
+   2.7  How sustainable is the current iteration pace? (company, 10 responses)
+   3.7  How much do you trust the artifacts the loop produced this iteration (assessments, seeded decisions, merged PRs)? (company, 10 responses)
+   4.0  How much did this iteration's hardening (gates tested under attack, broader forge support) increase your confidence in the suite? (company, 10 responses)
 
-```sh
-cp out/pulse-report.json /tmp/first.json
-just dogfood
-diff /tmp/first.json out/pulse-report.json && echo identical
+flows   10 of 10 respondents completed the protocol
+source  simulated respondents — synthetic demo data, not a real survey
+
+full report: pulse/iteration-retro — a typed page beside the decisions it speaks to
 ```
 
-Today the pulse report stays a local file. It does not land in the
-knowledge base yet — that connection is future work.
+Reading it: each line is one question with its average score (1 to 5)
+and how many answered. **flows** confirms every respondent completed
+the protocol. **source** is the honesty label — this data is
+simulated, and the page says so too. A question whose group has fewer
+than `k` unique respondents shows no score; the page marks it
+suppressed.
+
+The run uses a fixed seed, so it is reproducible: run `pulse-report`
+again and the page's bytes do not change. To see the full record, ask
+your knowledge base session to show `pulse/iteration-retro`.
 
 ## The point
 
-After this step your knowledge base holds most of the thread: the
+After this step your knowledge base holds the whole thread: the
 assessment that found the gap, the decision that addressed it, the work
-that shipped it, and what it cost in machine time and human attention.
-The team's reaction still lives in pulse's local report. That thread is
-what the next step queries.
+that shipped it, what it cost in machine time and human attention, and
+the team's reaction. That thread is what the next step queries.

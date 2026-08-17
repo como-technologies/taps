@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/como-technologies/taps/pulse/schemas/v0.1.0/pulse-report.json",
+  "title": "Pulse report type",
+  "description": "One anonymous-poll result as a typed page. Emitted mechanically by pulse-report: per-question averages from the Signal zone's k-anonymous aggregation. The data_source field says where the answers came from; segments below the k threshold are suppressed and carry no average.",
+  "type": "object",
+  "required": [
+    "title",
+    "type",
+    "status",
+    "survey",
+    "data_source"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Stable opaque page identifier (ULID, tool-generated)."
+    },
+    "title": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "type": {
+      "type": "string",
+      "description": "Page type from registry"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "draft",
+        "stub",
+        "generated"
+      ],
+      "description": "Content lifecycle state. Mechanical reports are emitted `active`: deterministic tool output, not model prose."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line report headline"
+    },
+    "survey": {
+      "type": "string",
+      "description": "The survey name; also the page's place under pulse/."
+    },
+    "instrument": {
+      "type": "string",
+      "description": "The emitting Measure head (\"pulse\")."
+    },
+    "data_source": {
+      "type": "string",
+      "description": "Where the answers came from. Simulated runs say so plainly; never present simulated data as a real survey."
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "RNG seed of a deterministic simulated run. Absent on real polls."
+    },
+    "flows": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Protocol flows: how many respondents started and how many completed every step."
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "segment",
+          "responses",
+          "suppressed"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "responses": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "average": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Mean Scale5 score. Null when the segment is suppressed."
+          },
+          "suppressed": {
+            "type": "boolean",
+            "description": "True when the segment has fewer than k unique respondents; the average is withheld."
+          }
+        }
+      },
+      "description": "One row per question and segment: the k-anonymous aggregate the Signal zone returned."
+    },
+    "last_updated": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+      "description": "RFC 3339 timestamp the report was emitted. Deterministic runs omit it."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "owner": {
+      "type": "string",
+      "description": "Person, team, or agent responsible"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Certainty of this page's content. Mechanical reports normally omit it."
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pinned path@commit evidence refs (non-edge; interim until llm-wiki#8)."
+    },
+    "relates_to": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids/slugs of related pages"
+    },
+    "superseded_by": {
+      "type": "string",
+      "description": "Id (preferred) or slug of the replacement page"
+    }
+  },
+  "x-owner": "pulse",
+  "x-wiki-types": {
+    "pulse-report": "One anonymous-poll result — team signal as a typed page"
+  },
+  "x-graph-edges": {
+    "relates_to": {
+      "relation": "relates-to",
+      "direction": "outgoing"
+    },
+    "superseded_by": {
+      "relation": "superseded-by",
+      "direction": "outgoing"
+    }
+  },
+  "additionalProperties": false
+}

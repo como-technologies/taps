@@ -6434,6 +6434,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pulse-report"
+version = "0.1.0"
+dependencies = [
+ "como-kb-client",
+ "pulse-test-harness",
+ "serde_json",
+ "tokio",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "pulse-server"
 version = "0.1.0"
 dependencies = [
