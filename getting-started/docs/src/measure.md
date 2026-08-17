@@ -1,8 +1,5 @@
 # Step 6 — Measure
 
-> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
-> yet — commands and claims may change as the dogfood walk reaches it.
-
 Six months after a decision, someone asks what it cost and whether it
 helped. This step is how you answer from records instead of memory. Two
 instruments, one destination: the measurements land in the same knowledge
