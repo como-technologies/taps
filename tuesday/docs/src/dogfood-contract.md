@@ -1,19 +1,21 @@
 # Dogfood Contract — the Measure stage
 
-tuesday is the **Measure-stage consumer** of the TAPS loop and the
-**independent second verifier** of conduit's emission contract. conduit
-(Adopt) turns accepted ADRs into merged PRs and tags every one of them with a
-fixed set of markers; tuesday reads those markers at report time and turns
-them into hours attributed back to the originating decision. Two independent
-codebases agreeing on the same merged PR's labels, title, and trailer is the
-loop-closure evidence.
+> **This page describes the demoted forge lane** (`tuesday-report
+> forge …`). The carrier moved with conduit's rebuild (portfolio
+> ADR-0015): the primary lane prices decisions from **door-stamped
+> work-item frontmatter** in the knowledge base — `work_ms`,
+> `merged_at`, friction counters, sign-off and close records — with
+> attribution walked over graph edges (task → story → project →
+> `implements` → decision). No labels, no forge, no hours. The forge
+> lane below remains for reading merged PRs on external forges and for
+> the future mirroring integration.
 
-The normative statement of the shared markers is `como-contract`
-(`contract/src/tuesday.rs`), which both sides implement. This page is the
-consumer-side statement: what tuesday relies on, and how it allocates from
-it. Note: conduit is being rebuilt (portfolio ADR-0015) — the carrier moves
-from forge PR labels to work-item frontmatter, and this page changes with
-the rebuild's Measure step.
+tuesday's forge lane is the **independent second verifier** of the old
+emission contract: merged PRs tagged with a fixed set of markers, read
+back at report time and turned into hours attributed to the originating
+decision. The normative statement of the shared markers is
+`como-contract` (`contract/src/tuesday.rs`). What follows is the
+consumer-side statement of that legacy contract.
 
 ## What conduit emits on every PR
 

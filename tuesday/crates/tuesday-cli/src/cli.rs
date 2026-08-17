@@ -47,14 +47,41 @@ impl From<ScalingArg> for ScalingSeries {
     }
 }
 
-/// Headless monthly effort report: drives a read-only PR source through
-/// tuesday-core's calculator and emits the canonical MonthlyReport.
+/// The report surface. Bare `tuesday-report` prices the month from the
+/// knowledge base's door-stamped work-item pages (the suite pair
+/// `KB_URL`/`KB_WIKI` says which KB); the `forge` subcommand is the
+/// demoted legacy lane over merged PRs.
 #[derive(Debug, Parser)]
 #[command(
     name = "tuesday-report",
     version,
-    about = "Headless tuesday: one canonical MonthlyReport from merged PRs (ADR-0004)",
-    long_about = "Headless tuesday: fetches merged PRs from a forge, runs the effort\n\
+    about = "Price decisions from door-stamped work-item pages: machine time and human gate actions, per decision, as a measure-report page"
+)]
+pub struct Args {
+    /// Month to price, YYYY-MM (default: the current month)
+    #[arg(long, value_name = "YYYY-MM")]
+    pub period: Option<YearMonth>,
+
+    /// Output format: compact table for humans, json for automation
+    #[arg(short = 'o', long = "output", value_enum, default_value_t = OutputFormat::Table)]
+    pub output: OutputFormat,
+
+    #[command(subcommand)]
+    pub forge: Option<ForgeCmd>,
+}
+
+/// The demoted forge lane.
+#[derive(Debug, clap::Subcommand)]
+pub enum ForgeCmd {
+    /// Price merged PRs from a forge via effort labels (legacy lane —
+    /// the KB lane needs no labels and no forge)
+    Forge(Box<ForgeArgs>),
+}
+
+/// Headless monthly effort report: drives a read-only PR source through
+/// tuesday-core's calculator and emits the canonical MonthlyReport.
+#[derive(Debug, clap::Args)]
+#[command(long_about = "Fetches merged PRs from a forge, runs the effort\n\
         calculator, and emits the canonical serde MonthlyReport — the same schema\n\
         as the web head's JSON export, including the adr_totals rollup.\n\n\
         The window is one month (--year/--month) or an inclusive multi-month\n\
@@ -64,9 +91,8 @@ impl From<ScalingArg> for ScalingSeries {
         With --strict, every merged PR must carry exactly one effort:N-* label\n\
         AND (a category label OR an adr:* label); violations are listed on\n\
         stderr and the exit code is nonzero (ADR-0005 allocation ruling). In\n\
-        range mode the contract is checked month by month."
-)]
-pub struct Args {
+        range mode the contract is checked month by month.")]
+pub struct ForgeArgs {
     /// Forge provider to read merged PRs from
     #[arg(long, value_enum)]
     pub source: SourceKind,
@@ -135,24 +161,39 @@ pub struct Args {
     /// exactly one effort label and a category or adr:* label
     #[arg(long)]
     pub strict: bool,
-
-    /// Also write each month's report as a measure-report typed page into
-    /// this wiki (the directory holding wiki.toml), at
-    /// content/measures/<owner>-<YYYY-MM>.md. Deterministic — same forge data
-    /// and arguments, byte-identical page. Admission (llm-wiki ingest) and
-    /// committing stay with the caller; with --strict, pages are skipped
-    /// when violations are found (a contract-violating month doesn't enter
-    /// the record).
-    #[arg(long, value_name = "SPACE_DIR")]
-    pub kb: Option<PathBuf>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn parse(args: &[&str]) -> Result<Args, clap::Error> {
-        Args::try_parse_from(std::iter::once("tuesday-report").chain(args.iter().copied()))
+    fn parse(args: &[&str]) -> Result<ForgeArgs, clap::Error> {
+        let parsed = Args::try_parse_from(
+            ["tuesday-report", "forge"]
+                .iter()
+                .copied()
+                .chain(args.iter().copied()),
+        )?;
+        match parsed.forge {
+            Some(ForgeCmd::Forge(forge)) => Ok(*forge),
+            None => unreachable!("the forge subcommand was given"),
+        }
+    }
+
+    #[test]
+    fn the_bare_invocation_is_the_kb_lane() {
+        let args = Args::try_parse_from(["tuesday-report"]).unwrap();
+        assert!(args.forge.is_none());
+        assert_eq!(args.period, None);
+        assert_eq!(args.output, OutputFormat::Table);
+        let args = Args::try_parse_from(["tuesday-report", "--period", "2026-08"]).unwrap();
+        assert_eq!(
+            args.period,
+            Some(YearMonth {
+                year: 2026,
+                month: 8
+            })
+        );
     }
 
     const MINIMAL: &[&str] = &[

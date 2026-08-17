@@ -17,7 +17,12 @@ path = "src/main.rs"
 tuesday-core = { path = "../tuesday-core" }
 clap.workspace = true
 como-contract.workspace = true
+# The KB lane: read work-item pages, write the measure-report page, over
+# the appliance transport (the suite pair, like every taps tool).
+como-kb-client = { path = "../../../kb-client" }
+chrono.workspace = true
 serde_json.workspace = true
+serde_yaml_ng.workspace = true
 toml.workspace = true
 # The CLI is a native head: a tokio reactor here is fine (ADR-0002 only
 # forbids tokio inside tuesday-core, which must stay wasm32-compatible).
@@ -26,6 +31,4 @@ tracing-subscriber.workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true
-chrono.workspace = true
-# temp KB spaces for the --kb page-emission tests
 tempfile.workspace = true

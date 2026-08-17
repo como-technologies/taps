@@ -95,6 +95,7 @@ fn tuesday_report() -> Command {
 
 fn gitea_args(base_url: &str) -> Vec<String> {
     [
+        "forge",
         "--source",
         "gitea",
         "--base-url",
@@ -117,7 +118,13 @@ fn gitea_args(base_url: &str) -> Vec<String> {
 fn help_documents_the_full_surface() {
     let output = tuesday_report().arg("--help").output().unwrap();
     assert_eq!(output.status.code(), Some(0));
+    let top = String::from_utf8(output.stdout).unwrap();
+    for item in ["--period", "forge", "--output"] {
+        assert!(top.contains(item), "--help should document {item}:\n{top}");
+    }
 
+    let output = tuesday_report().args(["forge", "--help"]).output().unwrap();
+    assert_eq!(output.status.code(), Some(0));
     let help = String::from_utf8(output.stdout).unwrap();
     for flag in [
         "--source",
@@ -133,7 +140,6 @@ fn help_documents_the_full_surface() {
         "--output",
         "--scaling",
         "--strict",
-        "--kb",
     ] {
         assert!(
             help.contains(flag),
@@ -333,8 +339,8 @@ fn env_token_reaches_the_forge_when_no_file_is_given() {
 fn github_without_a_token_fails_fast_with_the_fix() {
     let output = tuesday_report()
         .args([
-            "--source", "github", "--owner", "como", "--repo", "tuesday", "--year", "2026",
-            "--month", "3",
+            "forge", "--source", "github", "--owner", "como", "--repo", "tuesday", "--year",
+            "2026", "--month", "3",
         ])
         .output()
         .unwrap();
@@ -351,6 +357,7 @@ fn github_without_a_token_fails_fast_with_the_fix() {
 fn base_url_is_rejected_for_github() {
     let output = tuesday_report()
         .args([
+            "forge",
             "--source",
             "github",
             "--base-url",
@@ -379,6 +386,7 @@ fn base_url_is_rejected_for_github() {
 fn out_of_range_month_is_a_usage_error() {
     let output = tuesday_report()
         .args([
+            "forge",
             "--source",
             "gitea",
             "--owner",
@@ -518,6 +526,7 @@ fn range_table_mode_emits_the_sectioned_table_with_the_rollup() {
 fn from_without_to_is_a_usage_error() {
     let output = tuesday_report()
         .args([
+            "forge",
             "--source",
             "gitea",
             "--owner",
@@ -572,86 +581,4 @@ fn forge_errors_exit_nonzero_with_a_message_on_stderr() {
     assert!(output.stdout.is_empty(), "no partial report on stdout");
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(stderr.contains("error"), "diagnostic on stderr:\n{stderr}");
-}
-
-#[test]
-fn kb_writes_a_measure_report_page_into_a_space() {
-    // Wave 4 (portfolio#7): --kb emits the month as a measure-report typed
-    // page. End to end over the real binary and a stub forge: page lands at
-    // content/measures/<owner>-<YYYY-MM>.md, typed, deterministic, carrying the
-    // adr_totals attribution the harness will query.
-    let forge = stub_forge(pulls_body(&[
-        pull(7, "Ship the widget", &["effort:3-average", "adr:ADR-0003"]),
-        pull(
-            8,
-            "Fix the gadget",
-            &["effort:1-super-quick", "category/bug"],
-        ),
-    ]));
-
-    let wiki = tempfile::tempdir().unwrap();
-    std::fs::write(wiki.path().join("wiki.toml"), "name = \"t\"\n").unwrap();
-
-    let mut args = gitea_args(&forge.base_url);
-    args.push("--kb".into());
-    args.push(wiki.path().to_string_lossy().into_owned());
-
-    let output = tuesday_report().args(&args).output().unwrap();
-    assert_eq!(output.status.code(), Some(0), "{output:?}");
-    let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("kb: wrote"), "{stderr}");
-
-    let page_path = wiki.path().join("content/measures/como-2026-03.md");
-    let page = std::fs::read_to_string(&page_path).unwrap();
-    assert!(page.contains("type: measure-report\n"), "{page}");
-    assert!(page.contains("period: \"2026-03\"\n"), "{page}");
-    assert!(page.contains("instrument: tuesday\n"), "{page}");
-    assert!(page.contains("ADR-0003"), "{page}");
-
-    // Converge: a second run over the same forge data is byte-identical.
-    let rerun = tuesday_report().args(&args).output().unwrap();
-    assert_eq!(rerun.status.code(), Some(0));
-    assert_eq!(page, std::fs::read_to_string(&page_path).unwrap());
-}
-
-#[test]
-fn kb_requires_a_space_and_names_the_bootstrap() {
-    let forge = stub_forge(pulls_body(&[pull(
-        7,
-        "Ship the widget",
-        &["effort:3-average", "adr:ADR-0003"],
-    )]));
-    let not_a_space = tempfile::tempdir().unwrap();
-
-    let mut args = gitea_args(&forge.base_url);
-    args.push("--kb".into());
-    args.push(not_a_space.path().to_string_lossy().into_owned());
-
-    let output = tuesday_report().args(&args).output().unwrap();
-    assert_eq!(output.status.code(), Some(1), "{output:?}");
-    let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("not a wiki"), "{stderr}");
-    assert!(stderr.contains("llm-wiki admin create"), "{stderr}");
-}
-
-#[test]
-fn kb_is_skipped_when_strict_violations_exist() {
-    // A contract-violating month doesn't enter the record: --strict + --kb
-    // exits nonzero, says so, and writes no page.
-    let forge = stub_forge(pulls_body(&[pull(9, "No labels at all", &[])]));
-    let wiki = tempfile::tempdir().unwrap();
-    std::fs::write(wiki.path().join("wiki.toml"), "name = \"t\"\n").unwrap();
-
-    let mut args = gitea_args(&forge.base_url);
-    args.extend([
-        "--strict".into(),
-        "--kb".into(),
-        wiki.path().to_string_lossy().into_owned(),
-    ]);
-
-    let output = tuesday_report().args(&args).output().unwrap();
-    assert_eq!(output.status.code(), Some(1), "{output:?}");
-    let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("kb: not written"), "{stderr}");
-    assert!(!wiki.path().join("wiki/measures").exists());
 }

@@ -122,6 +122,27 @@ impl KbClient {
         Ok(text)
     }
 
+    /// Ensure a tool-shipped schema is current in the wiki: register on
+    /// first contact, and when the engine answers that the changed schema
+    /// needs an explicit upgrade, walk it through the evolve door — a tool
+    /// upgrading its *own* class is an ordinary upgrade. A cross-owner
+    /// conflict still fails loudly at the evolve door. Returns the engine's
+    /// status word (`registered` / `unchanged` / `evolved`).
+    pub async fn ensure_schema(&self, type_name: &str, schema: &str) -> Result<String> {
+        let payload = serde_json::json!({"type": type_name, "schema": schema});
+        let report = match self
+            .call_json("wiki_admin_schema_register", payload.clone())
+            .await
+        {
+            Ok(report) => report,
+            Err(e) if e.to_string().contains("explicit upgrade") => {
+                self.call_json("wiki_admin_schema_evolve", payload).await?
+            }
+            Err(e) => return Err(e),
+        };
+        Ok(report["status"].as_str().unwrap_or("?").to_string())
+    }
+
     /// Call a wiki tool and parse its text content as JSON.
     pub async fn call_json(
         &self,

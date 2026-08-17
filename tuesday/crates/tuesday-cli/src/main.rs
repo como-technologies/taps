@@ -1,27 +1,33 @@
-//! `tuesday-report`: the headless CLI head (ADR-0004).
+//! `tuesday-report`: the headless Measure head.
+//!
+//! Bare invocation is the KB lane: price the month's decisions from
+//! door-stamped work-item pages over the appliance transport, land the
+//! `measure-report` page, print the summary. The `forge` subcommand is the
+//! demoted legacy lane over merged PRs (ADR-0004).
 //!
 //! Named `tuesday-report` and not `tuesday` because the web head's binary
 //! owns the `tuesday` name — the generic self-host path (Containerfile,
 //! scripts/build-static-release.sh, dx's `target/dx/tuesday` output dir —
 //! ADR-0008) points at it; see crates/tuesday-web/Cargo.toml.
 //!
-//! Exit codes: 0 = report emitted (and, with `--strict`, every merged PR
-//! satisfies the ADR-0005 contract); 1 = runtime failure or strict
-//! violations (listed on stderr, the report still printed); 2 = usage error
-//! (clap). Stdout carries only the report — every diagnostic goes to
-//! stderr, so `-o json` output is pipeable.
+//! Exit codes: 0 = report emitted (and, with the forge lane's `--strict`,
+//! every merged PR satisfies the ADR-0005 contract); 1 = runtime failure
+//! or strict violations (listed on stderr, the report still printed);
+//! 2 = usage error (clap). Stdout carries only the report — every
+//! diagnostic goes to stderr, so `-o json` output is pipeable.
 
 use clap::Parser;
 use std::process::ExitCode;
 use tracing_subscriber::EnvFilter;
-use tuesday_cli::cli::{Args, SourceKind};
+use tuesday_cli::cli::{Args, ForgeArgs, ForgeCmd, OutputFormat, SourceKind};
 use tuesday_cli::run::{
     RangeRequest, RunOutcome, RunRequest, run_range_with_source, run_with_source,
 };
 use tuesday_cli::token::resolve_token;
+use tuesday_cli::window::YearMonth;
 use tuesday_core::{GitHubSource, GiteaSource, PrSource};
 
-/// conduit's dogfood forge — the documented default for `--source gitea`.
+/// The old dogfood forge default for `forge --source gitea`.
 const DEFAULT_GITEA_BASE_URL: &str = "http://localhost:3000";
 
 #[tokio::main(flavor = "current_thread")]
@@ -35,48 +41,39 @@ async fn main() -> ExitCode {
         .init();
 
     let args = Args::parse();
-    let kb = args.kb.clone();
-    let source_name = match args.source {
-        SourceKind::Github => "github",
-        SourceKind::Gitea => "gitea",
-    };
-    let owner = args.owner.clone();
-    let repos = args.repos.clone();
+    match args.forge {
+        None => {
+            let period = args.period.unwrap_or_else(current_month);
+            match tuesday_cli::measure::run(period, args.output == OutputFormat::Json).await {
+                Ok(stdout) => {
+                    print!("{stdout}");
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("error: {e}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
+        Some(ForgeCmd::Forge(forge)) => run_forge(*forge).await,
+    }
+}
+
+fn current_month() -> YearMonth {
+    use chrono::Datelike;
+    let now = chrono::Utc::now();
+    YearMonth {
+        year: now.year() as u32,
+        month: now.month(),
+    }
+}
+
+async fn run_forge(args: ForgeArgs) -> ExitCode {
     match run(args).await {
         Ok(outcome) => {
             print!("{}", outcome.stdout);
             if !outcome.stdout.ends_with('\n') {
                 println!();
-            }
-            // --kb (portfolio#7 wave 4): emit each month as a measure-report
-            // typed page. Skipped when strict violations exist — a
-            // contract-violating month doesn't enter the record.
-            if let Some(wiki) = kb {
-                if outcome.violations.is_empty() {
-                    let pages: Vec<_> = outcome
-                        .reports
-                        .iter()
-                        .map(|(period, report)| {
-                            (
-                                *period,
-                                tuesday_cli::kb::page(*period, report, source_name, &repos),
-                            )
-                        })
-                        .collect();
-                    match tuesday_cli::kb::write_pages(&wiki, &owner, &pages) {
-                        Ok(written) => {
-                            for path in written {
-                                eprintln!("kb: wrote {}", path.display());
-                            }
-                        }
-                        Err(e) => {
-                            eprintln!("error: {e}");
-                            return ExitCode::FAILURE;
-                        }
-                    }
-                } else {
-                    eprintln!("kb: not written — strict violations present");
-                }
             }
             if outcome.violations.is_empty() {
                 ExitCode::SUCCESS
@@ -105,7 +102,7 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn run(args: Args) -> Result<RunOutcome, String> {
+async fn run(args: ForgeArgs) -> Result<RunOutcome, String> {
     if args.source == SourceKind::Github && args.base_url.is_some() {
         return Err(
             "--base-url applies only to --source gitea (GitHub's API base is fixed)".to_string(),
@@ -136,7 +133,7 @@ async fn run(args: Args) -> Result<RunOutcome, String> {
 /// Pick the window mode: `--from/--to` drives the multi-month range
 /// pipeline (ADR-0007); otherwise `--year/--month` drives the single-month
 /// pipeline. Clap guarantees exactly one of the two windows is present.
-async fn dispatch<S: PrSource>(source: &S, args: &Args) -> Result<RunOutcome, String> {
+async fn dispatch<S: PrSource>(source: &S, args: &ForgeArgs) -> Result<RunOutcome, String> {
     if let (Some(from), Some(to)) = (args.from, args.to) {
         let request = RangeRequest {
             owner: args.owner.clone(),

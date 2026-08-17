@@ -27,7 +27,7 @@
 //! `docs/src/dogfood-contract.md`.
 
 pub mod cli;
-pub mod kb;
+pub mod measure;
 pub mod render;
 pub mod report;
 pub mod run;

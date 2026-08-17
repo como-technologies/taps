@@ -87,27 +87,8 @@ impl WorkStore for KbWorkStore {
     async fn ensure_schemas(&self) -> Result<Vec<String>> {
         let mut out = Vec::new();
         for (type_name, schema) in SCHEMAS {
-            let payload = json!({"type": type_name, "schema": schema});
-            let report = match self
-                .kb
-                .call_json("wiki_admin_schema_register", payload.clone())
-                .await
-            {
-                Ok(report) => report,
-                // A changed schema under conduit's own ownership is an
-                // ordinary upgrade: walk it through the evolve door. A
-                // cross-owner conflict still fails there, loudly.
-                Err(e) if e.to_string().contains("explicit upgrade") => {
-                    self.kb
-                        .call_json("wiki_admin_schema_evolve", payload)
-                        .await?
-                }
-                Err(e) => return Err(e),
-            };
-            out.push(format!(
-                "{type_name}: {}",
-                report["status"].as_str().unwrap_or("?")
-            ));
+            let status = self.kb.ensure_schema(type_name, schema).await?;
+            out.push(format!("{type_name}: {status}"));
         }
         Ok(out)
     }

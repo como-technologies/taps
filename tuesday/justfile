@@ -20,14 +20,14 @@ init:
 # dependency vulnerability audit.
 ci: fmt-check lint lint-server lanes test-server book crate-audit
 
-# Format code
+# Format code (the tuesday crates; the root justfile owns the suite-wide run)
 fmt:
-    cargo fmt
+    cargo fmt -p tuesday-core -p tuesday-cli -p tuesday-web
 
 # Fail ci on any formatting drift (blocking since the M2 hedge removal:
 # the pre-split edition-2024 drift was cleared by one pure style commit)
 fmt-check:
-    cargo fmt --check
+    cargo fmt -p tuesday-core -p tuesday-cli -p tuesday-web --check
 
 # Clippy, whole workspace (web lane via tuesday-web's default `web` feature).
 # Warnings are errors (M2 hedge removal: the pre-split web head's warning

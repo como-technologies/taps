@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/como-technologies/taps/tuesday/schemas/v0.1.0/measure-report.json",
   "title": "Measure report type",
-  "description": "One Measure-stage report as a typed page (kb-spec \u00a72; portfolio#7 wave 4). Emitted mechanically by the Measure heads \u2014 tuesday's quantitative capacity report today; pulse's qualitative aggregate when it un-parks \u2014 so adoption evidence is harness-queryable beside the decisions it attributes to.",
+  "description": "One Measure-stage report as a typed page. Emitted mechanically by the Measure heads — tuesday prices decisions from door-stamped work-item pages (machine time and human gate actions; never hours-shaped fiction); pulse's qualitative aggregate joins when it un-parks. Adoption evidence, harness-queryable beside the decisions it attributes to.",
   "type": "object",
   "required": [
     "title",
@@ -52,27 +52,96 @@
       "type": "string",
       "description": "Where the underlying signal came from (e.g. \"gitea:como\", \"github:acme\", a survey id)."
     },
-    "repos": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Repositories the report aggregates (quantitative reports)."
-    },
-    "total_hours": {
-      "type": "number",
-      "description": "Allocated hours across the period (quantitative reports)."
-    },
-    "unallocated_hours": {
-      "type": "number",
-      "description": "Hours from merged PRs carrying no effort score."
-    },
-    "adr_hours": {
+    "decisions": {
       "type": "object",
       "additionalProperties": {
-        "type": "number"
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "landed": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "projects": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stories": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tasks": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "merge_commits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "machine_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "human_gates": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "signoffs": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "closes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bounces": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "door_refusals": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "description": "Human attention spent at the gates (counts of door-witnessed actions): sign-offs given, stories/projects closed, bounces issued, knocks the merge door refused. Counters are lifetime-to-date on the items involved."
+          }
+        }
       },
-      "description": "Full allocated hours per decision reference (the adr_totals rollup): attribution answers what a decision cost, never split like categories."
+      "description": "Per decision reference (ADR-NNNN): what landed in the period and what it cost in the two real currencies — machine milliseconds between claim and the merge door, and human gate actions. Attribution is the graph (task -> story -> project -> implements -> decision), never a label convention."
+    },
+    "unattributed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tasks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "machine_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Work landed in the period whose graph walk reaches no decision — genuinely orphaned, called out rather than hidden."
+    },
+    "discarded": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "machine_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Cancelled work items to date: planning that was paid for and set aside, and any execution time they carried."
     },
     "last_updated": {
       "type": "string",
@@ -116,7 +185,7 @@
   },
   "x-owner": "tuesday",
   "x-wiki-types": {
-    "measure-report": "One Measure-stage report \u2014 adoption evidence as a typed page"
+    "measure-report": "One Measure-stage report — adoption evidence as a typed page"
   },
   "x-graph-edges": {
     "relates_to": {
