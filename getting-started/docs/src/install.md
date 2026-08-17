@@ -26,6 +26,15 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 cargo install --locked just
 ```
 
+Then tell git who you are — with your own name and address, which is
+why it isn't in the block above. Several steps sign things with this
+identity (Step 5's work-item sign-off records it as the approver):
+
+```sh
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+```
+
 ## Clone
 
 Already cloned from a local checkout in

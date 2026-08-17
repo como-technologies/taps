@@ -89,9 +89,8 @@ and unsealed until you act.
 ## Sign off — this part is you
 
 Sign-off is a terminal seat, and it flows downhill: project before
-story before tasks. Your signature records who you are — set your git
-identity first if this machine doesn't have one
-(`git config --global user.email you@example.com`).
+story before tasks. Your signature records who you are — the git
+identity you set in [Step 1](./install.md).
 
 ```sh
 cd ~/conduit-workspace
