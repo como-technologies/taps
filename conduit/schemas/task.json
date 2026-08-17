@@ -153,8 +153,7 @@
       },
       "then": {
         "required": [
-          "merge_commit",
-          "merged_at"
+          "merge_commit"
         ]
       }
     }
