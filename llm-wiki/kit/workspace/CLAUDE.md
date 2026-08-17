@@ -60,3 +60,11 @@ no corpus here and no filesystem path to one.
 
 The Como skills in `.claude/skills/` carry the procedures: author-guide,
 author-glossary, research, lint-and-fix. Prefer them over ad-hoc flows.
+
+## Writing standard (STRONG REQUIREMENT)
+
+All output follows ASD-STE100 (Simplified Technical English): short
+sentences, active voice, one idea per sentence, plain words. Do not
+coin jargon — if a term is not defined where the reader stands, do not
+use it. This applies to docs, book and guide pages, kit files, CLI and
+report output, commit messages, and issue comments.

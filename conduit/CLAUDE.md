@@ -68,3 +68,11 @@ The harness workspace template and posture skills live in `kit/`.
   rewrites a body, and the seal pins body bytes only.
 - Never put test-only state in a production type; the doors test against
   an in-memory `WorkStore`, and internal git is real in tests.
+
+## Writing standard (STRONG REQUIREMENT)
+
+All output follows ASD-STE100 (Simplified Technical English): short
+sentences, active voice, one idea per sentence, plain words. Do not
+coin jargon — if a term is not defined where the reader stands, do not
+use it. This applies to docs, book and guide pages, kit files, CLI and
+report output, commit messages, and issue comments.

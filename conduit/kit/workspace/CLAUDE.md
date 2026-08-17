@@ -51,3 +51,11 @@ signed task from claim to the merge door), and `review-task` (the
 standing-gate review — only ever in a session that did not implement
 the work). Prefer them over ad-hoc flows, and wear one hat at a time:
 in particular, a session that executed a task never reviews it.
+
+## Writing standard (STRONG REQUIREMENT)
+
+All output follows ASD-STE100 (Simplified Technical English): short
+sentences, active voice, one idea per sentence, plain words. Do not
+coin jargon — if a term is not defined where the reader stands, do not
+use it. This applies to docs, book and guide pages, kit files, CLI and
+report output, commit messages, and issue comments.
