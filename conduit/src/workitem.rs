@@ -457,22 +457,18 @@ mod tests {
     }
 
     #[test]
-    fn task_effort_enum_is_the_tuesday_closed_set() {
+    fn the_task_schema_carries_measured_telemetry_not_guessed_effort() {
+        // The doors witness work_ms/merged_at and the friction counters;
+        // a qualitative effort bucket does not survive measurement
+        // (taps 118 explores a derived grade if one is ever needed).
         let v: serde_json::Value = serde_json::from_str(TASK_SCHEMA).unwrap();
-        let schema_efforts: Vec<&str> = v["properties"]["effort"]["enum"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|e| e.as_str().unwrap())
-            .collect();
-        let contract_efforts: Vec<&str> = como_contract::tuesday::EFFORT_LABELS
-            .iter()
-            .map(|l| l.strip_prefix("effort:").unwrap())
-            .collect();
-        assert_eq!(
-            schema_efforts, contract_efforts,
-            "task effort enum drifted from como-contract EFFORT_LABELS"
-        );
+        assert!(v["properties"]["effort"].is_null(), "effort came back");
+        for field in ["work_ms", "merged_at", "bounces", "door_refusals"] {
+            assert!(
+                v["properties"][field].is_object(),
+                "task schema lost {field}"
+            );
+        }
     }
 
     #[test]

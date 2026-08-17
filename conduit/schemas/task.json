@@ -50,17 +50,6 @@
       "type": "string",
       "description": "Id (preferred) or slug of the parent story — sign-off flows downhill through this edge, done flows uphill"
     },
-    "effort": {
-      "type": "string",
-      "enum": [
-        "1-super-quick",
-        "2-not-long",
-        "3-average",
-        "4-a-while",
-        "5-felt-like-forever"
-      ],
-      "description": "Effort bucket from the closed set (como-contract EFFORT_LABELS minus the label prefix) — the field tuesday prices, carried here instead of a forge PR label"
-    },
     "branch": {
       "type": "string",
       "description": "Working branch in the project's internal repo, written by the claim door"
@@ -79,6 +68,21 @@
       "type": "integer",
       "minimum": 0,
       "description": "Execution wall-clock milliseconds, written by the doors — the raw quantity tuesday prices"
+    },
+    "merged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the merge door landed this task (RFC3339) — the field that puts it in a Measure period"
+    },
+    "bounces": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Times this item's approval was destroyed (explicit bounce or a door's forced bounce) — door-incremented friction, never caller-set"
+    },
+    "door_refusals": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Knocks the merge door turned away after claim (gate red or merge failure) — door-incremented friction, never caller-set"
     },
     "relates_to": {
       "type": "array",
@@ -149,7 +153,8 @@
       },
       "then": {
         "required": [
-          "merge_commit"
+          "merge_commit",
+          "merged_at"
         ]
       }
     }

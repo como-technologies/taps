@@ -14,7 +14,6 @@ anyhow.workspace = true
 # The doors' seams: KB transport (async, rmcp under the hood) + the MCP
 # server door + tool-parameter schemas (the one-clap-definition pattern).
 async-trait.workspace = true
-como-contract.workspace = true
 como-kb-client = { path = "../kb-client" }
 clap.workspace = true
 rmcp.workspace = true

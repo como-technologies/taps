@@ -46,6 +46,16 @@
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
       "description": "RFC 3339 timestamp the story was created"
     },
+    "bounces": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Times this item's approval was destroyed (explicit bounce or a door's forced bounce) — door-incremented friction, never caller-set"
+    },
+    "closed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this item was closed (RFC3339) — a story on the harness door, a project only at the human seat"
+    },
     "project": {
       "type": "string",
       "description": "Id (preferred) or slug of the parent project — sign-off flows downhill through this edge, done flows uphill"

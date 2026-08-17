@@ -216,6 +216,7 @@ async fn the_full_loop_lands_one_squash_commit_and_closes_uphill() {
     assert_eq!(sha.len(), 40);
     let task = store.text("work/task-1-t");
     assert!(task.contains(&format!("merge_commit: {sha}")));
+    assert!(task.contains("merged_at:"));
     assert!(task.contains("work_ms:"));
 
     // The squash commit carries the provenance trailer.
@@ -232,6 +233,7 @@ async fn the_full_loop_lands_one_squash_commit_and_closes_uphill() {
     close_core(&store, Actor::Harness, &id("story-1"))
         .await
         .unwrap();
+    assert!(store.text("work/story-1-s").contains("closed_at:"));
     let refused = close_core(&store, Actor::Harness, &id("project-1"))
         .await
         .unwrap_err();
@@ -291,6 +293,10 @@ async fn a_tampered_contract_is_bounced_not_worked() {
     let msg = err.to_string();
     assert!(msg.contains("seal") && msg.contains("bounced"), "{msg}");
     assert_eq!(store.status_of("work/task-1-t"), "draft");
+    assert!(
+        store.text("work/task-1-t").contains("bounces: 1"),
+        "a bounce is counted friction"
+    );
     assert!(
         !store.text("work/task-1-t").contains("approval:"),
         "the broken seal is stripped, never overwritten"
@@ -373,6 +379,37 @@ async fn close_requires_landed_children_and_the_merge_door_requires_a_claim() {
         .await
         .unwrap_err();
     assert!(err.to_string().contains("invalid transition"), "{err}");
+}
+
+#[tokio::test]
+async fn a_red_gate_is_a_counted_refusal_and_the_next_green_knock_lands() {
+    let store = FakeStore::default();
+    let dir = tempfile::TempDir::new().unwrap();
+    signed_tree(&store).await;
+    let claimed = claim_core(&store, dir.path(), Actor::Harness, &id("task-1"))
+        .await
+        .unwrap();
+    let repo = claimed["repo"].as_str().unwrap().to_string();
+    push_work(dir.path(), &repo, "work/task-1-t");
+
+    // Gate red: the door refuses and counts the knock on the page.
+    store.edit_fm("work/project-1-p", |i| i.set("gate", "false"));
+    let err = complete_core(&store, dir.path(), Duration::from_secs(60), &id("task-1"))
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains("gate"), "{err}");
+    assert!(store.text("work/task-1-t").contains("door_refusals: 1"));
+    assert_eq!(store.status_of("work/task-1-t"), "in-progress");
+
+    // Fix the gate; the door lands it, refusal count intact on the page.
+    store.edit_fm("work/project-1-p", |i| {
+        i.set("gate", "test -f delivered.txt")
+    });
+    complete_core(&store, dir.path(), Duration::from_secs(60), &id("task-1"))
+        .await
+        .unwrap();
+    let task = store.text("work/task-1-t");
+    assert!(task.contains("door_refusals: 1") && task.contains("merged_at:"));
 }
 
 #[tokio::test]

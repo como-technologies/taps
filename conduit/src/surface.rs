@@ -194,9 +194,11 @@ async fn bounce_subtree(
     for e in subtree(corpus, root) {
         if e.item.status().is_some_and(Status::is_signed_open) {
             let stripped = approval::strip(&e.text)?;
+            let bounces = count(e, "bounces") + 1;
             let item_text = {
                 let mut item = Item::parse(&e.slug, &stripped)?;
                 item.set_status(Status::Draft);
+                item.set("bounces", serde_yaml_ng::Value::Number(bounces.into()));
                 item.serialize()?
             };
             store.write(&e.slug, &item_text).await?;
@@ -497,7 +499,7 @@ pub async fn complete_core(
         .and_then(serde_yaml_ng::Value::as_str)
         .unwrap_or(DEFAULT_GATE);
 
-    let merged = crate::repo::merge_task(
+    let merged = match crate::repo::merge_task(
         &repo,
         branch,
         e.item.title().unwrap_or(&e.slug),
@@ -505,7 +507,23 @@ pub async fn complete_core(
         gate,
         gate_timeout,
         &dir.join(".conduit").join("workspaces"),
-    )?;
+    ) {
+        Ok(merged) => merged,
+        Err(err) => {
+            // A refused knock is friction the door witnessed — count it on
+            // the page before reporting the refusal.
+            let refusals = count(e, "door_refusals") + 1;
+            let text = rewrite(e, |i| {
+                i.set(
+                    "door_refusals",
+                    serde_yaml_ng::Value::Number(refusals.into()),
+                );
+            })?;
+            store.write(&e.slug, &text).await?;
+            store.ingest().await?;
+            return Err(err);
+        }
+    };
 
     let work_ms = e
         .item
@@ -521,6 +539,7 @@ pub async fn complete_core(
 
     let text = rewrite(e, |i| {
         i.set("merge_commit", merged.merge_commit.as_str());
+        i.set("merged_at", now_rfc3339().as_str());
         i.set("work_ms", serde_yaml_ng::Value::Number(work_ms.into()));
         i.set_status(Status::Done);
     })?;
@@ -550,7 +569,10 @@ pub async fn close_core(store: &dyn WorkStore, actor: Actor, p: &IdParams) -> Re
     let parent = corpus.parent_of(e).and_then(|pe| pe.item.status());
     let children = corpus.children_statuses(e);
     check_transition(class, actor, from, Status::Done, parent, &children)?;
-    let text = rewrite(e, |i| i.set_status(Status::Done))?;
+    let text = rewrite(e, |i| {
+        i.set("closed_at", now_rfc3339().as_str());
+        i.set_status(Status::Done);
+    })?;
     store.write(&e.slug, &text).await?;
     let ingest = store.ingest().await?;
     Ok(json!({ "slug": e.slug, "status": "done", "children": children, "ingest": ingest }))
@@ -576,6 +598,15 @@ pub async fn cancel_core(store: &dyn WorkStore, actor: Actor, p: &IdParams) -> R
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+
+/// A door-owned counter's current value (absent = 0).
+fn count(e: &Loaded, key: &str) -> u64 {
+    e.item
+        .fm
+        .get(key)
+        .and_then(serde_yaml_ng::Value::as_u64)
+        .unwrap_or(0)
+}
 
 fn class_and_status(e: &Loaded) -> Result<(Class, Status)> {
     match (e.item.class(), e.item.status()) {
