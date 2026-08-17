@@ -1,8 +1,7 @@
 # Step 5 — Adopt
 
-> 🚧 **Not yet walked.** This page is written ahead of its first clean
-> walkthrough, deliberately — the page is the program, and the walk
-> verifies it. Commands and claims firm up as the walk lands.
+> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
+> yet — commands and claims may change as the dogfood walk reaches it.
 
 Accepted decisions become landed, priced change. The engine is
 [conduit](../portfolio/loop/adopt.html), and it works the way the rest
