@@ -180,7 +180,8 @@ pub fn class_name(class: Class) -> &'static str {
     }
 }
 
-/// Slug stem for a new page: `<class>-<kebab-title>`, capped for sanity.
+/// Slug stem for a new page: `<class>-<kebab-title>`, capped for sanity —
+/// at a word boundary, so a cut never strands half a word.
 pub fn stem(class: Class, title: &str) -> String {
     let mut slug = String::new();
     for c in title.chars() {
@@ -191,7 +192,14 @@ pub fn stem(class: Class, title: &str) -> String {
         }
     }
     let slug = slug.trim_matches('-');
-    let slug = &slug[..slug.len().min(60)];
+    let slug = if slug.len() > 60 {
+        match slug[..60].rfind('-') {
+            Some(cut) => &slug[..cut],
+            None => &slug[..60],
+        }
+    } else {
+        slug
+    };
     format!("{}-{}", class_name(class), slug.trim_matches('-'))
 }
 
@@ -225,15 +233,27 @@ pub struct WorkCorpus {
 }
 
 impl WorkCorpus {
-    /// Resolve a caller-supplied identifier (slug or page id) to one entry.
+    /// Resolve a caller-supplied identifier to one entry: an exact slug
+    /// (with or without the `work/` prefix), a page id, or any fragment
+    /// that matches exactly one slug — the human seat types fragments,
+    /// not sixty-character slugs.
     pub fn resolve(&self, input: &str) -> anyhow::Result<&Loaded> {
         let t = input.trim();
         if t.is_empty() {
             anyhow::bail!("empty work-item identifier");
         }
-        match self.entries.iter().find(|e| e.is_target_of(t)) {
-            Some(e) => Ok(e),
-            None => anyhow::bail!(
+        if let Some(e) = self.entries.iter().find(|e| e.is_target_of(t)) {
+            return Ok(e);
+        }
+        let needle = t.to_ascii_lowercase();
+        let hits: Vec<&Loaded> = self
+            .entries
+            .iter()
+            .filter(|e| e.slug.to_ascii_lowercase().contains(&needle))
+            .collect();
+        match hits.as_slice() {
+            [one] => Ok(one),
+            [] => anyhow::bail!(
                 "no work item matches '{input}' (known: {})",
                 if self.entries.is_empty() {
                     "none — the wiki has no work items yet".to_string()
@@ -244,6 +264,13 @@ impl WorkCorpus {
                         .collect::<Vec<_>>()
                         .join(", ")
                 }
+            ),
+            many => anyhow::bail!(
+                "'{input}' is ambiguous — it matches: {}",
+                many.iter()
+                    .map(|e| e.slug.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ),
         }
     }
@@ -329,6 +356,22 @@ mod tests {
         );
     }
 
+    #[test]
+    fn long_stems_cut_at_a_word_boundary() {
+        let s = stem(
+            Class::Project,
+            "Every pull request carries the review standard it will be judged by",
+        );
+        assert_eq!(
+            s,
+            "project-every-pull-request-carries-the-review-standard-it-will-be"
+        );
+        assert!(!s.ends_with('-'));
+        // A single unbroken word still gets the hard cap.
+        let s = stem(Class::Task, &"x".repeat(80));
+        assert_eq!(s.len(), "task-".len() + 60);
+    }
+
     fn corpus() -> WorkCorpus {
         let mut entries = Vec::new();
         let mut add = |class: Class, title: &str, parent: Option<(&str, &str)>| {
@@ -367,5 +410,20 @@ mod tests {
             vec![Status::Draft, Status::Draft]
         );
         assert!(c.resolve("nope").is_err());
+    }
+
+    #[test]
+    fn fragments_resolve_when_unique_and_name_rivals_when_not() {
+        let c = corpus();
+        // A fragment matching exactly one slug resolves, case-insensitively.
+        assert_eq!(c.resolve("t-one").unwrap().slug, "work/task-t-one");
+        assert_eq!(c.resolve("T-TWO").unwrap().slug, "work/task-t-two");
+        // A fragment matching several names every candidate.
+        let err = c.resolve("task").unwrap_err().to_string();
+        assert!(err.contains("ambiguous"));
+        assert!(err.contains("work/task-t-one") && err.contains("work/task-t-two"));
+        // Exact matches still win outright even when they'd also be a
+        // fragment of something else.
+        assert_eq!(c.resolve("story-s").unwrap().slug, "work/story-s");
     }
 }

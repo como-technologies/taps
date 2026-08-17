@@ -100,6 +100,10 @@ conduit show <item>             # read what you are about to sign
 conduit signoff <item>          # seal it; the item goes ready
 ```
 
+`<item>` is any unique fragment of the slug `list` shows —
+`conduit show review-standard` beats typing sixty characters. An
+ambiguous fragment errors with the candidates.
+
 What you sign is the **body** — the goal, the scenarios, the test
 set. The seal pins its exact bytes: any edit afterwards breaks it, and
 every door bounces a broken item back to draft instead of acting on
