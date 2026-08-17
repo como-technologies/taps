@@ -8,24 +8,40 @@ helped. This step is how you answer from records instead of memory. Two
 instruments, one destination: the measurements land in the same knowledge
 base as the decisions they price.
 
-## Price the decision — tuesday
+## Price the decisions — tuesday
 
-[tuesday](../portfolio/loop/measure.html) attributes team effort to decisions from
-merged PRs: each PR carries an effort label (a relative 1–5 scale — team
-capacity, never individual surveillance), and the report rolls that up
-per ADR.
+[tuesday](../portfolio/loop/measure.html) prices each decision from the
+work-item pages Step 5 landed. Nothing is asked of anyone: conduit's
+doors already stamped everything the report needs — `work_ms` and
+`merged_at` on each task the merge door landed, the friction counters
+(`bounces`, `door_refusals`) on items whose gates pushed back, and the
+sign-off and close records at every human seat. Attribution is the
+graph: task → story → project → `implements` → decision, the edge your
+PM session drew when it planned the work.
+
+The report speaks two currencies, and neither is hours: **machine
+time** (milliseconds of execution between claim and landing) and
+**human gate actions** (sign-offs given, verdicts weighed, projects
+closed, bounces issued). Agents do the work; your attention is the
+scarce input — the report prices both, and never pretends one is the
+other.
 
 ```sh
-tuesday-report --kb ~/myproject-kb
+tuesday-report                    # prices the current month
+tuesday-report --period 2026-08   # or a named one
 ```
 
-The month's capacity report lands as a typed page beside the decisions it
-prices, carrying its per-ADR attribution.
+tuesday reads the suite pair from Step 2 like every taps tool — no
+flags, no forge, no filesystem access to the wiki. The month's
+`measure-report` page lands beside the decisions it prices, through
+the same admission gates as everything else, and it is deterministic:
+the same pages produce byte-identical reports, so re-running converges
+instead of churning history.
 
-> 🚧 **Unverified.** The walk confirms the label convention on the
-> Step 5 PRs (the shared contract crate defines it), how the binary is
-> built and invoked from a fresh clone, and what the report page looks
-> like for a one-decision month.
+> 🚧 **Unverified.** The walk confirms the report against Step 5's
+> real project: one decision priced, its machine time and gate actions
+> matching what the doors recorded, unattributed and discarded work
+> called out honestly.
 
 ## Read the room — pulse
 
