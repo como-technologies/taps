@@ -1,8 +1,5 @@
 # Around again
 
-> 🚧 **Not yet walked.** This page hasn't survived a clean walkthrough
-> yet — commands and claims may change as the dogfood walk reaches it.
-
 The loop closed the moment the measurements landed next to the
 decision. This step proves it, then starts the next trip.
 
