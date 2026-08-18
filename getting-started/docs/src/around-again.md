@@ -27,11 +27,13 @@ What did our first decision cost, and why did we make it? Answer from
 the myproject wiki only, and cite a page for every claim.
 ```
 
-Expect the whole thread back: the assessment report that found the
-gap, the decision that addressed it, the work items that shipped it,
-tuesday's measure page with the machine time and human attention it
-cost, and pulse's poll page with the team's reaction. Every claim
-points at a page you can open — you trust the pages, not the model.
+Expect the thread back with a citation for every claim: the
+assessment report that found the gap, the decision that addressed it,
+the work items that shipped it, and tuesday's measure page with the
+machine time and human attention it cost. Every claim points at a
+page you can open — you trust the pages, not the model. (pulse's poll
+page speaks to a different question — ask how the change landed with
+the team, and it joins the answer.)
 
 ## Re-assess
 
@@ -52,15 +54,16 @@ cd ~/taps/assessments
 amaker publish <project-id>
 ```
 
-Re-publishing overwrites the report page, and nothing is lost: the
-wiki keeps every page's history, and the pages that cited the first
-report still quote what it said. Back in your session, close the
-loop:
+Re-publishing overwrites the report page. The first report's numbers
+are not lost: the decision and project pages quote them, and the wiki
+keeps every page's history. (The tool surface cannot read an old
+revision back yet, so the citing pages are what your session works
+from.) Back in your session, close the loop:
 
 ```text
-Compare the new assessment report with the first one (the wiki's page
-history has it). What moved, and does the change match what our
-decision aimed for?
+Compare the new assessment report with the first one — the decision
+and project pages quote the first report's numbers. What moved, and
+does the change match what our decision aimed for?
 ```
 
 The delta between two assessments is the evidence of movement. The
